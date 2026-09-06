@@ -24,13 +24,22 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
+
+      - name: Record evaluated commit
+        run: echo "$GITHUB_SHA" > ci-commit.txt
 
       - name: TypeScript
         run: npm run build
 
       - name: Unit and application tests
         run: npm test
+
+      - name: Publish quality evidence
+        uses: actions/upload-artifact@v5
+        with:
+          name: ci-quality-evidence-${{ github.sha }}
+          path: ci-commit.txt
 
   bdd:
     name: BDD acceptance tests
@@ -47,7 +56,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: BDD
         run: npm run test:bdd
@@ -67,7 +76,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
