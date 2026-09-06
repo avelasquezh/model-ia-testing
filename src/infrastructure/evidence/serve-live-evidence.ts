@@ -1,6 +1,6 @@
 import { LiveExecutionEvidenceViewer } from './LiveExecutionEvidenceViewer.js';
 
-const [rootDirectory = 'test-results/evidence', executionId] = process.argv.slice(2);
+const [executionId, rootDirectory = 'test-results/evidence'] = process.argv.slice(2);
 
 if (!executionId) {
   console.error('Usage: npm run evidence:viewer -- <execution-id> [root-directory]');
