@@ -26,10 +26,25 @@ describe('ExecuteScenario', () => {
     const targets = new InMemoryTargetRepository();
     const scenarios = new InMemoryScenarioRepository();
     const executions = new InMemoryExecutionRepository();
-    const observedAt = new Date('2026-09-05T22:00:00.000Z');
+    const firstStartedAt = new Date('2026-09-05T21:59:59.500Z');
+    const firstObservedAt = new Date('2026-09-05T22:00:00.000Z');
+    const secondStartedAt = new Date('2026-09-05T22:00:00.500Z');
+    const secondObservedAt = new Date('2026-09-05T22:00:01.000Z');
     const observations = [
-      { input: 'Hola', response: 'Hola, ¿en qué puedo ayudarte?', observedAt },
-      { input: '¿Cómo estás?', response: 'Estoy bien.', observedAt: new Date('2026-09-05T22:00:01.000Z') },
+      {
+        input: 'Hola',
+        response: 'Hola, ¿en qué puedo ayudarte?',
+        startedAt: firstStartedAt,
+        observedAt: firstObservedAt,
+        durationMs: 500,
+      },
+      {
+        input: '¿Cómo estás?',
+        response: 'Estoy bien.',
+        startedAt: secondStartedAt,
+        observedAt: secondObservedAt,
+        durationMs: 500,
+      },
     ];
     const runner = new FakeExecutionRunner({ status: 'PASSED', observations });
     await targets.save(new Target({ id: 'target-1', name: 'Demo', url: 'https://example.com', status: 'ACTIVE' }));
