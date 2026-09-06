@@ -8,7 +8,7 @@ type Criterion = {
 
 const candidateCompliance = (criteria: readonly Criterion[]): number => {
   if (criteria.length === 0) return 0;
-  const values = criteria.map((criterion) =>
+  const values: number[] = criteria.map((criterion): number =>
     criterion.status === 'PASS' ? 1 : criterion.status === 'PARTIAL' ? 0.5 : 0,
   );
   return values.reduce((sum, value) => sum + value, 0) / values.length;
