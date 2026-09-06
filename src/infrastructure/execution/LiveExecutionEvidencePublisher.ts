@@ -13,10 +13,14 @@ export class LiveExecutionEvidencePublisher implements ExecutionEvidencePublishe
     await mkdir(executionDirectory, { recursive: true });
 
     if (event.type === 'OBSERVATION') {
-      const metadataPath = join(
-        executionDirectory,
-        `turn-${String(event.turnIndex + 1).padStart(2, '0')}.json`,
-      );
+      const turn = String(event.turnIndex + 1).padStart(2, '0');
+      const screenshotPath = join(executionDirectory, `turn-${turn}.png`);
+      const metadataPath = join(executionDirectory, `turn-${turn}.json`);
+
+      if (event.observation.screenshot !== undefined) {
+        await writeFile(screenshotPath, event.observation.screenshot);
+      }
+
       await writeFile(
         metadataPath,
         JSON.stringify(
@@ -35,13 +39,6 @@ export class LiveExecutionEvidencePublisher implements ExecutionEvidencePublishe
           2,
         ),
       );
-
-      if (event.observation.screenshot !== undefined) {
-        await writeFile(
-          join(executionDirectory, `turn-${String(event.turnIndex + 1).padStart(2, '0')}.png`),
-          event.observation.screenshot,
-        );
-      }
 
       return;
     }
