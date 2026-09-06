@@ -1,0 +1,25 @@
+{
+  "name": "model-ia-testing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Architecture spike for model-ia-testing",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest run",
+    "test:bdd": "cucumber-js",
+    "test:browser": "playwright test",
+    "test:architecture": "npm run build && npm test && npm run test:bdd && npm run test:browser"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^12.2.0",
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
