@@ -1,11 +1,11 @@
 import { chromium } from '@playwright/test';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { PlaywrightConversationUi } from './PlaywrightConversationUi.js';
 
 const browser = await chromium.launch({ headless: true });
 
-afterEach(async () => {
-  await browser.contexts()[0]?.close();
+afterAll(async () => {
+  await browser.close();
 });
 
 describe('PlaywrightConversationUi', () => {
