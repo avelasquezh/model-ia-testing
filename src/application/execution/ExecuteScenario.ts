@@ -55,7 +55,12 @@ export class ExecuteScenario {
         { execution: running, scenario, target },
         runnerOptions,
       );
-      finalExecution = running.finish(result.status, new Date(), result.observations);
+      finalExecution = running.finish(
+        result.status,
+        new Date(),
+        result.observations,
+        result.errors,
+      );
     } catch {
       finalExecution = running.finish('ERROR');
     }
