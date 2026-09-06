@@ -27,15 +27,19 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
       for (const conversationInput of input.scenario.props.inputs) {
         if (options.signal?.aborted) return { status: 'CANCELLED' };
 
+        const startedAt = new Date();
         const response = await this.withCancellation(
           session.send(conversationInput, options.timeoutMs),
           options.signal,
         );
+        const durationMs = response.observedAt.getTime() - startedAt.getTime();
 
         observations.push({
           input: conversationInput.value,
           response: response.value,
+          startedAt,
           observedAt: response.observedAt,
+          durationMs,
         });
       }
 
