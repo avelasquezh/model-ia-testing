@@ -86,7 +86,10 @@ class PlaywrightConversationSession implements ConversationSession {
     }
 
     const value = await this.ui.sendMessage(input.value, timeoutMs);
-    return { value, observedAt: new Date() };
+    const observedAt = new Date();
+    const screenshot = new Uint8Array(await this.browserSession.page.screenshot({ type: 'png' }));
+
+    return { value, observedAt, screenshot };
   }
 
   public async close(): Promise<void> {
