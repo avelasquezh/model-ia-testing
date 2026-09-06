@@ -1,0 +1,17 @@
+export type ConversationMessage = {
+  readonly value: string;
+};
+
+export type ConversationResponse = {
+  readonly value: string;
+  readonly observedAt: Date;
+};
+
+export type ConversationSession = {
+  send(input: ConversationMessage, timeoutMs: number): Promise<ConversationResponse>;
+  close(): Promise<void>;
+};
+
+export interface ConversationPort {
+  open(timeoutMs: number): Promise<ConversationSession>;
+}
