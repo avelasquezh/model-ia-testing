@@ -7,6 +7,8 @@ import type {
   ConversationResponse,
   ConversationSession,
 } from '../../application/ports/ConversationPort.js';
+import type { ExecutionEvidencePublisher } from '../../application/ports/ExecutionEvidencePublisher.js';
+import { InMemoryExecutionEvidencePublisher } from './InMemoryExecutionEvidencePublisher.js';
 import { PlaywrightExecutionRunner } from './PlaywrightExecutionRunner.js';
 
 function createConversationPort() {
@@ -229,5 +231,97 @@ describe('PlaywrightExecutionRunner', () => {
     expect(result.status).toBe('CANCELLED');
     expect(session.send).not.toHaveBeenCalled();
     expect(session.close).toHaveBeenCalledOnce();
+  });
+
+  it('retains a close error when cancellation occurs before a turn', async () => {
+    const { conversation, session } = createConversationPort();
+    vi.mocked(session.close).mockRejectedValueOnce(new Error('close failure'));
+    const { scenario, target, execution } = createExecutionContext();
+    const controller = new AbortController();
+    controller.abort();
+    const runner = new PlaywrightExecutionRunner(conversation);
+
+    const result = await runner.execute(
+      { execution, scenario, target },
+      { timeoutMs: 5_000, signal: controller.signal },
+    );
+
+    expect(result.status).toBe('CANCELLED');
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors?.[0]?.operation).toBe('CLOSE');
+    expect(result.errors?.[0]?.message).toBe('close failure');
+  });
+
+  it('retains a close error when global timeout is exhausted before a turn', async () => {
+    const { conversation, session } = createConversationPort();
+    vi.mocked(session.close).mockRejectedValueOnce(new Error('close failure'));
+    const now = vi.spyOn(Date, 'now')
+      .mockReturnValueOnce(1_000)
+      .mockReturnValueOnce(1_000)
+      .mockReturnValueOnce(7_000);
+    const { scenario, target, execution } = createExecutionContext();
+    const runner = new PlaywrightExecutionRunner(conversation);
+
+    try {
+      const result = await runner.execute(
+        { execution, scenario, target },
+        { timeoutMs: 5_000 },
+      );
+
+      expect(result.status).toBe('ERROR');
+      expect(result.errors).toHaveLength(2);
+      expect(result.errors?.[0]?.code).toBe('TIMEOUT');
+      expect(result.errors?.[1]?.operation).toBe('CLOSE');
+      expect(result.errors?.[1]?.message).toBe('close failure');
+    } finally {
+      now.mockRestore();
+    }
+  });
+
+  it('publishes each observed turn with its screenshot immediately', async () => {
+    const { conversation, session } = createConversationPort();
+    const screenshot = new Uint8Array([137, 80, 78, 71]);
+    vi.mocked(session.send).mockResolvedValue({
+      value: 'Respuesta',
+      observedAt: new Date('2026-09-06T12:00:01Z'),
+      screenshot,
+    });
+    const publisher = new InMemoryExecutionEvidencePublisher();
+    const { scenario, target, execution } = createExecutionContext();
+    const runner = new PlaywrightExecutionRunner(conversation, publisher);
+
+    const result = await runner.execute(
+      { execution, scenario, target },
+      { timeoutMs: 5_000 },
+    );
+
+    expect(result.observations).toHaveLength(2);
+    expect(publisher.events).toHaveLength(2);
+    expect(publisher.events[0]).toMatchObject({
+      type: 'OBSERVATION',
+      executionId: 'execution-1',
+      turnIndex: 0,
+    });
+    const firstObservation = publisher.events[0];
+    expect(firstObservation.type).toBe('OBSERVATION');
+    if (firstObservation.type === 'OBSERVATION') {
+      expect(firstObservation.observation.screenshot).toEqual(screenshot);
+    }
+  });
+
+  it('can run with an explicit publisher contract', async () => {
+    const { conversation } = createConversationPort();
+    const publisher: ExecutionEvidencePublisher = {
+      publish: vi.fn().mockResolvedValue(undefined),
+    };
+    const { scenario, target, execution } = createExecutionContext();
+    const runner = new PlaywrightExecutionRunner(conversation, publisher);
+
+    await runner.execute(
+      { execution, scenario, target },
+      { timeoutMs: 5_000 },
+    );
+
+    expect(publisher.publish).toHaveBeenCalled();
   });
 });
