@@ -76,4 +76,37 @@ describe('PlaywrightConversationUi', () => {
 
     await context.close();
   });
+
+  it('detects a new response even when its text repeats the previous response', async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await page.setContent(`
+      <main>
+        <input aria-label="Mensaje" />
+        <button id="send">Enviar</button>
+        <div data-testid="assistant-message">Respuesta fija</div>
+        <script>
+          document.getElementById('send').addEventListener('click', () => {
+            const response = document.createElement('div');
+            response.dataset.testid = 'assistant-message';
+            response.textContent = 'Respuesta fija';
+            document.querySelector('main').appendChild(response);
+          });
+        </script>
+      </main>
+    `);
+
+    const ui = new PlaywrightConversationUi(page, {
+      composer: { kind: 'role', role: 'textbox', name: 'Mensaje' },
+      sendButton: { kind: 'role', role: 'button', name: 'Enviar' },
+      response: { kind: 'testId', value: 'assistant-message' },
+      responseTimeoutMs: 2_000,
+      pollIntervalMs: 10,
+    });
+
+    await expect(ui.sendMessage('Hola', 2_000)).resolves.toBe('Respuesta fija');
+
+    await context.close();
+  });
 });
