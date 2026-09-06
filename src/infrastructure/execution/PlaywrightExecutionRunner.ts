@@ -15,9 +15,18 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
     input: ExecutionRunnerInput,
     options: ExecutionRunnerOptions,
   ): Promise<ExecutionRunnerResult> {
+    const deadline = Date.now() + options.timeoutMs;
     let session;
+
     try {
-      session = await this.conversation.open(input.target.props.url, options.timeoutMs);
+      const remainingTimeoutMs = this.remainingTimeout(deadline);
+      if (remainingTimeoutMs <= 0) {
+        return {
+          status: 'ERROR',
+          errors: [this.toTimeoutError('OPEN')],
+        };
+      }
+      session = await this.conversation.open(input.target.props.url, remainingTimeoutMs);
     } catch (error) {
       return {
         status: 'ERROR',
@@ -34,11 +43,17 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
           return { status: 'CANCELLED', observations, errors };
         }
 
+        const remainingTimeoutMs = this.remainingTimeout(deadline);
+        if (remainingTimeoutMs <= 0) {
+          errors.push(this.toTimeoutError('SEND', index));
+          return { status: 'ERROR', observations, errors };
+        }
+
         const startedAt = new Date();
 
         try {
           const response = await this.withCancellation(
-            session.send(conversationInput, options.timeoutMs),
+            session.send(conversationInput, remainingTimeoutMs),
             options.signal,
           );
           const durationMs = response.observedAt.getTime() - startedAt.getTime();
@@ -74,6 +89,10 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
     return { status: 'INCONCLUSIVE', observations };
   }
 
+  private remainingTimeout(deadline: number): number {
+    return Math.max(0, deadline - Date.now());
+  }
+
   private async withCancellation<T>(operation: Promise<T>, signal?: AbortSignal): Promise<T> {
     if (!signal) return operation;
     if (signal.aborted) throw new DOMException('Execution cancelled', 'AbortError');
@@ -106,6 +125,19 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
     return {
       code,
       message,
+      operation,
+      ...(turnIndex !== undefined ? { turnIndex } : {}),
+      occurredAt: new Date(),
+    };
+  }
+
+  private toTimeoutError(
+    operation: ExecutionTechnicalError['operation'],
+    turnIndex?: number,
+  ): ExecutionTechnicalError {
+    return {
+      code: 'TIMEOUT',
+      message: 'Execution timeout exceeded',
       operation,
       ...(turnIndex !== undefined ? { turnIndex } : {}),
       occurredAt: new Date(),
