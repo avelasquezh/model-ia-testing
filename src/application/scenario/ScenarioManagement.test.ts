@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Scenario } from '../../domain/scenario/Scenario.js';
 import { CreateScenario } from './CreateScenario.js';
+import { UpdateScenario } from './UpdateScenario.js';
 import { InMemoryScenarioRepository } from '../../infrastructure/persistence/InMemoryScenarioRepository.js';
 
 const ids = { generate: () => 'scenario-001' };
@@ -46,6 +47,43 @@ describe('Scenario management', () => {
     expect(version2.props.id).toBe('scenario-001');
     expect(version2.props.version).toBe(2);
     expect(version2.props.expectedBehavior).toContain('conserva el contexto');
+  });
+
+  it('updates a scenario by creating and persisting the next version', async () => {
+    const repository = new InMemoryScenarioRepository();
+    const create = new CreateScenario(repository, ids);
+    const update = new UpdateScenario(repository);
+    await create.execute(validInput);
+
+    const updated = await update.execute({
+      scenarioId: 'scenario-001',
+      name: validInput.name,
+      objective: validInput.objective,
+      description: validInput.description,
+      inputs: [...validInput.inputs, { value: 'Necesito ayuda' }],
+      expectedBehavior: 'El bot mantiene el contexto entre turnos.',
+      finishConditions: validInput.finishConditions,
+    });
+
+    expect(updated.props.version).toBe(2);
+    expect(updated.props.inputs).toHaveLength(3);
+    expect(updated.props.expectedBehavior).toContain('mantiene el contexto');
+    expect(await repository.findById('scenario-001')).toBe(updated);
+  });
+
+  it('rejects updating a scenario that does not exist', async () => {
+    const repository = new InMemoryScenarioRepository();
+    const useCase = new UpdateScenario(repository);
+
+    await expect(useCase.execute({
+      scenarioId: 'missing',
+      name: validInput.name,
+      objective: validInput.objective,
+      description: validInput.description,
+      inputs: validInput.inputs,
+      expectedBehavior: validInput.expectedBehavior,
+      finishConditions: validInput.finishConditions,
+    })).rejects.toThrow('Scenario not found');
   });
 
   it('keeps scenarios queryable by target', async () => {
