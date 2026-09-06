@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: TypeScript and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript
+        run: npm run build
+
+      - name: Unit and application tests
+        run: npm test
+
+  bdd:
+    name: BDD acceptance tests
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: BDD
+        run: npm run test:bdd
+
+  browser:
+    name: Playwright E2E
+    needs: bdd
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright
+        run: npm run test:browser
+
+      - name: Publish browser evidence
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-evidence-${{ github.sha }}
+          path: |
+            artifacts/
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+
+  quality-gate:
+    name: Quality gate
+    needs: [quality, bdd, browser]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Quality gate passed
+        run: echo "All mandatory CI gates passed for $GITHUB_SHA"
