@@ -29,7 +29,7 @@ export class LiveExecutionEvidencePublisher implements ExecutionEvidencePublishe
             startedAt: event.observation.startedAt.toISOString(),
             observedAt: event.observation.observedAt.toISOString(),
             durationMs: event.observation.durationMs,
-            screenshot: event.observation.screenshot ? 'captured' : 'not-captured',
+            hasScreenshot: event.observation.screenshot !== undefined,
           },
           null,
           2,
