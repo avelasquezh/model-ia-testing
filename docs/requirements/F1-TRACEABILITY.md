@@ -38,9 +38,10 @@ La matriz se completa incrementalmente. No se inventan vínculos antes de que ex
 | REQ-F1-047 … REQ-F1-054 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | N/A | Cubierto | Cubierto |
 | REQ-F1-055 … REQ-F1-065 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto |
 | REQ-F1-066 … REQ-F1-073 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto parcialmente |
-| REQ-F1-074 … REQ-F1-082 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto | Cubierto | Pendiente | Pendiente | Pendiente | Pendiente |
-| REQ-F1-083 … REQ-F1-092 | Cubierto parcialmente | Cubierto | Cubierto parcialmente | Cubierto parcialmente | Pendiente | Cubierto parcialmente | Pendiente | Pendiente | Pendiente |
-| REQ-F1-093 … REQ-F1-115 | Pendiente / transversal | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
+| REQ-F1-074 … REQ-F1-082 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
+| REQ-F1-083 … REQ-F1-092 | Cubierto parcialmente | Cubierto | Cubierto parcialmente | Cubierto parcialmente | Cubierto | Cubierto parcialmente | Pendiente | Pendiente | Pendiente |
+| REQ-F1-093 … REQ-F1-099 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto parcialmente | Pendiente | Cubierto parcialmente | Pendiente | Pendiente | Pendiente |
+| REQ-F1-100 … REQ-F1-115 | Pendiente / transversal | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
 
 ### F1-05 — Resultados
 
@@ -68,17 +69,35 @@ La trazabilidad se materializa como un artefacto por requisito. Cada registro co
 
 El artefacto no intenta derivar vínculos que el sistema todavía no puede observar; registra únicamente relaciones suministradas de forma explícita por la aplicación. La ausencia de escenarios hace visible un requisito sin cobertura.
 
+### F1-09 — Calidad técnica
+
+`REQ-F1-074 … REQ-F1-082 → ResponsibilityCheck → RecordResponsibilityCheck → RecordResponsibilityCheck.test.ts → CI`
+
+La primera materialización de F1-09 registra controles de responsabilidad y separación arquitectónica sin introducir scoring. `ResponsibilityCheck` conserva el componente evaluado, sus dependencias externas y las violaciones observadas; `passed` únicamente indica si existen violaciones registradas. La interpretación de severidad, riesgo o calidad global queda fuera de este incremento.
+
 ### F1-10 — BDD y automatización
 
 `REQ-F1-083 … REQ-F1-087 → architecture.feature → architecture.steps.ts → ExecuteScenario → CI`
 
-El escenario Gherkin utiliza el caso de uso actual y dobles controlados para validar comportamiento sin depender del navegador. Los tags `@REQ-F1-084`, `@REQ-F1-085`, `@REQ-F1-086` y `@REQ-F1-087` hacen explícita la relación con los requisitos.
+El escenario Gherkin utiliza el caso de uso actual y dobles controlados para validar comportamiento sin depender del navegador. Los tags hacen explícita la relación con los requisitos.
 
 La automatización de navegador permanece separada de BDD: el spike Playwright valida la apertura y navegación mediante `PlaywrightBrowserAdapter`, mientras que las pruebas del adapter conversacional cubren la interacción de UI. La abstracción de UI se concentra en `PlaywrightConversationUi` y se configura mediante definiciones de locators, sin introducir POM o Screenplay como formalismo obligatorio.
 
-`REQ-F1-088 … REQ-F1-090` quedan parcialmente cubiertos por `ADR-006-TEST-STRATEGY-BDD-TDD.md`, que propone la estrategia por niveles y el uso diferenciado de BDD/TDD. El ADR permanece en estado propuesta, por lo que estos requisitos no se marcan como totalmente aprobados.
+`REQ-F1-088 … REQ-F1-090` quedan parcialmente cubiertos por `ADR-006-TEST-STRATEGY-BDD-TDD.md`, que propone la estrategia por niveles y el uso diferenciado de BDD/TDD. El ADR permanece en estado propuesta.
 
-`REQ-F1-091 … REQ-F1-092` tienen implementación técnica en Playwright y una abstracción de UI configurable; su cobertura definitiva queda condicionada al criterio arquitectónico documentado en el ADR correspondiente.
+`REQ-F1-091 … REQ-F1-092` tienen implementación técnica en Playwright y una abstracción de UI configurable; la decisión definitiva sobre la abstracción queda condicionada al criterio arquitectónico documentado.
+
+### F1-11 — Seguridad y límites
+
+`REQ-F1-093 … REQ-F1-099 → ExecutionSecurityPort / SecureExecuteScenario / InMemoryExecutionSecurityPolicy → pruebas de política y ejecución segura → CI`
+
+`REQ-F1-096` queda materializado mediante una política de autorización explícita por `targetId` antes de ejecutar el escenario. Este control de alcance no pretende reemplazar autenticación de actores.
+
+`REQ-F1-097` conserva timeout positivo y límite máximo de ejecución. `REQ-F1-098` se apoya en el modelo de errores técnicos de ejecución y su conservación operacional. `REQ-F1-099` combina validación de URLs HTTP/HTTPS con autorización previa del objetivo.
+
+`REQ-F1-094 … REQ-F1-095` quedan cubiertos parcialmente por la separación de configuración y secretos documentada en ADR-014; la materialización final depende del composition root y del entorno de despliegue.
+
+`REQ-F1-093` permanece condicionado al diseño de aislamiento de despliegue definido en ADR-008. No se introduce aislamiento ficticio dentro del dominio.
 
 ## Trazabilidad arquitectónica
 
