@@ -16,10 +16,20 @@ export class ObservableTiming {
   public constructor(public readonly props: ObservableTimingProps) {}
 
   public static measure(input: ObservableTimingInput): ObservableTiming {
-    const { interactionStartedAt, inputSentAt, firstResponseAt, responseCompletedAt, interactionFinishedAt } = input;
-    const timestamps = [interactionStartedAt, inputSentAt, firstResponseAt, responseCompletedAt, interactionFinishedAt].filter(
-      (value): value is Date => value !== undefined,
-    );
+    const {
+      interactionStartedAt,
+      inputSentAt,
+      firstResponseAt,
+      responseCompletedAt,
+      interactionFinishedAt,
+    } = input;
+    const timestamps = [
+      interactionStartedAt,
+      inputSentAt,
+      firstResponseAt,
+      responseCompletedAt,
+      interactionFinishedAt,
+    ].filter((value): value is Date => value !== undefined);
 
     for (const timestamp of timestamps) {
       if (Number.isNaN(timestamp.getTime())) {
@@ -28,7 +38,11 @@ export class ObservableTiming {
     }
 
     for (let index = 1; index < timestamps.length; index += 1) {
-      if (timestamps[index].getTime() < timestamps[index - 1].getTime()) {
+      const previous = timestamps[index - 1];
+      const current = timestamps[index];
+      if (previous === undefined || current === undefined) continue;
+
+      if (current.getTime() < previous.getTime()) {
         throw new Error('Observable timing timestamps must be chronological');
       }
     }
@@ -38,10 +52,18 @@ export class ObservableTiming {
     const completed = responseCompletedAt?.getTime();
     const finished = interactionFinishedAt?.getTime();
 
-    return new ObservableTiming({
-      timeToFirstResponseMs: firstResponse === undefined ? undefined : firstResponse - inputSent,
-      timeToCompleteResponseMs: completed === undefined ? undefined : completed - inputSent,
-      interactionDurationMs: finished === undefined ? undefined : finished - interactionStartedAt.getTime(),
-    });
+    const props: ObservableTimingProps = {};
+
+    if (firstResponse !== undefined) {
+      props.timeToFirstResponseMs = firstResponse - inputSent;
+    }
+    if (completed !== undefined) {
+      props.timeToCompleteResponseMs = completed - inputSent;
+    }
+    if (finished !== undefined) {
+      props.interactionDurationMs = finished - interactionStartedAt.getTime();
+    }
+
+    return new ObservableTiming(props);
   }
 }
