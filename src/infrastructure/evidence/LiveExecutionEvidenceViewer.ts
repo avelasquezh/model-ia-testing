@@ -16,7 +16,7 @@ body{font-family:system-ui,sans-serif;margin:0;background:#f5f5f5;color:#222}hea
 <header><div>Live execution evidence</div><div id="status" class="status">Waiting for evidence…</div></header>
 <main id="evidence"><div class="empty">Waiting for the first turn…</div></main>
 <script>
-const executionId = decodeURIComponent(location.pathname.split('/').pop() || '');
+const executionId = new URLSearchParams(location.search).get('executionId') || '';
 let rendered = new Set();
 async function refresh(){
   try{
@@ -97,7 +97,7 @@ export class LiveExecutionEvidenceViewer {
         const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
         const pathname = decodeURIComponent(url.pathname);
 
-        if (pathname === '/') {
+        if (pathname === '/' || /^\/execution\/[A-Za-z0-9_-]+$/.test(pathname)) {
           response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
           response.end(VIEWER_HTML);
           return;
@@ -167,11 +167,6 @@ export class LiveExecutionEvidenceViewer {
       const rightIndex = right.type === 'OBSERVATION' ? right.turnIndex ?? 0 : Number.MAX_SAFE_INTEGER;
       return leftIndex - rightIndex;
     });
-    return events.map((event) => ({
-      ...event,
-      ...(event.type === 'OBSERVATION'
-        ? { hasScreenshot: event.hasScreenshot ?? false }
-        : {}),
-    }));
+    return events;
   }
 }
