@@ -29,7 +29,15 @@ En esta fase solo se congelan requisitos y relaciones iniciales. Las columnas de
 
 | Requisito | Criterio aceptación | Gherkin | Test | Implementación | CI | Evidencia | Resultado | Hallazgo | Reporte |
 |---|---|---|---|---|---|---|---|---|---|
-| REQ-F1-001 … REQ-F1-115 | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
+| REQ-F1-001 … REQ-F1-039 | Pendiente | Pendiente | Pendiente | En curso | Validado en CI #123 | En curso | Pendiente | Pendiente | Pendiente |
+| REQ-F1-040 | Pendiente | Pendiente | `ProduceScenarioResult.test.ts` | `ScenarioResult` + `ProduceScenarioResult` | En curso | Relación mediante `evidenceId` | Implementado | Pendiente | Pendiente |
+| REQ-F1-041 | Pendiente | Pendiente | `ProduceScenarioResult.test.ts` | `ScenarioResult.executionId` | En curso | Asociado a ejecución | Implementado | Pendiente | Pendiente |
+| REQ-F1-042 | Pendiente | Pendiente | `ProduceScenarioResult.test.ts` | `ScenarioResult.evidenceId` | En curso | Resultado enlazado a evidencia | Implementado | Pendiente | Pendiente |
+| REQ-F1-043 | Pendiente | Pendiente | `ProduceScenarioResult.test.ts` | `executionOutcome` + `qualityEvaluationStatus` | En curso | Distingue ejecución de evaluación | Implementado | Pendiente | Pendiente |
+| REQ-F1-044 | Pendiente | Pendiente | `ProduceScenarioResult.test.ts` | Estados `INCONCLUSIVE` en `ScenarioResult` | En curso | Causa registrada | Implementado | Pendiente | Pendiente |
+| REQ-F1-045 | Pendiente | Pendiente | `ProduceScenarioResult.test.ts` | Estado `NOT_EVALUABLE` en `ScenarioResult` | En curso | Causa registrada | Implementado | Pendiente | Pendiente |
+| REQ-F1-046 | Pendiente | Pendiente | `ProduceScenarioResult.test.ts` | `ScenarioResult.cause` obligatorio para inconcluso/no evaluable | En curso | Causa trazable al resultado | Implementado | Pendiente | Pendiente |
+| REQ-F1-047 … REQ-F1-115 | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
 
 ## Trazabilidad arquitectónica
 
