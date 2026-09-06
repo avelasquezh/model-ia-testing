@@ -75,16 +75,27 @@ describe('PlaywrightExecutionRunner', () => {
 
     expect(result.status).toBe('INCONCLUSIVE');
     expect(result.observations).toHaveLength(2);
-    expect(result.observations?.[0]).toEqual({
-      input: 'Hola',
-      response: 'Respuesta a: Hola',
-      observedAt: responses[0]?.observedAt,
-    });
-    expect(result.observations?.[1]).toEqual({
-      input: '¿Cómo estás?',
-      response: 'Respuesta a: ¿Cómo estás?',
-      observedAt: responses[1]?.observedAt,
-    });
+
+    const first = result.observations?.[0];
+    const second = result.observations?.[1];
+    expect(first?.input).toBe('Hola');
+    expect(first?.response).toBe('Respuesta a: Hola');
+    expect(first?.startedAt).toBeInstanceOf(Date);
+    expect(first?.observedAt).toEqual(responses[0]?.observedAt);
+    expect(first?.durationMs).toBe(
+      (first?.observedAt?.getTime() ?? 0) - (first?.startedAt?.getTime() ?? 0),
+    );
+    expect(first?.durationMs).toBeGreaterThanOrEqual(0);
+
+    expect(second?.input).toBe('¿Cómo estás?');
+    expect(second?.response).toBe('Respuesta a: ¿Cómo estás?');
+    expect(second?.startedAt).toBeInstanceOf(Date);
+    expect(second?.observedAt).toEqual(responses[1]?.observedAt);
+    expect(second?.durationMs).toBe(
+      (second?.observedAt?.getTime() ?? 0) - (second?.startedAt?.getTime() ?? 0),
+    );
+    expect(second?.durationMs).toBeGreaterThanOrEqual(0);
+
     expect(conversation.open).toHaveBeenCalledWith(target.props.url, 5_000);
     expect(session.send).toHaveBeenCalledTimes(2);
     expect(session.send).toHaveBeenNthCalledWith(1, { value: 'Hola' }, 5_000);
