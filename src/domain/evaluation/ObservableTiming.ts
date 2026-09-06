@@ -52,17 +52,17 @@ export class ObservableTiming {
     const completed = responseCompletedAt?.getTime();
     const finished = interactionFinishedAt?.getTime();
 
-    const props: ObservableTimingProps = {};
-
-    if (firstResponse !== undefined) {
-      props.timeToFirstResponseMs = firstResponse - inputSent;
-    }
-    if (completed !== undefined) {
-      props.timeToCompleteResponseMs = completed - inputSent;
-    }
-    if (finished !== undefined) {
-      props.interactionDurationMs = finished - interactionStartedAt.getTime();
-    }
+    const props: ObservableTimingProps = {
+      ...(firstResponse === undefined
+        ? {}
+        : { timeToFirstResponseMs: firstResponse - inputSent }),
+      ...(completed === undefined
+        ? {}
+        : { timeToCompleteResponseMs: completed - inputSent }),
+      ...(finished === undefined
+        ? {}
+        : { interactionDurationMs: finished - interactionStartedAt.getTime() }),
+    };
 
     return new ObservableTiming(props);
   }
