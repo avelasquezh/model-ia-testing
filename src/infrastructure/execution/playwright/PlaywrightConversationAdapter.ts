@@ -43,10 +43,8 @@ class PlaywrightConversationSession implements ConversationSession {
       );
     }
 
-    const observedAt = new Date();
     const value = await this.ui.sendMessage(input.value, timeoutMs);
-
-    return { value, observedAt };
+    return { value, observedAt: new Date() };
   }
 
   public async close(): Promise<void> {
