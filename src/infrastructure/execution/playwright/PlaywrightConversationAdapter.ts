@@ -69,7 +69,7 @@ export class PlaywrightConversationAdapter implements ConversationPort {
 
 class PlaywrightConversationSession implements ConversationSession {
   public constructor(
-    private readonly browserSession: Awaited<ReturnType<BrowserAutomationPort['open']>>,
+    private readonly browserSession: PlaywrightBrowserSession,
     private readonly ui: PlaywrightConversationUi | undefined,
     private readonly timeoutMs: number,
   ) {}
