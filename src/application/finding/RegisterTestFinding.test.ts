@@ -5,11 +5,11 @@ import type { ExecutionEvidenceRepository } from '../ports/ExecutionEvidenceRepo
 import type { ExecutionRepository } from '../ports/ExecutionRepository.js';
 import type { IdGenerator } from '../ports/TargetPorts.js';
 import type { TestFinding } from '../../domain/finding/TestFinding.js';
-import type { TestFindingRepository } from '../ports/TestFindingRepository.js';
+import type { TestFindingRepository as FindingRepository } from '../ports/TestFindingRepository.js';
 import { RegisterTestFinding } from './RegisterTestFinding.js';
 
 class TestExecutionRepository implements ExecutionRepository {
-  public constructor(private readonly execution: Execution) {}
+  public constructor(private execution: Execution) {}
 
   public async save(execution: Execution): Promise<void> {
     this.execution = execution;
@@ -30,7 +30,7 @@ class TestEvidenceRepository implements ExecutionEvidenceRepository {
   }
 }
 
-class TestFindingRepository implements TestFindingRepository {
+class TestFindingRepository implements FindingRepository {
   public saved?: TestFinding;
 
   public async save(finding: TestFinding): Promise<void> {
@@ -60,7 +60,9 @@ function createFinishedExecution(): Execution {
     targetId: 'target-1',
     targetUrl: 'https://example.test/chat',
     status: 'PENDING',
-  }).start(new Date('2026-09-06T10:00:00.000Z')).finish('FAILED', new Date('2026-09-06T10:00:05.000Z'));
+  })
+    .start(new Date('2026-09-06T10:00:00.000Z'))
+    .finish('FAILED', new Date('2026-09-06T10:00:05.000Z'));
 }
 
 function createEvidence(): ExecutionEvidence {
@@ -121,11 +123,13 @@ describe('RegisterTestFinding', () => {
       new TestIdGenerator(),
     );
 
-    await expect(useCase.execute({
-      executionId: 'execution-1',
-      title: 'Finding',
-      description: 'Finding description',
-    })).rejects.toThrow('Finding requires a finished execution');
+    await expect(
+      useCase.execute({
+        executionId: 'execution-1',
+        title: 'Finding',
+        description: 'Finding description',
+      }),
+    ).rejects.toThrow('Finding requires a finished execution');
   });
 
   it('requires execution evidence', async () => {
@@ -136,11 +140,13 @@ describe('RegisterTestFinding', () => {
       new TestIdGenerator(),
     );
 
-    await expect(useCase.execute({
-      executionId: 'execution-1',
-      title: 'Finding',
-      description: 'Finding description',
-    })).rejects.toThrow('Execution evidence not found');
+    await expect(
+      useCase.execute({
+        executionId: 'execution-1',
+        title: 'Finding',
+        description: 'Finding description',
+      }),
+    ).rejects.toThrow('Execution evidence not found');
   });
 
   it('rejects evidence from another execution', async () => {
@@ -151,11 +157,13 @@ describe('RegisterTestFinding', () => {
       new TestIdGenerator(),
     );
 
-    await expect(useCase.execute({
-      executionId: 'execution-1',
-      evidenceId: 'evidence-other',
-      title: 'Finding',
-      description: 'Finding description',
-    })).rejects.toThrow('Finding evidence does not belong to execution');
+    await expect(
+      useCase.execute({
+        executionId: 'execution-1',
+        evidenceId: 'evidence-other',
+        title: 'Finding',
+        description: 'Finding description',
+      }),
+    ).rejects.toThrow('Finding evidence does not belong to execution');
   });
 });
