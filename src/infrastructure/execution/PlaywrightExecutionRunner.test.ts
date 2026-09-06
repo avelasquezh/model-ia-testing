@@ -105,7 +105,11 @@ describe('PlaywrightExecutionRunner', () => {
 
   it('uses the remaining global timeout for each operation', async () => {
     const { conversation, session } = createConversationPort();
-    const now = vi.spyOn(Date, 'now').mockReturnValueOnce(1_000).mockReturnValue(3_000);
+    const now = vi.spyOn(Date, 'now')
+      .mockReturnValueOnce(1_000)
+      .mockReturnValueOnce(1_000)
+      .mockReturnValueOnce(2_500)
+      .mockReturnValueOnce(4_500);
     const { scenario, target, execution } = createExecutionContext();
     const runner = new PlaywrightExecutionRunner(conversation);
 
@@ -117,8 +121,8 @@ describe('PlaywrightExecutionRunner', () => {
 
       expect(result.status).toBe('INCONCLUSIVE');
       expect(conversation.open).toHaveBeenCalledWith(target.props.url, 5_000);
-      expect(session.send).toHaveBeenNthCalledWith(1, { value: 'Hola' }, 2_000);
-      expect(session.send).toHaveBeenNthCalledWith(2, { value: '¿Cómo estás?' }, 2_000);
+      expect(session.send).toHaveBeenNthCalledWith(1, { value: 'Hola' }, 3_500);
+      expect(session.send).toHaveBeenNthCalledWith(2, { value: '¿Cómo estás?' }, 1_500);
     } finally {
       now.mockRestore();
     }
@@ -126,7 +130,10 @@ describe('PlaywrightExecutionRunner', () => {
 
   it('fails before starting the next turn when the global timeout is exhausted', async () => {
     const { conversation, session } = createConversationPort();
-    const now = vi.spyOn(Date, 'now').mockReturnValueOnce(1_000).mockReturnValueOnce(7_000);
+    const now = vi.spyOn(Date, 'now')
+      .mockReturnValueOnce(1_000)
+      .mockReturnValueOnce(1_000)
+      .mockReturnValueOnce(7_000);
     const { scenario, target, execution } = createExecutionContext();
     const runner = new PlaywrightExecutionRunner(conversation);
 
