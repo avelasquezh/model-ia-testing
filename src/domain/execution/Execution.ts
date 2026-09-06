@@ -1,4 +1,5 @@
 import type { ExecutionObservation } from './ExecutionObservation.js';
+import type { ExecutionTechnicalError } from './ExecutionTechnicalError.js';
 
 export const EXECUTION_STATUSES = [
   'PENDING',
@@ -24,6 +25,7 @@ export type ExecutionProps = {
   readonly startedAt?: Date;
   readonly finishedAt?: Date;
   readonly observations?: readonly ExecutionObservation[];
+  readonly errors?: readonly ExecutionTechnicalError[];
 };
 
 export class Execution {
@@ -48,6 +50,7 @@ export class Execution {
     status: Exclude<ExecutionStatus, 'PENDING' | 'RUNNING'>,
     finishedAt: Date = new Date(),
     observations: readonly ExecutionObservation[] = this.props.observations ?? [],
+    errors: readonly ExecutionTechnicalError[] = this.props.errors ?? [],
   ): Execution {
     if (this.props.status !== 'RUNNING') {
       throw new Error('Only running executions can finish');
@@ -55,6 +58,6 @@ export class Execution {
     if (finishedAt < (this.props.startedAt ?? finishedAt)) {
       throw new Error('Execution finish time cannot precede start time');
     }
-    return new Execution({ ...this.props, status, finishedAt, observations });
+    return new Execution({ ...this.props, status, finishedAt, observations, errors });
   }
 }
