@@ -4,4 +4,5 @@ export type ExecutionObservation = {
   readonly startedAt: Date;
   readonly observedAt: Date;
   readonly durationMs: number;
+  readonly screenshot?: Uint8Array;
 };
