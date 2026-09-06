@@ -1,3 +1,5 @@
+import type { ExecutionObservation } from './ExecutionObservation.js';
+
 export const EXECUTION_STATUSES = [
   'PENDING',
   'RUNNING',
@@ -21,6 +23,7 @@ export type ExecutionProps = {
   readonly status: ExecutionStatus;
   readonly startedAt?: Date;
   readonly finishedAt?: Date;
+  readonly observations?: readonly ExecutionObservation[];
 };
 
 export class Execution {
@@ -41,13 +44,17 @@ export class Execution {
     return new Execution({ ...this.props, status: 'RUNNING', startedAt });
   }
 
-  public finish(status: Exclude<ExecutionStatus, 'PENDING' | 'RUNNING'>, finishedAt: Date = new Date()): Execution {
+  public finish(
+    status: Exclude<ExecutionStatus, 'PENDING' | 'RUNNING'>,
+    finishedAt: Date = new Date(),
+    observations: readonly ExecutionObservation[] = this.props.observations ?? [],
+  ): Execution {
     if (this.props.status !== 'RUNNING') {
       throw new Error('Only running executions can finish');
     }
     if (finishedAt < (this.props.startedAt ?? finishedAt)) {
       throw new Error('Execution finish time cannot precede start time');
     }
-    return new Execution({ ...this.props, status, finishedAt });
+    return new Execution({ ...this.props, status, finishedAt, observations });
   }
 }
