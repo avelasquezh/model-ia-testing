@@ -66,6 +66,14 @@ La trazabilidad se materializa como un artefacto por requisito. Cada registro co
 
 El artefacto no intenta derivar vínculos que el sistema todavía no puede observar; registra únicamente relaciones suministradas de forma explícita por la aplicación. La ausencia de escenarios hace visible un requisito sin cobertura.
 
+### F1-09 — Calidad técnica
+
+`REQ-F1-074 … REQ-F1-082 → ResponsibilityCheck → RecordResponsibilityCheck → RecordResponsibilityCheck.test.ts → CI`
+
+La primera materialización de F1-09 registra controles de responsabilidad y separación arquitectónica sin introducir scoring. `ResponsibilityCheck` conserva el componente evaluado, sus dependencias externas y las violaciones observadas; `passed` únicamente indica si existen violaciones registradas. La interpretación de severidad, riesgo o calidad global queda fuera de este incremento.
+
+El caso de uso depende de un puerto de repositorio y de un generador de identificadores. La implementación permanece desacoplada de infraestructura concreta y el test utiliza dobles locales, preservando la separación entre dominio, aplicación y adaptadores.
+
 ## Trazabilidad arquitectónica
 
 | Artefacto | Decisión / responsabilidad | Estado |
