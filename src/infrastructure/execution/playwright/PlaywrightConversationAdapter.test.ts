@@ -4,6 +4,7 @@ import type {
   BrowserAutomationPort,
   BrowserAutomationSession,
 } from '../../../application/ports/BrowserAutomationPort.js';
+import { InMemoryConversationUiConfigRepository } from './InMemoryConversationUiConfigRepository.js';
 import { PlaywrightConversationAdapter } from './PlaywrightConversationAdapter.js';
 
 const browser = await chromium.launch({ headless: true });
@@ -26,23 +27,34 @@ function createBrowserPort(page?: Awaited<ReturnType<typeof browser.newPage>>) {
   return { browserPort, session };
 }
 
+const targetUrl = 'https://example.com/chat';
+const uiConfig = {
+  composer: { kind: 'role' as const, role: 'textbox', name: 'Mensaje' },
+  sendButton: { kind: 'role' as const, role: 'button', name: 'Enviar' },
+  response: { kind: 'testId' as const, value: 'assistant-message' },
+  responseTimeoutMs: 2_000,
+  pollIntervalMs: 10,
+};
+
 describe('PlaywrightConversationAdapter', () => {
   it('opens a conversation session by navigating through the browser port', async () => {
     const { browserPort, session } = createBrowserPort();
-    const adapter = new PlaywrightConversationAdapter(browserPort);
+    const configs = new InMemoryConversationUiConfigRepository();
+    const adapter = new PlaywrightConversationAdapter(browserPort, configs);
 
-    const conversation = await adapter.open('https://example.com/chat', 5_000);
+    const conversation = await adapter.open(targetUrl, 5_000);
 
     expect(browserPort.open).toHaveBeenCalledOnce();
-    expect(session.navigate).toHaveBeenCalledWith('https://example.com/chat', 5_000);
+    expect(session.navigate).toHaveBeenCalledWith(targetUrl, 5_000);
     await conversation.close();
     expect(session.close).toHaveBeenCalledOnce();
   });
 
-  it('does not expose UI mechanics through the conversation contract before selectors are configured', async () => {
+  it('does not expose UI mechanics through the conversation contract when target UI is not configured', async () => {
     const { browserPort } = createBrowserPort();
-    const adapter = new PlaywrightConversationAdapter(browserPort);
-    const conversation = await adapter.open('https://example.com/chat', 5_000);
+    const configs = new InMemoryConversationUiConfigRepository();
+    const adapter = new PlaywrightConversationAdapter(browserPort, configs);
+    const conversation = await adapter.open(targetUrl, 5_000);
 
     await expect(conversation.send({ value: 'Hola' }, 3_000)).rejects.toThrow(
       'Conversation UI interaction is not configured yet',
@@ -51,7 +63,7 @@ describe('PlaywrightConversationAdapter', () => {
     await conversation.close();
   });
 
-  it('uses the configured conversation UI and returns the observed response', async () => {
+  it('resolves the conversation UI configuration for the target URL', async () => {
     const context = await browser.newContext();
     const page = await context.newPage();
 
@@ -79,16 +91,12 @@ describe('PlaywrightConversationAdapter', () => {
     const browserPort: BrowserAutomationPort = {
       open: vi.fn().mockResolvedValue(session),
     };
+    const configs = new InMemoryConversationUiConfigRepository([
+      { targetUrl, config: uiConfig },
+    ]);
 
-    const adapter = new PlaywrightConversationAdapter(browserPort, {
-      composer: { kind: 'role', role: 'textbox', name: 'Mensaje' },
-      sendButton: { kind: 'role', role: 'button', name: 'Enviar' },
-      response: { kind: 'testId', value: 'assistant-message' },
-      responseTimeoutMs: 2_000,
-      pollIntervalMs: 10,
-    });
-
-    const conversation = await adapter.open('https://example.com/chat', 5_000);
+    const adapter = new PlaywrightConversationAdapter(browserPort, configs);
+    const conversation = await adapter.open(targetUrl, 5_000);
     const response = await conversation.send({ value: 'Hola' }, 2_000);
 
     expect(response.value).toBe('Respuesta de prueba');
