@@ -303,10 +303,10 @@ describe('PlaywrightExecutionRunner', () => {
       turnIndex: 0,
     });
     const firstObservation = publisher.events[0];
-    expect(firstObservation.type).toBe('OBSERVATION');
-    if (firstObservation.type === 'OBSERVATION') {
-      expect(firstObservation.observation.screenshot).toEqual(screenshot);
+    if (!firstObservation || firstObservation.type !== 'OBSERVATION') {
+      throw new Error('Expected first evidence event to be an observation');
     }
+    expect(firstObservation.observation.screenshot).toEqual(screenshot);
   });
 
   it('can run with an explicit publisher contract', async () => {
