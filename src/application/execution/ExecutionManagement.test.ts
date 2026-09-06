@@ -57,11 +57,37 @@ describe('ExecuteScenario', () => {
     expect(execution.props.status).toBe('PASSED');
     expect(execution.props.finishedAt).toBeInstanceOf(Date);
     expect(execution.props.observations).toEqual(observations);
+    expect(execution.props.errors).toEqual([]);
     expect(runner.calls).toHaveLength(1);
     expect(runner.calls[0]?.input.scenario.props.id).toBe('scenario-1');
     expect(runner.calls[0]?.input.target.props.url).toBe('https://example.com');
     expect(runner.calls[0]?.input.execution.props.status).toBe('RUNNING');
     expect(runner.calls[0]?.options.timeoutMs).toBe(60_000);
+    expect(await executions.findById(execution.props.id)).toBe(execution);
+  });
+
+  it('persists technical errors returned by the runner', async () => {
+    const targets = new InMemoryTargetRepository();
+    const scenarios = new InMemoryScenarioRepository();
+    const executions = new InMemoryExecutionRepository();
+    const occurredAt = new Date('2026-09-05T22:00:02.000Z');
+    const errors = [{
+      code: 'Error',
+      message: 'interaction failure',
+      operation: 'SEND' as const,
+      turnIndex: 1,
+      occurredAt,
+    }];
+    const runner = new FakeExecutionRunner({ status: 'ERROR', errors });
+    await targets.save(new Target({ id: 'target-1', name: 'Demo', url: 'https://example.com', status: 'ACTIVE' }));
+    await scenarios.save(scenario);
+
+    const execution = await new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner).execute({
+      scenarioId: 'scenario-1',
+    });
+
+    expect(execution.props.status).toBe('ERROR');
+    expect(execution.props.errors).toEqual(errors);
     expect(await executions.findById(execution.props.id)).toBe(execution);
   });
 
