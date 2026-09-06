@@ -33,7 +33,7 @@ export class PlaywrightConversationUi implements ConversationUi {
 
   public async sendMessage(input: string, timeoutMs: number): Promise<string> {
     const responseLocator = this.locate(this.config.response);
-    const previous = await this.readLastResponse(responseLocator);
+    const previous = await this.readResponseState(responseLocator);
 
     const composer = this.locate(this.config.composer);
     await composer.fill(input, { timeout: timeoutMs });
@@ -62,24 +62,25 @@ export class PlaywrightConversationUi implements ConversationUi {
     }
   }
 
-  private async readLastResponse(locator: Locator): Promise<string | null> {
+  private async readResponseState(locator: Locator): Promise<{ count: number; value: string | null }> {
     const count = await locator.count();
-    if (count === 0) return null;
-    return (await locator.last().textContent())?.trim() || null;
+    if (count === 0) return { count: 0, value: null };
+    return { count, value: (await locator.last().textContent())?.trim() || null };
   }
 
   private async waitForResponse(
     locator: Locator,
-    previous: string | null,
+    previous: { count: number; value: string | null },
     timeoutMs: number,
   ): Promise<string> {
     const deadline = Date.now() + Math.min(timeoutMs, this.responseTimeoutMs);
 
     while (Date.now() < deadline) {
-      const count = await locator.count();
-      if (count > 0) {
-        const current = (await locator.last().textContent())?.trim() || '';
-        if (current && current !== previous) return current;
+      const current = await this.readResponseState(locator);
+
+      if (current.count > previous.count && current.value) return current.value;
+      if (current.count === previous.count && current.value && current.value !== previous.value) {
+        return current.value;
       }
 
       await this.page.waitForTimeout(this.pollIntervalMs);
