@@ -7,14 +7,6 @@ import { InMemoryTargetRepository } from '../../infrastructure/persistence/InMem
 import { Scenario } from '../../domain/scenario/Scenario.js';
 import { Target } from '../../domain/target/Target.js';
 
-class FixedIds {
-  private current = 0;
-  generate(): string {
-    this.current += 1;
-    return `id-${this.current}`;
-  }
-}
-
 describe('ExecuteScenario', () => {
   const scenario = new Scenario({
     id: 'scenario-1', targetId: 'target-1', name: 'Greeting', objective: 'Validate greeting',
@@ -22,18 +14,24 @@ describe('ExecuteScenario', () => {
     expectedBehavior: 'Responds to greeting', finishConditions: [{ description: 'Assistant responds' }], version: 2,
   });
 
+  class FixedIds {
+    private current = 0;
+    generate(): string {
+      this.current += 1;
+      return `id-${this.current}`;
+    }
+  }
+
   it('delegates execution to the runner and persists its terminal state and observations', async () => {
     const targets = new InMemoryTargetRepository();
     const scenarios = new InMemoryScenarioRepository();
     const executions = new InMemoryExecutionRepository();
     const observedAt = new Date('2026-09-05T22:00:00.000Z');
-    const runner = new FakeExecutionRunner({
-      status: 'PASSED',
-      observations: [
-        { input: 'Hola', response: 'Hola, ¿en qué puedo ayudarte?', observedAt },
-        { input: '¿Cómo estás?', response: 'Estoy bien.', observedAt: new Date('2026-09-05T22:00:01.000Z') },
-      ],
-    });
+    const observations = [
+      { input: 'Hola', response: 'Hola, ¿en qué puedo ayudarte?', observedAt },
+      { input: '¿Cómo estás?', response: 'Estoy bien.', observedAt: new Date('2026-09-05T22:00:01.000Z') },
+    ];
+    const runner = new FakeExecutionRunner({ status: 'PASSED', observations });
     await targets.save(new Target({ id: 'target-1', name: 'Demo', url: 'https://example.com', status: 'ACTIVE' }));
     await scenarios.save(scenario);
 
@@ -43,10 +41,7 @@ describe('ExecuteScenario', () => {
 
     expect(execution.props.status).toBe('PASSED');
     expect(execution.props.finishedAt).toBeInstanceOf(Date);
-    expect(execution.props.observations).toEqual(runner.calls[0]?.input.execution.props.observations ?? [
-      { input: 'Hola', response: 'Hola, ¿en qué puedo ayudarte?', observedAt },
-      { input: '¿Cómo estás?', response: 'Estoy bien.', observedAt: new Date('2026-09-05T22:00:01.000Z') },
-    ]);
+    expect(execution.props.observations).toEqual(observations);
     expect(runner.calls).toHaveLength(1);
     expect(runner.calls[0]?.input.scenario.props.id).toBe('scenario-1');
     expect(runner.calls[0]?.input.target.props.url).toBe('https://example.com');
