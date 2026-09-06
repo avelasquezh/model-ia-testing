@@ -31,7 +31,7 @@ describe('LiveExecutionEvidencePublisher', () => {
       const screenshotPath = join(rootDirectory, 'execution-1', 'turn-01.png');
       const metadataPath = join(rootDirectory, 'execution-1', 'turn-01.json');
       expect(new Uint8Array(await readFile(screenshotPath))).toEqual(screenshot);
-      expect(await readFile(metadataPath, 'utf8')).toContain('captured');
+      expect(await readFile(metadataPath, 'utf8')).toContain('"hasScreenshot": true');
     } finally {
       await rm(rootDirectory, { recursive: true, force: true });
     }
