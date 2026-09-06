@@ -24,6 +24,7 @@ La matriz se completa incrementalmente. No se inventan vínculos antes de que ex
 10. Toda decisión arquitectónica relevante deberá tener un ADR o quedar explícitamente justificada como no aplicable.
 11. Un patrón o tecnología no se considerará adoptado únicamente por aparecer en documentación; deberá existir una necesidad y un criterio de validación.
 12. Las reglas arquitectónicas críticas deberán convertirse en controles automatizables cuando sea técnicamente viable.
+13. Cada incremento deberá ejecutar una regresión sobre el comportamiento ya validado antes de autorizar la continuidad.
 
 ## Cobertura implementada
 
@@ -41,8 +42,8 @@ La matriz se completa incrementalmente. No se inventan vínculos antes de que ex
 | REQ-F1-074 … REQ-F1-082 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
 | REQ-F1-083 … REQ-F1-092 | Cubierto parcialmente | Cubierto | Cubierto parcialmente | Cubierto parcialmente | Cubierto | Cubierto parcialmente | Pendiente | Pendiente | Pendiente |
 | REQ-F1-093 … REQ-F1-099 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto parcialmente | Cubierto | Cubierto parcialmente | Pendiente | Pendiente | Pendiente |
-| REQ-F1-100 … REQ-F1-108 | Cubierto parcialmente | Cubierto | Cubierto | Cubierto | Implementado en workflow CI | Cubierto parcialmente | Pendiente | Pendiente | Pendiente |
-| REQ-F1-109 … REQ-F1-115 | Pendiente / transversal | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
+| REQ-F1-100 … REQ-F1-108 | Cubierto parcialmente | Cubierto | Cubierto | Cubierto | Cubierto en CI | Cubierto | Pendiente | Pendiente | Pendiente |
+| REQ-F1-109 … REQ-F1-115 | Cubierto mediante documentación y gobierno | N/A según requisito | N/A | Cubierto documentalmente | Cubierto | Versionado en Git | N/A | N/A | N/A |
 
 ### F1-05 — Resultados
 
@@ -102,13 +103,21 @@ La automatización de navegador permanece separada de BDD: el spike Playwright v
 
 ### F1-12 — CI/CD
 
-`REQ-F1-100 … REQ-F1-108 → .github/workflows/ci.yml → gates TypeScript/unit → BDD → Playwright → quality-gate → CI`
+`REQ-F1-100 … REQ-F1-108 → .github/workflows/ci.yml → TypeScript/unit → BDD → Playwright → quality-gate → CI`
 
-El workflow ejecuta primero compilación y pruebas unitarias/aplicación; los gates posteriores dependen de su éxito. BDD depende del gate de calidad inicial y Playwright depende de BDD. El quality gate final depende de todos los gates obligatorios.
+La regresión validada del incremento ejecutó el workflow completo en el commit `e45d53f4f30c5b4d7dd1091becbb6d81b7250286`. Los cuatro jobs obligatorios terminaron en `success`: TypeScript/unit, BDD, Playwright E2E y quality gate.
 
-La pipeline publica evidencia de Playwright y un artefacto con el commit evaluado. Los workflows usan permisos mínimos de contenido de solo lectura. La instalación usa `npm install` porque el repositorio no contiene `package-lock.json`; `npm ci` no sería aplicable al estado actual del repositorio.
+La pipeline publica evidencia de Playwright y un artefacto con el commit evaluado. Los workflows usan permisos mínimos de contenido de solo lectura. La instalación usa `npm install` porque el repositorio no contiene `package-lock.json`; `npm ci` no es aplicable al estado actual.
 
 `REQ-F1-108` queda condicionado a la configuración de reglas de protección del repositorio: el workflow produce un check obligatorio candidato, pero el bloqueo efectivo de integración requiere que GitHub Branch Protection/Rulesets lo convierta en requisito.
+
+### F1-13 — Documentación y gobierno
+
+`REQ-F1-109 … REQ-F1-115 → F1-REQUIREMENTS.md / F1-TRACEABILITY.md / DEFINITION-OF-DONE.md / REQUIREMENTS-CHANGELOG.md / QUALITY-ARTIFACT-VERSIONING.md / ADRs → CI`
+
+Los requisitos y la matriz de trazabilidad permanecen como artefactos normativos versionados. `DEFINITION-OF-DONE.md` incorpora la regresión/autoevaluación como condición de continuidad. `REQUIREMENTS-CHANGELOG.md` registra cambios relevantes sin alterar los identificadores históricos, y `QUALITY-ARTIFACT-VERSIONING.md` define el versionado de artefactos de calidad junto con el producto.
+
+Las decisiones arquitectónicas continúan documentadas mediante ADR. Las decisiones metodológicas relacionadas con evaluación siguen explícitamente pendientes del Frente 2 y no se presentan como aprobadas.
 
 ## Trazabilidad arquitectónica
 
