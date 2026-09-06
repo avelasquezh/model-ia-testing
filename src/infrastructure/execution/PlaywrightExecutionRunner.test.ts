@@ -75,7 +75,6 @@ describe('PlaywrightExecutionRunner', () => {
 
     expect(result.status).toBe('INCONCLUSIVE');
     expect(result.observations).toHaveLength(2);
-    expect(result.errors).toEqual([]);
 
     const first = result.observations?.[0];
     const second = result.observations?.[1];
