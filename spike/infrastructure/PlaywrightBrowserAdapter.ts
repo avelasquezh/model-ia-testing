@@ -2,8 +2,8 @@ import { chromium, type Browser, type Page } from '@playwright/test';
 import type { BrowserPort } from '../application/ports/BrowserPort.js';
 
 export class PlaywrightBrowserAdapter implements BrowserPort {
-  private browser?: Browser;
-  private page?: Page;
+  private browser: Browser | undefined;
+  private page: Page | undefined;
 
   public async open(targetUrl: string): Promise<void> {
     this.browser = await chromium.launch({ headless: true });
