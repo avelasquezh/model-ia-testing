@@ -6,16 +6,15 @@ import type { TestFinding } from '../../domain/finding/TestFinding.js';
 import type { ExecutionEvidenceRepository } from '../ports/ExecutionEvidenceRepository.js';
 import type { ExecutionRepository } from '../ports/ExecutionRepository.js';
 import type { ScenarioResultRepository } from '../ports/ScenarioResultRepository.js';
-import type { TestFindingRepository } from '../ports/TestFindingRepository.js';
-import type { TestReportRepository } from '../ports/TestReportRepository.js';
+import type { TestFindingRepository as FindingRepository } from '../ports/TestFindingRepository.js';
+import type { TestReport } from '../../domain/report/TestReport.js';
+import type { TestReportRepository as ReportRepository } from '../ports/TestReportRepository.js';
 import type { IdGenerator } from '../ports/TargetPorts.js';
 import { GenerateTestReport } from './GenerateTestReport.js';
 
 class TestExecutionRepository implements ExecutionRepository {
   public constructor(private readonly value: Execution) {}
-
   public async save(): Promise<void> {}
-
   public async findById(id: string): Promise<Execution | null> {
     return this.value.props.id === id ? this.value : null;
   }
@@ -23,9 +22,7 @@ class TestExecutionRepository implements ExecutionRepository {
 
 class TestEvidenceRepository implements ExecutionEvidenceRepository {
   public constructor(private readonly value: ExecutionEvidence | undefined) {}
-
   public async save(): Promise<void> {}
-
   public async findByExecutionId(executionId: string): Promise<ExecutionEvidence | undefined> {
     return this.value?.props.executionId === executionId ? this.value : undefined;
   }
@@ -33,36 +30,29 @@ class TestEvidenceRepository implements ExecutionEvidenceRepository {
 
 class TestResultRepository implements ScenarioResultRepository {
   public constructor(private readonly value: ScenarioResult | undefined) {}
-
   public async save(): Promise<void> {}
-
   public async findByExecutionId(executionId: string): Promise<ScenarioResult | undefined> {
     return this.value?.props.executionId === executionId ? this.value : undefined;
   }
 }
 
-class TestFindingRepository implements TestFindingRepository {
+class TestFindingRepository implements FindingRepository {
   public constructor(private readonly values: readonly TestFinding[]) {}
-
   public async save(): Promise<void> {}
-
   public async findById(id: string): Promise<TestFinding | undefined> {
     return this.values.find((finding) => finding.props.id === id);
   }
-
   public async findByExecutionId(executionId: string): Promise<readonly TestFinding[]> {
     return this.values.filter((finding) => finding.props.executionId === executionId);
   }
 }
 
-class TestReportRepository implements TestReportRepository {
-  public saved?: import('../../domain/report/TestReport.js').TestReport;
-
-  public async save(report: import('../../domain/report/TestReport.js').TestReport): Promise<void> {
+class TestReportRepository implements ReportRepository {
+  public saved?: TestReport;
+  public async save(report: TestReport): Promise<void> {
     this.saved = report;
   }
-
-  public async findById(id: string): Promise<import('../../domain/report/TestReport.js').TestReport | undefined> {
+  public async findById(id: string): Promise<TestReport | undefined> {
     return this.saved?.props.id === id ? this.saved : undefined;
   }
 }
@@ -73,7 +63,7 @@ class TestIdGenerator implements IdGenerator {
   }
 }
 
-function createExecution(): Execution {
+function createFinishedExecution(): Execution {
   return new Execution({
     id: 'execution-1',
     scenarioId: 'scenario-1',
@@ -81,13 +71,15 @@ function createExecution(): Execution {
     targetId: 'target-1',
     targetUrl: 'https://example.test/chat',
     status: 'PENDING',
-  }).start(new Date('2026-09-06T10:00:00.000Z')).finish('INCONCLUSIVE', new Date('2026-09-06T10:00:05.000Z'));
+  })
+    .start(new Date('2026-09-06T10:00:00.000Z'))
+    .finish('INCONCLUSIVE', new Date('2026-09-06T10:00:05.000Z'));
 }
 
-function createEvidence(): ExecutionEvidence {
+function createEvidence(executionId = 'execution-1'): ExecutionEvidence {
   return new ExecutionEvidence({
-    id: 'evidence-1',
-    executionId: 'execution-1',
+    id: `evidence-${executionId}`,
+    executionId,
     targetId: 'target-1',
     targetUrl: 'https://example.test/chat',
     scenarioVersion: 2,
@@ -98,13 +90,13 @@ function createEvidence(): ExecutionEvidence {
   });
 }
 
-function createResult(): ScenarioResult {
+function createResult(executionId = 'execution-1', scenarioId = 'scenario-1'): ScenarioResult {
   return new ScenarioResult({
-    id: 'result-1',
-    executionId: 'execution-1',
-    scenarioId: 'scenario-1',
+    id: `result-${executionId}`,
+    executionId,
+    scenarioId,
     scenarioVersion: 2,
-    evidenceId: 'evidence-1',
+    evidenceId: `evidence-${executionId}`,
     executionOutcome: 'INCONCLUSIVE',
     qualityEvaluationStatus: 'NOT_EVALUATED',
     cause: 'Observable evidence is insufficient for quality evaluation',
@@ -116,7 +108,7 @@ describe('GenerateTestReport', () => {
   it('generates a report that preserves traceability and observable limitations', async () => {
     const reports = new TestReportRepository();
     const useCase = new GenerateTestReport(
-      new TestExecutionRepository(createExecution()),
+      new TestExecutionRepository(createFinishedExecution()),
       new TestEvidenceRepository(createEvidence()),
       new TestResultRepository(createResult()),
       new TestFindingRepository([]),
@@ -128,7 +120,7 @@ describe('GenerateTestReport', () => {
 
     expect(report.props.id).toBe('report-1');
     expect(report.props.executions).toHaveLength(1);
-    expect(report.props.executions[0]?.evidenceId).toBe('evidence-1');
+    expect(report.props.executions[0]?.evidenceId).toBe('evidence-execution-1');
     expect(report.props.executions[0]?.resultStatus).toBe('INCONCLUSIVE');
     expect(report.props.executions[0]?.qualityEvaluationStatus).toBe('NOT_EVALUATED');
     expect(report.props.executions[0]?.limitations).toContain(
@@ -138,12 +130,17 @@ describe('GenerateTestReport', () => {
   });
 
   it('supports multiple executions in one report', async () => {
-    const execution1 = createExecution();
+    const execution1 = createFinishedExecution();
     const execution2 = new Execution({
-      ...execution1.props,
       id: 'execution-2',
       scenarioId: 'scenario-2',
-    }).start().finish('CANCELLED');
+      scenarioVersion: 1,
+      targetId: 'target-1',
+      targetUrl: 'https://example.test/chat',
+      status: 'PENDING',
+    })
+      .start(new Date('2026-09-06T10:01:00.000Z'))
+      .finish('CANCELLED', new Date('2026-09-06T10:01:05.000Z'));
 
     class MultiExecutionRepository implements ExecutionRepository {
       public async save(): Promise<void> {}
@@ -155,31 +152,17 @@ describe('GenerateTestReport', () => {
     class MultiEvidenceRepository implements ExecutionEvidenceRepository {
       public async save(): Promise<void> {}
       public async findByExecutionId(executionId: string): Promise<ExecutionEvidence | undefined> {
-        return new ExecutionEvidence({
-          ...createEvidence().props,
-          id: `evidence-${executionId}`,
-          executionId,
-        });
+        return createEvidence(executionId);
       }
     }
 
     class MultiResultRepository implements ScenarioResultRepository {
       public async save(): Promise<void> {}
       public async findByExecutionId(executionId: string): Promise<ScenarioResult | undefined> {
-        const outcome = executionId === 'execution-1' ? 'INCONCLUSIVE' : 'CANCELLED';
-        return new ScenarioResult({
-          id: `result-${executionId}`,
+        return createResult(
           executionId,
-          scenarioId: executionId === 'execution-1' ? 'scenario-1' : 'scenario-2',
-          scenarioVersion: 2,
-          evidenceId: `evidence-${executionId}`,
-          executionOutcome: outcome,
-          qualityEvaluationStatus: 'NOT_EVALUATED',
-          ...(outcome === 'INCONCLUSIVE'
-            ? { cause: 'Observable evidence is insufficient for quality evaluation' }
-            : {}),
-          createdAt: new Date(),
-        });
+          executionId === 'execution-1' ? 'scenario-1' : 'scenario-2',
+        );
       }
     }
 
@@ -202,7 +185,7 @@ describe('GenerateTestReport', () => {
 
   it('requires a result for every execution', async () => {
     const useCase = new GenerateTestReport(
-      new TestExecutionRepository(createExecution()),
+      new TestExecutionRepository(createFinishedExecution()),
       new TestEvidenceRepository(createEvidence()),
       new TestResultRepository(undefined),
       new TestFindingRepository([]),
