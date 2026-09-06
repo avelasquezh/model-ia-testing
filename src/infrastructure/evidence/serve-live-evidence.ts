@@ -14,7 +14,7 @@ if (!executionId) {
     throw new Error('Unable to determine viewer address');
   }
 
-  console.log(`Live evidence viewer: http://${address.address}:${address.port}/execution/${encodeURIComponent(executionId)}`);
+  console.log(`Live evidence viewer: http://${address.address}:${address.port}/?executionId=${encodeURIComponent(executionId)}`);
 
   const shutdown = () => {
     server.close();
