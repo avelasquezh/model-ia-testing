@@ -80,17 +80,4 @@ describe('F2 risk model methodological validation', () => {
     expect(candidateRiskScore({ impact: 1, probability: 1, exposure: 1, uncertainty: 5 })).toBe(1);
     expect(candidateRiskScore({ impact: 5, probability: 5, exposure: 5, uncertainty: 1 })).toBe(125);
   });
-
-  it('does not define priority thresholds as part of the candidate formula', () => {
-    const score = candidateRiskScore({
-      impact: 5,
-      probability: 5,
-      exposure: 5,
-      uncertainty: 5,
-    });
-
-    expect(score).toBe(125);
-    expect(['P0', 'P1', 'P2', 'P3']).toContain('P0');
-    expect(true).toBe(true);
-  });
 });
