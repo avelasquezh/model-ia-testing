@@ -74,13 +74,13 @@ describe('F2 AI-assisted criteria methodological validation', () => {
     const aiOnlyEvidence: EvidenceRecord[] = [
       { id: 'ai-analysis-1', type: 'AI_ANALYSIS' },
     ];
-    const evaluation = {
+    const aiOnlyEvaluation = {
       ...baseEvaluation,
       inputEvidenceIds: ['ai-analysis-1'],
     };
 
-    expect(hasPrimaryEvidence(evaluation, aiOnlyEvidence)).toBe(false);
-    expect(hasPrimaryEvidence(evaluation, primaryEvidence)).toBe(true);
+    expect(hasPrimaryEvidence(aiOnlyEvaluation, aiOnlyEvidence)).toBe(false);
+    expect(hasPrimaryEvidence(baseEvaluation, primaryEvidence)).toBe(true);
   });
 
   it('keeps the AI output separate from the evidence and marks AI assistance explicitly', () => {
