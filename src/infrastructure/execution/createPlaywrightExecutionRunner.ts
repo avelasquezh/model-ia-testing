@@ -1,5 +1,5 @@
 import type { ConversationPort } from '../../application/ports/ConversationPort.js';
-import { LiveExecutionEvidencePublisher } from '../evidence/LiveExecutionEvidencePublisher.js';
+import { LiveExecutionEvidencePublisher } from './LiveExecutionEvidencePublisher.js';
 import { PlaywrightExecutionRunner } from './PlaywrightExecutionRunner.js';
 
 export function createPlaywrightExecutionRunner(
