@@ -63,7 +63,7 @@ describe('PlaywrightConversationAdapter', () => {
     await conversation.close();
   });
 
-  it('resolves the conversation UI configuration for the target URL', async () => {
+  it('captures a screenshot after each conversational response', async () => {
     const context = await browser.newContext();
     const page = await context.newPage();
 
@@ -101,6 +101,8 @@ describe('PlaywrightConversationAdapter', () => {
 
     expect(response.value).toBe('Respuesta de prueba');
     expect(response.observedAt).toBeInstanceOf(Date);
+    expect(response.screenshot).toBeInstanceOf(Uint8Array);
+    expect(response.screenshot?.byteLength).toBeGreaterThan(0);
 
     await conversation.close();
     expect(session.close).toHaveBeenCalledOnce();
