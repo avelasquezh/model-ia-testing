@@ -29,12 +29,11 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
     const errors: ExecutionTechnicalError[] = [];
 
     try {
-      for (let index = 0; index < input.scenario.props.inputs.length; index += 1) {
+      for (const [index, conversationInput] of input.scenario.props.inputs.entries()) {
         if (options.signal?.aborted) {
           return { status: 'CANCELLED', observations, errors };
         }
 
-        const conversationInput = input.scenario.props.inputs[index];
         const startedAt = new Date();
 
         try {
