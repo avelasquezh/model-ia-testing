@@ -1,22 +1,34 @@
-import type { ExecutionRunner, ExecutionRunnerInput, ExecutionRunnerOptions, ExecutionRunnerResult } from '../../application/ports/ExecutionRunner.js';
-import type { BrowserAutomationPort } from '../../application/ports/BrowserAutomationPort.js';
+import type {
+  ExecutionRunner,
+  ExecutionRunnerInput,
+  ExecutionRunnerOptions,
+  ExecutionRunnerResult,
+} from '../../application/ports/ExecutionRunner.js';
+import type { ConversationPort } from '../../application/ports/ConversationPort.js';
 
 export class PlaywrightExecutionRunner implements ExecutionRunner {
-  public constructor(private readonly browser: BrowserAutomationPort) {}
+  public constructor(private readonly conversation: ConversationPort) {}
 
   public async execute(
     input: ExecutionRunnerInput,
     options: ExecutionRunnerOptions,
   ): Promise<ExecutionRunnerResult> {
-    const session = await this.browser.open();
+    const session = await this.conversation.open(
+      input.target.props.url,
+      options.timeoutMs,
+    );
 
     try {
       if (options.signal?.aborted) return { status: 'CANCELLED' };
 
-      await this.withCancellation(
-        session.navigate(input.target.props.url, options.timeoutMs),
-        options.signal,
-      );
+      for (const conversationInput of input.scenario.props.inputs) {
+        if (options.signal?.aborted) return { status: 'CANCELLED' };
+
+        await this.withCancellation(
+          session.send(conversationInput, options.timeoutMs),
+          options.signal,
+        );
+      }
 
       return { status: 'INCONCLUSIVE' };
     } finally {
