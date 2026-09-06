@@ -35,7 +35,11 @@ describe('F2 risk prioritization methodological validation', () => {
       { id: 'uncertain', impact: 1, probability: 5, exposure: 5, uncertainty: 5 },
     ];
 
-    expect(candidateRiskScore(cases[0])).toBe(candidateRiskScore(cases[1]));
+    const known = cases[0];
+    const uncertain = cases[1];
+    if (!known || !uncertain) throw new Error('Risk validation cases are incomplete');
+
+    expect(candidateRiskScore(known)).toBe(candidateRiskScore(uncertain));
     expect(candidateOrdering(cases).map(({ id }) => id)).toEqual(['uncertain', 'known']);
   });
 
