@@ -1,9 +1,14 @@
+import type { Page } from '@playwright/test';
 import type {
   ConversationPort,
   ConversationResponse,
   ConversationSession,
 } from '../../../application/ports/ConversationPort.js';
-import type { ConversationUiConfigRepository } from '../../../application/ports/ConversationUiConfigRepository.js';
+import type {
+  ConversationUiConfig,
+  ConversationUiConfigRepository,
+  ConversationUiLocator,
+} from '../../../application/ports/ConversationUiConfigRepository.js';
 import type { BrowserAutomationPort } from '../../../application/ports/BrowserAutomationPort.js';
 import { PlaywrightConversationUi, type PlaywrightConversationUiConfig } from './PlaywrightConversationUi.js';
 import { type PlaywrightBrowserSession } from './PlaywrightBrowserAdapter.js';
@@ -19,26 +24,40 @@ export class PlaywrightConversationAdapter implements ConversationPort {
     await browserSession.navigate(targetUrl, timeoutMs);
 
     const config = await this.uiConfigs.findByTargetUrl(targetUrl);
-    const uiConfig = config ? this.toPlaywrightConfig(config) : undefined;
-    const ui = uiConfig
-      ? new PlaywrightConversationUi(browserSession.page, uiConfig)
+    const ui = config
+      ? new PlaywrightConversationUi(browserSession.page, this.toPlaywrightConfig(config))
       : undefined;
 
     return new PlaywrightConversationSession(browserSession, ui, timeoutMs);
   }
 
-  private toPlaywrightConfig(config: Awaited<ReturnType<ConversationUiConfigRepository['findByTargetUrl']>>): PlaywrightConversationUiConfig | undefined {
-    if (!config) return undefined;
-
-    const toLocator = (locator: typeof config.composer): PlaywrightConversationUiConfig['composer'] => locator;
-
+  private toPlaywrightConfig(config: ConversationUiConfig): PlaywrightConversationUiConfig {
     return {
-      composer: toLocator(config.composer),
-      sendButton: config.sendButton ? toLocator(config.sendButton) : undefined,
-      response: toLocator(config.response),
+      composer: this.toPlaywrightLocator(config.composer),
+      sendButton: config.sendButton ? this.toPlaywrightLocator(config.sendButton) : undefined,
+      response: this.toPlaywrightLocator(config.response),
       responseTimeoutMs: config.responseTimeoutMs,
       pollIntervalMs: config.pollIntervalMs,
     };
+  }
+
+  private toPlaywrightLocator(locator: ConversationUiLocator): PlaywrightConversationUiConfig['composer'] {
+    switch (locator.kind) {
+      case 'role':
+        return {
+          kind: 'role',
+          role: locator.role as Parameters<Page['getByRole']>[0],
+          name: locator.name,
+        };
+      case 'label':
+        return { kind: 'label', value: locator.value };
+      case 'placeholder':
+        return { kind: 'placeholder', value: locator.value };
+      case 'testId':
+        return { kind: 'testId', value: locator.value };
+      case 'css':
+        return { kind: 'css', value: locator.value };
+    }
   }
 }
 
