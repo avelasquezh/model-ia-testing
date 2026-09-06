@@ -1,7 +1,7 @@
 import { Execution } from '../../domain/execution/Execution.js';
 import type { IdGenerator } from '../ports/TargetPorts.js';
 import type { ExecutionRepository } from '../ports/ExecutionRepository.js';
-import type { ExecutionRunner } from '../ports/ExecutionRunner.js';
+import type { ExecutionRunner, ExecutionRunnerOptions } from '../ports/ExecutionRunner.js';
 import type { ScenarioRepository } from '../ports/ScenarioRepository.js';
 import type { TargetRepository } from '../ports/TargetRepository.js';
 
@@ -48,10 +48,13 @@ export class ExecuteScenario {
 
     let finalExecution: Execution;
     try {
-      const result = await this.runner.execute({ execution: running, scenario, target }, {
-        timeoutMs,
-        signal: input.signal,
-      });
+      const runnerOptions: ExecutionRunnerOptions = input.signal
+        ? { timeoutMs, signal: input.signal }
+        : { timeoutMs };
+      const result = await this.runner.execute(
+        { execution: running, scenario, target },
+        runnerOptions,
+      );
       finalExecution = running.finish(result.status);
     } catch {
       finalExecution = running.finish('ERROR');
