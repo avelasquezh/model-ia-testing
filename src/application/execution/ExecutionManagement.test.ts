@@ -22,11 +22,18 @@ describe('ExecuteScenario', () => {
     expectedBehavior: 'Responds to greeting', finishConditions: [{ description: 'Assistant responds' }], version: 2,
   });
 
-  it('delegates execution to the runner and persists its terminal state', async () => {
+  it('delegates execution to the runner and persists its terminal state and observations', async () => {
     const targets = new InMemoryTargetRepository();
     const scenarios = new InMemoryScenarioRepository();
     const executions = new InMemoryExecutionRepository();
-    const runner = new FakeExecutionRunner({ status: 'PASSED' });
+    const observedAt = new Date('2026-09-05T22:00:00.000Z');
+    const runner = new FakeExecutionRunner({
+      status: 'PASSED',
+      observations: [
+        { input: 'Hola', response: 'Hola, ¿en qué puedo ayudarte?', observedAt },
+        { input: '¿Cómo estás?', response: 'Estoy bien.', observedAt: new Date('2026-09-05T22:00:01.000Z') },
+      ],
+    });
     await targets.save(new Target({ id: 'target-1', name: 'Demo', url: 'https://example.com', status: 'ACTIVE' }));
     await scenarios.save(scenario);
 
@@ -36,6 +43,10 @@ describe('ExecuteScenario', () => {
 
     expect(execution.props.status).toBe('PASSED');
     expect(execution.props.finishedAt).toBeInstanceOf(Date);
+    expect(execution.props.observations).toEqual(runner.calls[0]?.input.execution.props.observations ?? [
+      { input: 'Hola', response: 'Hola, ¿en qué puedo ayudarte?', observedAt },
+      { input: '¿Cómo estás?', response: 'Estoy bien.', observedAt: new Date('2026-09-05T22:00:01.000Z') },
+    ]);
     expect(runner.calls).toHaveLength(1);
     expect(runner.calls[0]?.input.scenario.props.id).toBe('scenario-1');
     expect(runner.calls[0]?.input.target.props.url).toBe('https://example.com');
