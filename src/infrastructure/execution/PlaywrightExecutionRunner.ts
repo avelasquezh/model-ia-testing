@@ -8,7 +8,7 @@ import type {
   ExecutionRunnerOptions,
   ExecutionRunnerResult,
 } from '../../application/ports/ExecutionRunner.js';
-import type { ConversationPort } from '../../application/ports/ConversationPort.js';
+import type { ConversationPort, ConversationSession } from '../../application/ports/ConversationPort.js';
 import type { ExecutionObservation } from '../../domain/execution/ExecutionObservation.js';
 import type { ExecutionTechnicalError } from '../../domain/execution/ExecutionTechnicalError.js';
 
@@ -27,7 +27,7 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
     options: ExecutionRunnerOptions,
   ): Promise<ExecutionRunnerResult> {
     const deadline = Date.now() + options.timeoutMs;
-    let session;
+    let session: ConversationSession;
 
     try {
       const remainingTimeoutMs = this.remainingTimeout(deadline);
@@ -45,11 +45,13 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
 
     const observations: ExecutionObservation[] = [];
     const errors: ExecutionTechnicalError[] = [];
+    let cancelled = false;
 
     try {
       for (const [index, conversationInput] of input.scenario.props.inputs.entries()) {
         if (options.signal?.aborted) {
-          return { status: 'CANCELLED', observations, errors };
+          cancelled = true;
+          break;
         }
 
         const remainingTimeoutMs = this.remainingTimeout(deadline);
@@ -57,7 +59,7 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
           const error = this.toTimeoutError('SEND', index);
           errors.push(error);
           await this.publishError(input.execution.props.id, error);
-          return { status: 'ERROR', observations, errors };
+          break;
         }
 
         const startedAt = new Date();
@@ -82,7 +84,8 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
           await this.publishObservation(input.execution.props.id, index, observation);
         } catch (error) {
           if (this.isAbortError(error)) {
-            return { status: 'CANCELLED', observations, errors };
+            cancelled = true;
+            break;
           }
           const technicalError = this.toTechnicalError(error, 'SEND', index);
           errors.push(technicalError);
@@ -98,6 +101,10 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
         errors.push(technicalError);
         await this.publishError(input.execution.props.id, technicalError);
       }
+    }
+
+    if (cancelled) {
+      return { status: 'CANCELLED', observations, errors };
     }
 
     if (errors.length > 0) {
