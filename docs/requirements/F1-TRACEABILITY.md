@@ -8,7 +8,7 @@ Para decisiones arquitectónicas se añade una relación transversal:
 
 `REQ / RESTRICCIÓN → ADR → COMPONENTE / PUERTO → TEST ARQUITECTÓNICO → CI`
 
-En esta fase solo se congelan requisitos y relaciones iniciales. Las columnas de implementación, pruebas y CI permanecerán vacías hasta los frentes correspondientes.
+La matriz se completa incrementalmente. No se inventan vínculos antes de que exista el artefacto correspondiente.
 
 ## Reglas
 
@@ -25,19 +25,32 @@ En esta fase solo se congelan requisitos y relaciones iniciales. Las columnas de
 11. Un patrón o tecnología no se considerará adoptado únicamente por aparecer en documentación; deberá existir una necesidad y un criterio de validación.
 12. Las reglas arquitectónicas críticas deberán convertirse en controles automatizables cuando sea técnicamente viable.
 
-## Cobertura inicial
+## Cobertura implementada
 
 | Requisito | Criterio aceptación | Gherkin | Test | Implementación | CI | Evidencia | Resultado | Hallazgo | Reporte |
 |---|---|---|---|---|---|---|---|---|---|
-| REQ-F1-001 … REQ-F1-039 | Pendiente | Pendiente | Pendiente | En curso | Validado en CI #123 | En curso | Pendiente | Pendiente | Pendiente |
-| REQ-F1-040 | Pendiente | Pendiente | `ProduceScenarioResult.test.ts` | `ScenarioResult` + `ProduceScenarioResult` | En curso | Relación mediante `evidenceId` | Implementado | Pendiente | Pendiente |
-| REQ-F1-041 | Pendiente | Pendiente | `ProduceScenarioResult.test.ts` | `ScenarioResult.executionId` | En curso | Asociado a ejecución | Implementado | Pendiente | Pendiente |
-| REQ-F1-042 | Pendiente | Pendiente | `ProduceScenarioResult.test.ts` | `ScenarioResult.evidenceId` | En curso | Resultado enlazado a evidencia | Implementado | Pendiente | Pendiente |
-| REQ-F1-043 | Pendiente | Pendiente | `ProduceScenarioResult.test.ts` | `executionOutcome` + `qualityEvaluationStatus` | En curso | Distingue ejecución de evaluación | Implementado | Pendiente | Pendiente |
-| REQ-F1-044 | Pendiente | Pendiente | `ProduceScenarioResult.test.ts` | Estados `INCONCLUSIVE` en `ScenarioResult` | En curso | Causa registrada | Implementado | Pendiente | Pendiente |
-| REQ-F1-045 | Pendiente | Pendiente | `ProduceScenarioResult.test.ts` | Estado `NOT_EVALUABLE` en `ScenarioResult` | En curso | Causa registrada | Implementado | Pendiente | Pendiente |
-| REQ-F1-046 | Pendiente | Pendiente | `ProduceScenarioResult.test.ts` | `ScenarioResult.cause` obligatorio para inconcluso/no evaluable | En curso | Causa trazable al resultado | Implementado | Pendiente | Pendiente |
-| REQ-F1-047 … REQ-F1-115 | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
+| REQ-F1-001 … REQ-F1-004 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | N/A | N/A | N/A | N/A |
+| REQ-F1-005 | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | N/A | Pendiente | N/A | N/A |
+| REQ-F1-006 … REQ-F1-015 | Cubierto parcialmente por escenarios/suites | Pendiente | Cubierto | Cubierto | Cubierto | N/A | N/A | N/A | N/A |
+| REQ-F1-016 … REQ-F1-027 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto parcialmente | Pendiente | N/A | N/A |
+| REQ-F1-028 … REQ-F1-039 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Pendiente | N/A | N/A |
+| REQ-F1-040 … REQ-F1-046 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | N/A | Pendiente |
+| REQ-F1-047 … REQ-F1-054 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | N/A | Cubierto | Pendiente |
+| REQ-F1-055 … REQ-F1-065 | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
+| REQ-F1-066 … REQ-F1-073 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Pendiente |
+| REQ-F1-074 … REQ-F1-115 | Pendiente / transversal | Pendiente | Parcial | Parcial | Parcial | Parcial | Parcial | Parcial | Pendiente |
+
+### F1-05 — Resultados
+
+`REQ-F1-040 … REQ-F1-046 → ScenarioResult → ProduceScenarioResult → ProduceScenarioResult.test.ts → CI`
+
+El resultado conserva `executionId`, `scenarioId`, `scenarioVersion` y `evidenceId`. También distingue el resultado de ejecución de la evaluación de calidad, que permanece como `NOT_EVALUATED` en esta baseline.
+
+### F1-06 — Hallazgos
+
+`REQ-F1-047 … REQ-F1-054 → TestFinding → RegisterTestFinding → RegisterTestFinding.test.ts → CI`
+
+Cada hallazgo requiere una ejecución finalizada y evidencia perteneciente a esa ejecución. Los campos `impact`, `severity` y `risk` existen como datos del hallazgo, pero no se interpretan ni califican mediante una metodología dentro de este frente.
 
 ## Trazabilidad arquitectónica
 
@@ -59,6 +72,4 @@ En esta fase solo se congelan requisitos y relaciones iniciales. Las columnas de
 | ADR-016 | Estructura modular | Propuesta |
 | ADR-017 | SDLC seguro y flujo Git | Propuesta |
 
-Los ADR permanecen como propuestas hasta que la revisión arquitectónica y los spikes definidos proporcionen evidencia suficiente para aprobarlos. No se deben inventar relaciones REQ→ADR que todavía no hayan sido analizadas.
-
-La matriz se completará incrementalmente. No se deberán inventar vínculos antes de que exista el artefacto correspondiente.
+Los ADR permanecen como propuestas hasta que la revisión arquitectónica y los spikes definidos proporcionen evidencia suficiente para aprobarlos. No se inventan relaciones REQ→ADR todavía no analizadas.
