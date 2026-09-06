@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS architecture_spike_runs (
+  id UUID PRIMARY KEY,
+  status TEXT NOT NULL CHECK (status IN ('PASS', 'FAIL')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
