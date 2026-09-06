@@ -63,8 +63,8 @@ function createExecutionContext() {
 }
 
 describe('PlaywrightExecutionRunner', () => {
-  it('executes every scenario input through the conversation boundary', async () => {
-    const { conversation, session } = createConversationPort();
+  it('executes every scenario input through the conversation boundary and captures observations', async () => {
+    const { conversation, session, responses } = createConversationPort();
     const { scenario, target, execution } = createExecutionContext();
     const runner = new PlaywrightExecutionRunner(conversation);
 
@@ -74,6 +74,17 @@ describe('PlaywrightExecutionRunner', () => {
     );
 
     expect(result.status).toBe('INCONCLUSIVE');
+    expect(result.observations).toHaveLength(2);
+    expect(result.observations?.[0]).toEqual({
+      input: 'Hola',
+      response: 'Respuesta a: Hola',
+      observedAt: responses[0]?.observedAt,
+    });
+    expect(result.observations?.[1]).toEqual({
+      input: '¿Cómo estás?',
+      response: 'Respuesta a: ¿Cómo estás?',
+      observedAt: responses[1]?.observedAt,
+    });
     expect(conversation.open).toHaveBeenCalledWith(target.props.url, 5_000);
     expect(session.send).toHaveBeenCalledTimes(2);
     expect(session.send).toHaveBeenNthCalledWith(1, { value: 'Hola' }, 5_000);
