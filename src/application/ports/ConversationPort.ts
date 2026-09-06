@@ -8,10 +8,13 @@ export type ConversationResponse = {
 };
 
 export type ConversationSession = {
-  send(input: ConversationMessage, timeoutMs: number): Promise<ConversationResponse>;
+  send(
+    input: ConversationMessage,
+    timeoutMs: number,
+  ): Promise<ConversationResponse>;
   close(): Promise<void>;
 };
 
 export interface ConversationPort {
-  open(timeoutMs: number): Promise<ConversationSession>;
+  open(targetUrl: string, timeoutMs: number): Promise<ConversationSession>;
 }
