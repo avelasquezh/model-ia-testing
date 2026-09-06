@@ -22,10 +22,10 @@ describe('EvidenceUnit', () => {
   });
 
   it('accepts evidence without a step when the evidence belongs to the run', () => {
+    const { stepId: _stepId, ...runLevelEvidenceProps } = validProps;
     const evidence = new EvidenceUnit({
-      ...validProps,
+      ...runLevelEvidenceProps,
       id: 'evidence-2',
-      stepId: undefined,
       evidenceType: 'BROWSER_METADATA',
     });
 
