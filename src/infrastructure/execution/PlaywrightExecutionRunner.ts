@@ -12,10 +12,14 @@ import type { ConversationPort } from '../../application/ports/ConversationPort.
 import type { ExecutionObservation } from '../../domain/execution/ExecutionObservation.js';
 import type { ExecutionTechnicalError } from '../../domain/execution/ExecutionTechnicalError.js';
 
+const NOOP_EVIDENCE_PUBLISHER: ExecutionEvidencePublisher = {
+  publish: async () => undefined,
+};
+
 export class PlaywrightExecutionRunner implements ExecutionRunner {
   public constructor(
     private readonly conversation: ConversationPort,
-    private readonly evidencePublisher: ExecutionEvidencePublisher,
+    private readonly evidencePublisher: ExecutionEvidencePublisher = NOOP_EVIDENCE_PUBLISHER,
   ) {}
 
   public async execute(
