@@ -1,0 +1,73 @@
+name: Architecture Spike
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  spike:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: spike
+          POSTGRES_PASSWORD: spike
+          POSTGRES_DB: spike
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U spike -d spike"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: SPIKE-001 TypeScript
+        run: npm run build
+
+      - name: SPIKE-002/003/006/010/011/012 Unit and architecture tests
+        env:
+          NODE_ENV: test
+          TARGET_TIMEOUT_MS: 5000
+          DATABASE_URL: postgresql://spike:spike@localhost:5432/spike
+        run: npm test
+
+      - name: SPIKE-004 BDD Cucumber
+        run: npm run test:bdd
+
+      - name: SPIKE-005 Playwright
+        run: npm run test:browser
+
+      - name: Publish test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: architecture-spike-evidence
+          path: |
+            artifacts/
+            test-results/
+          if-no-files-found: ignore
+
+      - name: Quality gate
+        run: echo "Architecture spike quality gate passed"
