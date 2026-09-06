@@ -6,6 +6,7 @@ import { InMemoryScenarioRepository } from '../../infrastructure/persistence/InM
 import { InMemoryTargetRepository } from '../../infrastructure/persistence/InMemoryTargetRepository.js';
 import { Scenario } from '../../domain/scenario/Scenario.js';
 import { Target } from '../../domain/target/Target.js';
+import type { TargetAvailabilityPort } from '../ports/TargetPorts.js';
 
 describe('ExecuteScenario', () => {
   const scenario = new Scenario({
@@ -21,6 +22,10 @@ describe('ExecuteScenario', () => {
       return `id-${this.current}`;
     }
   }
+
+  const available: TargetAvailabilityPort = {
+    isAvailable: async () => true,
+  };
 
   it('delegates execution to the runner and persists its terminal state and observations', async () => {
     const targets = new InMemoryTargetRepository();
@@ -50,7 +55,7 @@ describe('ExecuteScenario', () => {
     await targets.save(new Target({ id: 'target-1', name: 'Demo', url: 'https://example.com', status: 'ACTIVE' }));
     await scenarios.save(scenario);
 
-    const execution = await new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner).execute({
+    const execution = await new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner, available).execute({
       scenarioId: 'scenario-1',
     });
 
@@ -82,7 +87,7 @@ describe('ExecuteScenario', () => {
     await targets.save(new Target({ id: 'target-1', name: 'Demo', url: 'https://example.com', status: 'ACTIVE' }));
     await scenarios.save(scenario);
 
-    const execution = await new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner).execute({
+    const execution = await new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner, available).execute({
       scenarioId: 'scenario-1',
     });
 
@@ -100,7 +105,7 @@ describe('ExecuteScenario', () => {
     await targets.save(new Target({ id: 'target-1', name: 'Demo', url: 'https://example.com', status: 'ACTIVE' }));
     await scenarios.save(scenario);
 
-    const execution = await new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner).execute({
+    const execution = await new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner, available).execute({
       scenarioId: 'scenario-1',
     });
 
@@ -117,9 +122,27 @@ describe('ExecuteScenario', () => {
     await targets.save(new Target({ id: 'target-1', name: 'Demo', url: 'https://example.com', status: 'INACTIVE' }));
     await scenarios.save(scenario);
 
-    await expect(new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner).execute({
+    await expect(new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner, available).execute({
       scenarioId: 'scenario-1',
     })).rejects.toThrow('Target must be active to execute');
     expect(runner.calls).toHaveLength(0);
+  });
+
+  it('rejects execution when the active target is unavailable without creating an execution', async () => {
+    const targets = new InMemoryTargetRepository();
+    const scenarios = new InMemoryScenarioRepository();
+    const executions = new InMemoryExecutionRepository();
+    const runner = new FakeExecutionRunner();
+    const unavailable: TargetAvailabilityPort = {
+      isAvailable: async () => false,
+    };
+    await targets.save(new Target({ id: 'target-1', name: 'Demo', url: 'https://example.com', status: 'ACTIVE' }));
+    await scenarios.save(scenario);
+
+    await expect(new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner, unavailable).execute({
+      scenarioId: 'scenario-1',
+    })).rejects.toThrow('Target is not available');
+    expect(runner.calls).toHaveLength(0);
+    expect(await executions.findById('id-1')).toBeNull();
   });
 });
