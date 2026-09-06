@@ -5,6 +5,7 @@ import type {
   ExecutionRunnerResult,
 } from '../../application/ports/ExecutionRunner.js';
 import type { ConversationPort } from '../../application/ports/ConversationPort.js';
+import type { ExecutionObservation } from '../../domain/execution/ExecutionObservation.js';
 
 export class PlaywrightExecutionRunner implements ExecutionRunner {
   public constructor(private readonly conversation: ConversationPort) {}
@@ -21,16 +22,24 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
     try {
       if (options.signal?.aborted) return { status: 'CANCELLED' };
 
+      const observations: ExecutionObservation[] = [];
+
       for (const conversationInput of input.scenario.props.inputs) {
         if (options.signal?.aborted) return { status: 'CANCELLED' };
 
-        await this.withCancellation(
+        const response = await this.withCancellation(
           session.send(conversationInput, options.timeoutMs),
           options.signal,
         );
+
+        observations.push({
+          input: conversationInput.value,
+          response: response.value,
+          observedAt: response.observedAt,
+        });
       }
 
-      return { status: 'INCONCLUSIVE' };
+      return { status: 'INCONCLUSIVE', observations };
     } finally {
       await session.close();
     }
