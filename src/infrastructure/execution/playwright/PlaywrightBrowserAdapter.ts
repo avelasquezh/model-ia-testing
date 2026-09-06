@@ -5,7 +5,7 @@ import type {
 } from '../../../application/ports/BrowserAutomationPort.js';
 
 export class PlaywrightBrowserAdapter implements BrowserAutomationPort {
-  public async open(): Promise<BrowserAutomationSession> {
+  public async open(): Promise<PlaywrightBrowserSession> {
     const browser = await chromium.launch({ headless: true });
     const context = await browser.newContext();
     const page = await context.newPage();
@@ -14,11 +14,11 @@ export class PlaywrightBrowserAdapter implements BrowserAutomationPort {
   }
 }
 
-class PlaywrightBrowserSession implements BrowserAutomationSession {
+export class PlaywrightBrowserSession implements BrowserAutomationSession {
   public constructor(
     private readonly browser: Browser,
     private readonly context: BrowserContext,
-    private readonly page: Page,
+    public readonly page: Page,
   ) {}
 
   public async navigate(url: string, timeoutMs: number): Promise<void> {
