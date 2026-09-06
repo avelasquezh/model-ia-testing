@@ -1,5 +1,5 @@
 import type { Target } from '../../domain/target/Target.js';
-import type { TargetRepository } from '../ports/TargetRepository.js';
+import type { TargetRepository } from '../../application/ports/TargetRepository.js';
 
 export class InMemoryTargetRepository implements TargetRepository {
   private readonly targets = new Map<string, Target>();
