@@ -9,7 +9,7 @@ import type { ScenarioResultRepository } from '../ports/ScenarioResultRepository
 import { ProduceScenarioResult } from './ProduceScenarioResult.js';
 
 class TestExecutionRepository implements ExecutionRepository {
-  public constructor(private readonly execution: Execution) {}
+  public constructor(private execution: Execution) {}
 
   public async save(execution: Execution): Promise<void> {
     this.execution = execution;
@@ -48,7 +48,9 @@ class TestIdGenerator implements IdGenerator {
   }
 }
 
-function createExecution(status: 'INCONCLUSIVE' | 'NOT_EVALUABLE' | 'ERROR' | 'CANCELLED' | 'RUNNING'): Execution {
+function createExecution(
+  status: 'INCONCLUSIVE' | 'NOT_EVALUABLE' | 'ERROR' | 'CANCELLED' | 'RUNNING',
+): Execution {
   const pending = new Execution({
     id: 'execution-1',
     scenarioId: 'scenario-1',
@@ -62,6 +64,32 @@ function createExecution(status: 'INCONCLUSIVE' | 'NOT_EVALUABLE' | 'ERROR' | 'C
   if (status === 'RUNNING') return running;
 
   return running.finish(status, new Date('2026-09-06T10:00:05.000Z'));
+}
+
+function createErrorExecution(): Execution {
+  const pending = new Execution({
+    id: 'execution-1',
+    scenarioId: 'scenario-1',
+    scenarioVersion: 2,
+    targetId: 'target-1',
+    targetUrl: 'https://example.test/chat',
+    status: 'PENDING',
+  });
+
+  return pending.start(new Date('2026-09-06T10:00:00.000Z')).finish(
+    'ERROR',
+    new Date('2026-09-06T10:00:05.000Z'),
+    [],
+    [
+      {
+        code: 'TIMEOUT',
+        message: 'Execution timeout exceeded',
+        operation: 'SEND',
+        turnIndex: 0,
+        occurredAt: new Date('2026-09-06T10:00:04.000Z'),
+      },
+    ],
+  );
 }
 
 function createEvidence(): ExecutionEvidence {
@@ -124,19 +152,9 @@ describe('ProduceScenarioResult', () => {
   });
 
   it('records the execution error as the cause of an error result', async () => {
-    const execution = createExecution('INCONCLUSIVE').finish('ERROR', new Date('2026-09-06T10:00:05.000Z'), [], [
-      {
-        code: 'TIMEOUT',
-        message: 'Execution timeout exceeded',
-        operation: 'SEND',
-        turnIndex: 0,
-        occurredAt: new Date('2026-09-06T10:00:04.000Z'),
-      },
-    ]);
-
     const results = new TestResultRepository();
     const useCase = new ProduceScenarioResult(
-      new TestExecutionRepository(execution),
+      new TestExecutionRepository(createErrorExecution()),
       new TestEvidenceRepository(createEvidence()),
       results,
       new TestIdGenerator(),
