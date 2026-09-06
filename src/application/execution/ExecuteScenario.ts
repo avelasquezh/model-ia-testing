@@ -1,5 +1,5 @@
 import { Execution } from '../../domain/execution/Execution.js';
-import type { IdGenerator } from '../ports/TargetPorts.js';
+import type { IdGenerator, TargetAvailabilityPort } from '../ports/TargetPorts.js';
 import type { ExecutionRepository } from '../ports/ExecutionRepository.js';
 import type { ExecutionRunner, ExecutionRunnerOptions } from '../ports/ExecutionRunner.js';
 import type { ScenarioRepository } from '../ports/ScenarioRepository.js';
@@ -20,6 +20,7 @@ export class ExecuteScenario {
     private readonly executions: ExecutionRepository,
     private readonly ids: IdGenerator,
     private readonly runner: ExecutionRunner,
+    private readonly availability: TargetAvailabilityPort,
   ) {}
 
   public async execute(input: ExecuteScenarioInput): Promise<Execution> {
@@ -29,6 +30,9 @@ export class ExecuteScenario {
     const target = await this.targets.findById(scenario.props.targetId);
     if (!target) throw new Error('Target not found');
     if (target.props.status !== 'ACTIVE') throw new Error('Target must be active to execute');
+
+    const available = await this.availability.isAvailable(target.props.url);
+    if (!available) throw new Error('Target is not available');
 
     const timeoutMs = input.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) {
