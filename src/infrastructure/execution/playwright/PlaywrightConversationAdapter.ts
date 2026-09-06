@@ -32,23 +32,40 @@ export class PlaywrightConversationAdapter implements ConversationPort {
   }
 
   private toPlaywrightConfig(config: ConversationUiConfig): PlaywrightConversationUiConfig {
-    return {
+    const result: PlaywrightConversationUiConfig = {
       composer: this.toPlaywrightLocator(config.composer),
-      sendButton: config.sendButton ? this.toPlaywrightLocator(config.sendButton) : undefined,
       response: this.toPlaywrightLocator(config.response),
-      responseTimeoutMs: config.responseTimeoutMs,
-      pollIntervalMs: config.pollIntervalMs,
     };
+
+    if (config.sendButton !== undefined) {
+      result.sendButton = this.toPlaywrightLocator(config.sendButton);
+    }
+
+    if (config.responseTimeoutMs !== undefined) {
+      result.responseTimeoutMs = config.responseTimeoutMs;
+    }
+
+    if (config.pollIntervalMs !== undefined) {
+      result.pollIntervalMs = config.pollIntervalMs;
+    }
+
+    return result;
   }
 
   private toPlaywrightLocator(locator: ConversationUiLocator): PlaywrightConversationUiConfig['composer'] {
     switch (locator.kind) {
-      case 'role':
-        return {
+      case 'role': {
+        const result: PlaywrightConversationUiConfig['composer'] = {
           kind: 'role',
           role: locator.role as Parameters<Page['getByRole']>[0],
-          name: locator.name,
         };
+
+        if (locator.name !== undefined) {
+          result.name = locator.name;
+        }
+
+        return result;
+      }
       case 'label':
         return { kind: 'label', value: locator.value };
       case 'placeholder':
