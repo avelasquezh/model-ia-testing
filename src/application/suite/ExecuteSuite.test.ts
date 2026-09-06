@@ -9,6 +9,7 @@ import { InMemoryScenarioRepository } from '../../infrastructure/persistence/InM
 import { InMemorySuiteRepository } from '../../infrastructure/persistence/InMemorySuiteRepository.js';
 import { InMemoryTargetRepository } from '../../infrastructure/persistence/InMemoryTargetRepository.js';
 import { FakeExecutionRunner } from '../../infrastructure/execution/FakeExecutionRunner.js';
+import type { TargetAvailabilityPort } from '../ports/TargetPorts.js';
 
 class FixedIds {
   private current = 0;
@@ -18,6 +19,10 @@ class FixedIds {
     return `execution-${this.current}`;
   }
 }
+
+const available: TargetAvailabilityPort = {
+  isAvailable: async () => true,
+};
 
 const makeScenario = (id: string): Scenario => new Scenario({
   id,
@@ -38,7 +43,7 @@ describe('ExecuteSuite', () => {
     const targets = new InMemoryTargetRepository();
     const executions = new InMemoryExecutionRepository();
     const runner = new FakeExecutionRunner({ status: 'INCONCLUSIVE', observations: [] });
-    const executeScenario = new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner);
+    const executeScenario = new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner, available);
     const executeSuite = new ExecuteSuite(suites, executeScenario);
 
     await targets.save(new Target({ id: 'target-001', name: 'Demo', url: 'https://example.com', status: 'ACTIVE' }));
@@ -70,7 +75,7 @@ describe('ExecuteSuite', () => {
     const targets = new InMemoryTargetRepository();
     const executions = new InMemoryExecutionRepository();
     const runner = new FakeExecutionRunner();
-    const executeScenario = new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner);
+    const executeScenario = new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner, available);
     const executeSuite = new ExecuteSuite(suites, executeScenario);
 
     await expect(executeSuite.execute({ suiteId: 'missing' })).rejects.toThrow('Suite not found');
@@ -83,7 +88,7 @@ describe('ExecuteSuite', () => {
     const targets = new InMemoryTargetRepository();
     const executions = new InMemoryExecutionRepository();
     const runner = new FakeExecutionRunner({ status: 'CANCELLED', observations: [] });
-    const executeScenario = new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner);
+    const executeScenario = new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner, available);
     const executeSuite = new ExecuteSuite(suites, executeScenario);
     const controller = new AbortController();
 
