@@ -5,6 +5,7 @@ export type ConversationMessage = {
 export type ConversationResponse = {
   readonly value: string;
   readonly observedAt: Date;
+  readonly screenshot?: Uint8Array;
 };
 
 export type ConversationSession = {
