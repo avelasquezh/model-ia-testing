@@ -16,6 +16,12 @@ Un requisito se considera terminado únicamente cuando la evidencia demuestra qu
 - Quality gates satisfechos.
 - Evidencia de validación disponible.
 - Documentación actualizada cuando corresponda.
+- Regresión/autoevaluación del incremento ejecutada sobre lo desarrollado previamente.
+- Resultado de la regresión analizado y cualquier fallo corregido antes de autorizar continuidad.
+
+## Regla de continuidad
+
+La terminación de un incremento requiere una regresión satisfactoria. Un incremento no autoriza la continuidad por el solo hecho de compilar o pasar sus pruebas nuevas; debe conservar el comportamiento validado de los incrementos anteriores.
 
 ## Regla
 
