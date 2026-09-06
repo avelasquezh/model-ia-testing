@@ -34,10 +34,10 @@ La matriz se completa incrementalmente. No se inventan vínculos antes de que ex
 | REQ-F1-006 … REQ-F1-015 | Cubierto parcialmente por escenarios/suites | Pendiente | Cubierto | Cubierto | Cubierto | N/A | N/A | N/A | N/A |
 | REQ-F1-016 … REQ-F1-027 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto parcialmente | Pendiente | N/A | N/A |
 | REQ-F1-028 … REQ-F1-039 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Pendiente | N/A | N/A |
-| REQ-F1-040 … REQ-F1-046 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | N/A | Pendiente |
-| REQ-F1-047 … REQ-F1-054 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | N/A | Cubierto | Pendiente |
+| REQ-F1-040 … REQ-F1-046 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | N/A | Cubierto |
+| REQ-F1-047 … REQ-F1-054 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | N/A | Cubierto | Cubierto |
 | REQ-F1-055 … REQ-F1-065 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto |
-| REQ-F1-066 … REQ-F1-073 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Pendiente |
+| REQ-F1-066 … REQ-F1-073 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto parcialmente |
 | REQ-F1-074 … REQ-F1-115 | Pendiente / transversal | Pendiente | Parcial | Parcial | Parcial | Parcial | Parcial | Parcial | Pendiente |
 
 ### F1-05 — Resultados
@@ -57,6 +57,14 @@ Cada hallazgo requiere una ejecución finalizada y evidencia perteneciente a esa
 `REQ-F1-055 … REQ-F1-065 → TestReport → GenerateTestReport → GenerateTestReport.test.ts → CI`
 
 El reporte puede agrupar una o varias ejecuciones y conserva sus relaciones con objetivo, escenario/versionado, evidencia, resultado y hallazgos. Las limitaciones de observabilidad y los estados no evaluables se exponen explícitamente; la interpretación de calidad permanece separada y no se agrega scoring en este frente.
+
+### F1-08 — Trazabilidad
+
+`REQ-F1-066 … REQ-F1-073 → RequirementTrace → RegisterRequirementTrace → RegisterRequirementTrace.test.ts → CI`
+
+La trazabilidad se materializa como un artefacto por requisito. Cada registro conserva los identificadores de escenarios, ejecuciones, resultados, hallazgos y reportes relacionados y expone explícitamente `COVERED` o `UNCOVERED`. El dominio rechaza identificadores vacíos, duplicados y estados de cobertura inconsistentes.
+
+El artefacto no intenta derivar vínculos que el sistema todavía no puede observar; registra únicamente relaciones suministradas de forma explícita por la aplicación. La ausencia de escenarios hace visible un requisito sin cobertura.
 
 ## Trazabilidad arquitectónica
 
