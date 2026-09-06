@@ -1,4 +1,8 @@
 import type {
+  ExecutionEvidencePublisher,
+  ExecutionEvidenceEvent,
+} from '../../application/ports/ExecutionEvidencePublisher.js';
+import type {
   ExecutionRunner,
   ExecutionRunnerInput,
   ExecutionRunnerOptions,
@@ -9,7 +13,10 @@ import type { ExecutionObservation } from '../../domain/execution/ExecutionObser
 import type { ExecutionTechnicalError } from '../../domain/execution/ExecutionTechnicalError.js';
 
 export class PlaywrightExecutionRunner implements ExecutionRunner {
-  public constructor(private readonly conversation: ConversationPort) {}
+  public constructor(
+    private readonly conversation: ConversationPort,
+    private readonly evidencePublisher: ExecutionEvidencePublisher,
+  ) {}
 
   public async execute(
     input: ExecutionRunnerInput,
@@ -21,17 +28,15 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
     try {
       const remainingTimeoutMs = this.remainingTimeout(deadline);
       if (remainingTimeoutMs <= 0) {
-        return {
-          status: 'ERROR',
-          errors: [this.toTimeoutError('OPEN')],
-        };
+        const error = this.toTimeoutError('OPEN');
+        await this.publishError(input.execution.props.id, error);
+        return { status: 'ERROR', errors: [error] };
       }
       session = await this.conversation.open(input.target.props.url, remainingTimeoutMs);
     } catch (error) {
-      return {
-        status: 'ERROR',
-        errors: [this.toTechnicalError(error, 'OPEN')],
-      };
+      const technicalError = this.toTechnicalError(error, 'OPEN');
+      await this.publishError(input.execution.props.id, technicalError);
+      return { status: 'ERROR', errors: [technicalError] };
     }
 
     const observations: ExecutionObservation[] = [];
@@ -45,7 +50,9 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
 
         const remainingTimeoutMs = this.remainingTimeout(deadline);
         if (remainingTimeoutMs <= 0) {
-          errors.push(this.toTimeoutError('SEND', index));
+          const error = this.toTimeoutError('SEND', index);
+          errors.push(error);
+          await this.publishError(input.execution.props.id, error);
           return { status: 'ERROR', observations, errors };
         }
 
@@ -58,19 +65,24 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
           );
           const durationMs = response.observedAt.getTime() - startedAt.getTime();
 
-          observations.push({
+          const observation: ExecutionObservation = {
             input: conversationInput.value,
             response: response.value,
             startedAt,
             observedAt: response.observedAt,
             durationMs,
             ...(response.screenshot !== undefined ? { screenshot: response.screenshot } : {}),
-          });
+          };
+
+          observations.push(observation);
+          await this.publishObservation(input.execution.props.id, index, observation);
         } catch (error) {
           if (this.isAbortError(error)) {
             return { status: 'CANCELLED', observations, errors };
           }
-          errors.push(this.toTechnicalError(error, 'SEND', index));
+          const technicalError = this.toTechnicalError(error, 'SEND', index);
+          errors.push(technicalError);
+          await this.publishError(input.execution.props.id, technicalError);
           break;
         }
       }
@@ -78,7 +90,9 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
       try {
         await session.close();
       } catch (error) {
-        errors.push(this.toTechnicalError(error, 'CLOSE'));
+        const technicalError = this.toTechnicalError(error, 'CLOSE');
+        errors.push(technicalError);
+        await this.publishError(input.execution.props.id, technicalError);
       }
     }
 
@@ -87,6 +101,29 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
     }
 
     return { status: 'INCONCLUSIVE', observations };
+  }
+
+  private async publishObservation(
+    executionId: string,
+    turnIndex: number,
+    observation: ExecutionObservation,
+  ): Promise<void> {
+    const event: ExecutionEvidenceEvent = {
+      type: 'OBSERVATION',
+      executionId,
+      turnIndex,
+      observation,
+    };
+    await this.evidencePublisher.publish(event);
+  }
+
+  private async publishError(executionId: string, error: ExecutionTechnicalError): Promise<void> {
+    const event: ExecutionEvidenceEvent = {
+      type: 'ERROR',
+      executionId,
+      error,
+    };
+    await this.evidencePublisher.publish(event);
   }
 
   private remainingTimeout(deadline: number): number {
