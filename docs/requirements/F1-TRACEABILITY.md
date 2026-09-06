@@ -36,7 +36,7 @@ La matriz se completa incrementalmente. No se inventan vínculos antes de que ex
 | REQ-F1-028 … REQ-F1-039 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Pendiente | N/A | N/A |
 | REQ-F1-040 … REQ-F1-046 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | N/A | Pendiente |
 | REQ-F1-047 … REQ-F1-054 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | N/A | Cubierto | Pendiente |
-| REQ-F1-055 … REQ-F1-065 | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
+| REQ-F1-055 … REQ-F1-065 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto |
 | REQ-F1-066 … REQ-F1-073 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Pendiente |
 | REQ-F1-074 … REQ-F1-115 | Pendiente / transversal | Pendiente | Parcial | Parcial | Parcial | Parcial | Parcial | Parcial | Pendiente |
 
@@ -51,6 +51,12 @@ El resultado conserva `executionId`, `scenarioId`, `scenarioVersion` y `evidence
 `REQ-F1-047 … REQ-F1-054 → TestFinding → RegisterTestFinding → RegisterTestFinding.test.ts → CI`
 
 Cada hallazgo requiere una ejecución finalizada y evidencia perteneciente a esa ejecución. Los campos `impact`, `severity` y `risk` existen como datos del hallazgo, pero no se interpretan ni califican mediante una metodología dentro de este frente.
+
+### F1-07 — Reportes
+
+`REQ-F1-055 … REQ-F1-065 → TestReport → GenerateTestReport → GenerateTestReport.test.ts → CI`
+
+El reporte puede agrupar una o varias ejecuciones y conserva sus relaciones con objetivo, escenario/versionado, evidencia, resultado y hallazgos. Las limitaciones de observabilidad y los estados no evaluables se exponen explícitamente; la interpretación de calidad permanece separada y no se agrega scoring en este frente.
 
 ## Trazabilidad arquitectónica
 
