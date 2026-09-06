@@ -75,6 +75,7 @@ describe('PlaywrightExecutionRunner', () => {
 
     expect(result.status).toBe('INCONCLUSIVE');
     expect(result.observations).toHaveLength(2);
+    expect(result.errors).toEqual([]);
 
     const first = result.observations?.[0];
     const second = result.observations?.[1];
@@ -103,17 +104,63 @@ describe('PlaywrightExecutionRunner', () => {
     expect(session.close).toHaveBeenCalledOnce();
   });
 
-  it('closes the conversation session when an interaction fails', async () => {
+  it('captures an interaction error and preserves observations from previous turns', async () => {
     const { conversation, session } = createConversationPort();
-    vi.mocked(session.send).mockRejectedValueOnce(new Error('interaction failure'));
+    vi.mocked(session.send).mockImplementationOnce(async (input) => ({
+      value: `Respuesta a: ${input.value}`,
+      observedAt: new Date(),
+    })).mockRejectedValueOnce(new Error('interaction failure'));
     const { scenario, target, execution } = createExecutionContext();
     const runner = new PlaywrightExecutionRunner(conversation);
 
-    await expect(
-      runner.execute({ execution, scenario, target }, { timeoutMs: 5_000 }),
-    ).rejects.toThrow('interaction failure');
+    const result = await runner.execute(
+      { execution, scenario, target },
+      { timeoutMs: 5_000 },
+    );
 
+    expect(result.status).toBe('ERROR');
+    expect(result.observations).toHaveLength(1);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors?.[0]?.code).toBe('Error');
+    expect(result.errors?.[0]?.message).toBe('interaction failure');
+    expect(result.errors?.[0]?.operation).toBe('SEND');
+    expect(result.errors?.[0]?.turnIndex).toBe(1);
+    expect(result.errors?.[0]?.occurredAt).toBeInstanceOf(Date);
     expect(session.close).toHaveBeenCalledOnce();
+  });
+
+  it('captures an error when opening the conversation fails', async () => {
+    const { conversation } = createConversationPort();
+    vi.mocked(conversation.open).mockRejectedValueOnce(new Error('navigation failure'));
+    const { scenario, target, execution } = createExecutionContext();
+    const runner = new PlaywrightExecutionRunner(conversation);
+
+    const result = await runner.execute(
+      { execution, scenario, target },
+      { timeoutMs: 5_000 },
+    );
+
+    expect(result.status).toBe('ERROR');
+    expect(result.observations).toBeUndefined();
+    expect(result.errors?.[0]?.operation).toBe('OPEN');
+    expect(result.errors?.[0]?.message).toBe('navigation failure');
+  });
+
+  it('captures an error when closing the conversation fails', async () => {
+    const { conversation, session } = createConversationPort();
+    vi.mocked(session.close).mockRejectedValueOnce(new Error('close failure'));
+    const { scenario, target, execution } = createExecutionContext();
+    const runner = new PlaywrightExecutionRunner(conversation);
+
+    const result = await runner.execute(
+      { execution, scenario, target },
+      { timeoutMs: 5_000 },
+    );
+
+    expect(result.status).toBe('ERROR');
+    expect(result.observations).toHaveLength(2);
+    expect(result.errors?.[0]?.operation).toBe('CLOSE');
+    expect(result.errors?.[0]?.message).toBe('close failure');
   });
 
   it('does not send a message when cancellation is already requested', async () => {
