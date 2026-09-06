@@ -40,6 +40,7 @@ export class PlaywrightExecutionRunner implements ExecutionRunner {
           startedAt,
           observedAt: response.observedAt,
           durationMs,
+          ...(response.screenshot !== undefined ? { screenshot: response.screenshot } : {}),
         });
       }
 
