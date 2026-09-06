@@ -32,16 +32,17 @@ La matriz se completa incrementalmente. No se inventan vínculos antes de que ex
 | REQ-F1-001 … REQ-F1-004 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | N/A | N/A | N/A | N/A |
 | REQ-F1-005 | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | N/A | Pendiente | N/A | N/A |
 | REQ-F1-006 … REQ-F1-015 | Cubierto parcialmente por escenarios/suites | Pendiente | Cubierto | Cubierto | Cubierto | N/A | N/A | N/A | N/A |
-| REQ-F1-016 … REQ-F1-027 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto parcialmente | Pendiente | N/A | N/A |
-| REQ-F1-028 … REQ-F1-039 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Pendiente | N/A | N/A |
+| REQ-F1-016 … REQ-F1-027 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto | Cubierto parcialmente | Cubierto parcialmente | Pendiente | N/A | N/A |
+| REQ-F1-028 … REQ-F1-039 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto | Cubierto parcialmente | Cubierto | Pendiente | N/A | N/A |
 | REQ-F1-040 … REQ-F1-046 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | N/A | Cubierto |
 | REQ-F1-047 … REQ-F1-054 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | N/A | Cubierto | Cubierto |
 | REQ-F1-055 … REQ-F1-065 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto |
 | REQ-F1-066 … REQ-F1-073 | Cubierto | Pendiente | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto | Cubierto parcialmente |
 | REQ-F1-074 … REQ-F1-082 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
 | REQ-F1-083 … REQ-F1-092 | Cubierto parcialmente | Cubierto | Cubierto parcialmente | Cubierto parcialmente | Cubierto | Cubierto parcialmente | Pendiente | Pendiente | Pendiente |
-| REQ-F1-093 … REQ-F1-099 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto parcialmente | Pendiente | Cubierto parcialmente | Pendiente | Pendiente | Pendiente |
-| REQ-F1-100 … REQ-F1-115 | Pendiente / transversal | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
+| REQ-F1-093 … REQ-F1-099 | Cubierto parcialmente | Pendiente | Cubierto | Cubierto parcialmente | Cubierto | Cubierto parcialmente | Pendiente | Pendiente | Pendiente |
+| REQ-F1-100 … REQ-F1-108 | Cubierto parcialmente | Cubierto | Cubierto | Cubierto | Implementado en workflow CI | Cubierto parcialmente | Pendiente | Pendiente | Pendiente |
+| REQ-F1-109 … REQ-F1-115 | Pendiente / transversal | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
 
 ### F1-05 — Resultados
 
@@ -98,6 +99,16 @@ La automatización de navegador permanece separada de BDD: el spike Playwright v
 `REQ-F1-094 … REQ-F1-095` quedan cubiertos parcialmente por la separación de configuración y secretos documentada en ADR-014; la materialización final depende del composition root y del entorno de despliegue.
 
 `REQ-F1-093` permanece condicionado al diseño de aislamiento de despliegue definido en ADR-008. No se introduce aislamiento ficticio dentro del dominio.
+
+### F1-12 — CI/CD
+
+`REQ-F1-100 … REQ-F1-108 → .github/workflows/ci.yml → gates TypeScript/unit → BDD → Playwright → quality-gate → CI`
+
+El workflow ejecuta primero compilación y pruebas unitarias/aplicación; los gates posteriores dependen de su éxito. BDD depende del gate de calidad inicial y Playwright depende de BDD. El quality gate final depende de todos los gates obligatorios.
+
+La pipeline publica evidencia de Playwright y un artefacto con el commit evaluado. Los workflows usan permisos mínimos de contenido de solo lectura. La instalación usa `npm install` porque el repositorio no contiene `package-lock.json`; `npm ci` no sería aplicable al estado actual del repositorio.
+
+`REQ-F1-108` queda condicionado a la configuración de reglas de protección del repositorio: el workflow produce un check obligatorio candidato, pero el bloqueo efectivo de integración requiere que GitHub Branch Protection/Rulesets lo convierta en requisito.
 
 ## Trazabilidad arquitectónica
 
