@@ -3,6 +3,7 @@ import type {
   ConversationResponse,
   ConversationSession,
 } from '../../../application/ports/ConversationPort.js';
+import type { ConversationUiConfigRepository } from '../../../application/ports/ConversationUiConfigRepository.js';
 import type { BrowserAutomationPort } from '../../../application/ports/BrowserAutomationPort.js';
 import { PlaywrightConversationUi, type PlaywrightConversationUiConfig } from './PlaywrightConversationUi.js';
 import { type PlaywrightBrowserSession } from './PlaywrightBrowserAdapter.js';
@@ -10,18 +11,34 @@ import { type PlaywrightBrowserSession } from './PlaywrightBrowserAdapter.js';
 export class PlaywrightConversationAdapter implements ConversationPort {
   public constructor(
     private readonly browser: BrowserAutomationPort,
-    private readonly uiConfig?: PlaywrightConversationUiConfig,
+    private readonly uiConfigs: ConversationUiConfigRepository,
   ) {}
 
   public async open(targetUrl: string, timeoutMs: number): Promise<ConversationSession> {
     const browserSession = (await this.browser.open()) as PlaywrightBrowserSession;
     await browserSession.navigate(targetUrl, timeoutMs);
 
-    const ui = this.uiConfig
-      ? new PlaywrightConversationUi(browserSession.page, this.uiConfig)
+    const config = await this.uiConfigs.findByTargetUrl(targetUrl);
+    const uiConfig = config ? this.toPlaywrightConfig(config) : undefined;
+    const ui = uiConfig
+      ? new PlaywrightConversationUi(browserSession.page, uiConfig)
       : undefined;
 
     return new PlaywrightConversationSession(browserSession, ui, timeoutMs);
+  }
+
+  private toPlaywrightConfig(config: Awaited<ReturnType<ConversationUiConfigRepository['findByTargetUrl']>>): PlaywrightConversationUiConfig | undefined {
+    if (!config) return undefined;
+
+    const toLocator = (locator: typeof config.composer): PlaywrightConversationUiConfig['composer'] => locator;
+
+    return {
+      composer: toLocator(config.composer),
+      sendButton: config.sendButton ? toLocator(config.sendButton) : undefined,
+      response: toLocator(config.response),
+      responseTimeoutMs: config.responseTimeoutMs,
+      pollIntervalMs: config.pollIntervalMs,
+    };
   }
 }
 
