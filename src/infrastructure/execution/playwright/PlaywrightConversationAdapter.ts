@@ -32,40 +32,29 @@ export class PlaywrightConversationAdapter implements ConversationPort {
   }
 
   private toPlaywrightConfig(config: ConversationUiConfig): PlaywrightConversationUiConfig {
-    const result: PlaywrightConversationUiConfig = {
+    return {
       composer: this.toPlaywrightLocator(config.composer),
       response: this.toPlaywrightLocator(config.response),
+      ...(config.sendButton !== undefined
+        ? { sendButton: this.toPlaywrightLocator(config.sendButton) }
+        : {}),
+      ...(config.responseTimeoutMs !== undefined
+        ? { responseTimeoutMs: config.responseTimeoutMs }
+        : {}),
+      ...(config.pollIntervalMs !== undefined
+        ? { pollIntervalMs: config.pollIntervalMs }
+        : {}),
     };
-
-    if (config.sendButton !== undefined) {
-      result.sendButton = this.toPlaywrightLocator(config.sendButton);
-    }
-
-    if (config.responseTimeoutMs !== undefined) {
-      result.responseTimeoutMs = config.responseTimeoutMs;
-    }
-
-    if (config.pollIntervalMs !== undefined) {
-      result.pollIntervalMs = config.pollIntervalMs;
-    }
-
-    return result;
   }
 
   private toPlaywrightLocator(locator: ConversationUiLocator): PlaywrightConversationUiConfig['composer'] {
     switch (locator.kind) {
-      case 'role': {
-        const result: PlaywrightConversationUiConfig['composer'] = {
+      case 'role':
+        return {
           kind: 'role',
           role: locator.role as Parameters<Page['getByRole']>[0],
+          ...(locator.name !== undefined ? { name: locator.name } : {}),
         };
-
-        if (locator.name !== undefined) {
-          result.name = locator.name;
-        }
-
-        return result;
-      }
       case 'label':
         return { kind: 'label', value: locator.value };
       case 'placeholder':
