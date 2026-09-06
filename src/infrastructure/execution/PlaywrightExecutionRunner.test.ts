@@ -96,11 +96,56 @@ describe('PlaywrightExecutionRunner', () => {
     );
     expect(second?.durationMs).toBeGreaterThanOrEqual(0);
 
-    expect(conversation.open).toHaveBeenCalledWith(target.props.url, 5_000);
+    expect(conversation.open).toHaveBeenCalledWith(target.props.url, expect.any(Number));
     expect(session.send).toHaveBeenCalledTimes(2);
-    expect(session.send).toHaveBeenNthCalledWith(1, { value: 'Hola' }, 5_000);
-    expect(session.send).toHaveBeenNthCalledWith(2, { value: '¿Cómo estás?' }, 5_000);
+    expect(session.send).toHaveBeenNthCalledWith(1, { value: 'Hola' }, expect.any(Number));
+    expect(session.send).toHaveBeenNthCalledWith(2, { value: '¿Cómo estás?' }, expect.any(Number));
     expect(session.close).toHaveBeenCalledOnce();
+  });
+
+  it('uses the remaining global timeout for each operation', async () => {
+    const { conversation, session } = createConversationPort();
+    const now = vi.spyOn(Date, 'now').mockReturnValueOnce(1_000).mockReturnValue(3_000);
+    const { scenario, target, execution } = createExecutionContext();
+    const runner = new PlaywrightExecutionRunner(conversation);
+
+    try {
+      const result = await runner.execute(
+        { execution, scenario, target },
+        { timeoutMs: 5_000 },
+      );
+
+      expect(result.status).toBe('INCONCLUSIVE');
+      expect(conversation.open).toHaveBeenCalledWith(target.props.url, 5_000);
+      expect(session.send).toHaveBeenNthCalledWith(1, { value: 'Hola' }, 2_000);
+      expect(session.send).toHaveBeenNthCalledWith(2, { value: '¿Cómo estás?' }, 2_000);
+    } finally {
+      now.mockRestore();
+    }
+  });
+
+  it('fails before starting the next turn when the global timeout is exhausted', async () => {
+    const { conversation, session } = createConversationPort();
+    const now = vi.spyOn(Date, 'now').mockReturnValueOnce(1_000).mockReturnValueOnce(7_000);
+    const { scenario, target, execution } = createExecutionContext();
+    const runner = new PlaywrightExecutionRunner(conversation);
+
+    try {
+      const result = await runner.execute(
+        { execution, scenario, target },
+        { timeoutMs: 5_000 },
+      );
+
+      expect(result.status).toBe('ERROR');
+      expect(result.observations).toHaveLength(0);
+      expect(result.errors?.[0]?.code).toBe('TIMEOUT');
+      expect(result.errors?.[0]?.operation).toBe('SEND');
+      expect(result.errors?.[0]?.turnIndex).toBe(0);
+      expect(session.send).not.toHaveBeenCalled();
+      expect(session.close).toHaveBeenCalledOnce();
+    } finally {
+      now.mockRestore();
+    }
   });
 
   it('captures an interaction error and preserves observations from previous turns', async () => {
