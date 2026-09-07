@@ -1,7 +1,7 @@
 # Frente 3 — Spike técnico de arquitectura
 
 **Versión:** 1.0  
-**Estado:** Validación incremental en ejecución
+**Estado:** **VALIDADO**
 
 ## 1. Objetivo
 
@@ -15,71 +15,52 @@ La combinación TypeScript + Node.js + arquitectura hexagonal + PostgreSQL + Cuc
 
 ## 3. Alcance mínimo
 
-El spike deberá contener un vertical slice mínimo que atraviese:
+El spike contiene un vertical slice mínimo que atraviesa:
 
 `Gherkin → Step → Caso de uso → Dominio → Puerto → Adaptador → Evidencia → Persistencia → CI`
 
-Debe existir además una ejecución Playwright controlada.
+Existe además una ejecución Playwright controlada.
 
 ## 4. Validaciones
 
-| ID | Validación | Evidencia requerida | Criterio |
+| ID | Validación | Evidencia observada | Resultado |
 |---|---|---|---|
-| SPIKE-001 | TypeScript estricto | Log de compilación | Compila sin errores |
-| SPIKE-002 | Dominio independiente | Test unitario | Ejecuta sin infraestructura |
-| SPIKE-003 | Aplicación mediante puertos | Test con doble | Caso de uso sin adapter real |
-| SPIKE-004 | Gherkin/Cucumber | Resultado Cucumber | Escenario ejecutado |
-| SPIKE-005 | Playwright | Reporte/artifact | Interacción controlada exitosa |
-| SPIKE-006 | Sustitución browser | Test de aplicación | No requiere navegador real |
-| SPIKE-007 | PostgreSQL | Migración + test | Esquema reproducible |
-| SPIKE-008 | Evidencia | Artifact + metadata | Evidencia relacionada con run |
-| SPIKE-009 | GitHub Actions | Workflow run | Gates ejecutados |
-| SPIKE-010 | Dependencias arquitectónicas | Análisis estático/configuración | Violaciones críticas detectables |
-| SPIKE-011 | Configuración | Test de configuración | Fallo explícito ante configuración inválida |
-| SPIKE-012 | Observabilidad | Logs estructurados | Run correlacionable |
+| SPIKE-001 | TypeScript estricto | Workflow `34089149510`, compilación sin errores | PASS |
+| SPIKE-002 | Dominio independiente | Pruebas unitarias del dominio sin infraestructura | PASS |
+| SPIKE-003 | Aplicación mediante puertos | Pruebas con dobles de aplicación | PASS |
+| SPIKE-004 | Gherkin/Cucumber | Cucumber ejecutado en workflow | PASS |
+| SPIKE-005 | Playwright | Reporte HTML publicado en artifact | PASS |
+| SPIKE-006 | Sustitución browser | Pruebas de aplicación sin navegador real | PASS |
+| SPIKE-007 | PostgreSQL | Migraciones y pruebas de integración reproducibles | PASS |
+| SPIKE-008 | Evidencia | Manifiesto `artifacts/spike-008-evidence-manifest.json` con run, commit y SHA-256 | PASS |
+| SPIKE-009 | GitHub Actions | Gates CI ejecutados y completados | PASS |
+| SPIKE-010 | Dependencias arquitectónicas | Regla estática que detecta dependencias prohibidas en dominio | PASS |
+| SPIKE-011 | Configuración | Prueba de configuración inválida con fallo explícito | PASS |
+| SPIKE-012 | Observabilidad | Log JSON estructurado correlacionado mediante `runId` | PASS |
 
 ## 5. Criterios de éxito
 
-El spike será **VALIDADO** cuando todas las validaciones obligatorias pasen y no exista una contradicción arquitectónica crítica.
-
-Será **VALIDADO CON CAMBIOS** cuando la hipótesis sea viable pero una o más decisiones deban modificarse sin invalidar la arquitectura general.
-
-Será **NO VALIDADO** cuando exista una incompatibilidad fundamental que obligue a replantear la arquitectura o el stack.
+El spike queda **VALIDADO** porque todas las validaciones obligatorias pasan y no se observó una contradicción arquitectónica crítica en la evidencia ejecutable.
 
 ## 6. Evidencia del spike
 
-La evidencia deberá incluir como mínimo:
+Evidencia principal de cierre:
 
-- commit exacto;
-- workflow de GitHub Actions;
-- resultados de tests;
-- logs relevantes;
-- reporte Cucumber;
-- artefactos Playwright;
-- migraciones ejecutadas;
-- referencia a la evidencia generada;
-- incidencias o desviaciones encontradas;
-- conclusión final.
-
-Para SPIKE-008, el workflow genera `artifacts/spike-008-evidence-manifest.json` después de las pruebas y antes de publicar el artifact. El manifiesto registra `runId`, `runUrl`, `commitSha`, `ref`, workflow, timestamp de generación y SHA-256 de los archivos de evidencia descubiertos en `artifacts/`, `test-results/` y `playwright-report/`.
+- workflow: `Architecture Spike` run `34089149510`;
+- commit evaluado: `3fb8db1877679486d75cd7ff1af30ef94740c1a6`;
+- artifact: `architecture-spike-evidence`;
+- manifiesto: `artifacts/spike-008-evidence-manifest.json`;
+- digest del artifact: `sha256:50fdcb7f797593a84b770a7b5a6f82bfe3603726b4fc8eb56dfd50a48844e169`;
+- el manifiesto registra además hashes SHA-256 de los archivos de evidencia publicados.
 
 ## 7. Regla de decisión
 
-No se considerará que una tecnología fue validada solo porque instala o compila. Debe demostrar que funciona dentro de los límites arquitectónicos definidos.
+No se considera que una tecnología fue validada solo porque instala o compila. En este spike las tecnologías y límites incluidos en las validaciones demostraron comportamiento observable dentro de la arquitectura definida.
 
-No se aprobará un patrón por presencia nominal. Debe existir un problema que resuelva y una evidencia que demuestre que no introduce complejidad injustificada.
+No se aprueba un patrón por presencia nominal. La evidencia del spike respalda las decisiones que pasan las validaciones; las decisiones fuera de este alcance permanecen pendientes.
 
-## 8. Resultado esperado
+## 8. Resultado
 
-El spike debe producir una decisión formal sobre:
+La hipótesis arquitectónica es **VALIDADA** para continuar hacia el desarrollo incremental del MVP.
 
-- stack;
-- estructura modular;
-- estrategia BDD/TDD;
-- estrategia de automatización de navegador;
-- persistencia;
-- evidencia;
-- CI/CD;
-- controles arquitectónicos.
-
-Las decisiones que continúen siendo inciertas permanecerán como propuestas en sus ADR correspondientes.
+Quedan fuera del cierre de F3 las decisiones aún pendientes en `PENDING-DECISIONS.md`, incluyendo aspectos de seguridad operativa, SAST/secret scanning, políticas definitivas de ramas/protección y decisiones metodológicas del Frente 2.
