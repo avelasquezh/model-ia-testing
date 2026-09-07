@@ -45,6 +45,12 @@ export class ExecuteScenario {
       scenarioVersion: scenario.props.version,
       targetId: target.props.id,
       targetUrl: target.props.url,
+      targetConfiguration: {
+        id: target.props.id,
+        name: target.props.name,
+        url: target.props.url,
+        status: 'ACTIVE',
+      },
       status: 'PENDING',
     }).start();
 

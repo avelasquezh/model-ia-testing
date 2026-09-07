@@ -32,6 +32,9 @@ export class CaptureExecutionEvidence {
       transcript: execution.props.observations ?? [],
       errors: execution.props.errors ?? [],
       capturedAt: new Date(),
+      ...(execution.props.targetConfiguration
+        ? { targetConfiguration: execution.props.targetConfiguration }
+        : {}),
     });
 
     await this.evidence.save(captured);

@@ -63,6 +63,12 @@ describe('ExecuteScenario', () => {
     expect(execution.props.finishedAt).toBeInstanceOf(Date);
     expect(execution.props.observations).toEqual(observations);
     expect(execution.props.errors).toEqual([]);
+    expect(execution.props.targetConfiguration).toEqual({
+      id: 'target-1',
+      name: 'Demo',
+      url: 'https://example.com',
+      status: 'ACTIVE',
+    });
     expect(runner.calls).toHaveLength(1);
     expect(runner.calls[0]?.input.scenario.props.id).toBe('scenario-1');
     expect(runner.calls[0]?.input.target.props.url).toBe('https://example.com');
