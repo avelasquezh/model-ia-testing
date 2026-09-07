@@ -5,23 +5,24 @@
 **Rama:** `main`  
 **Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 con baseline ejecutable parcial y F3 en validación técnica.
 
-## Incremento actual — corrección del contrato de versionado
+## Incremento actual — recuperación del gate TypeScript
 
-**Estado:** corrección implementada; pendiente de nuevo resultado CI.
+**Estado:** correcciones implementadas; nuevo CI pendiente de conclusión.
 
-El primer CI posterior a la integración del contexto de versionado falló en compilación. La causa observada fue que el nuevo contrato de `Execution` rompió fixtures legacy y un step BDD que aún utilizaba el constructor anterior de `ExecuteScenario`. No se relajó la persistencia ni se eliminó el versionado del agregado.
+El CI correspondiente al commit `906f6887` volvió a fallar en compilación TypeScript. La regresión quedó reducida a tres defectos concretos: un `commitSha` opcional enviado como `undefined` bajo `exactOptionalPropertyTypes`, un mock de PostgreSQL cuya firma no permitía inspeccionar el segundo argumento y una restauración del agregado que utilizaba el identificador importado solo como tipo en vez del alias de valor.
 
-La corrección normaliza explícitamente una ausencia de contexto en construcciones legacy a `legacy-unknown`, mientras que las ejecuciones nuevas creadas por `ExecuteScenario` siguen recibiendo un `EvaluationVersionContext` explícito. También se corrigió la preservación de `startedAt` durante `Execution.start()` y se actualizó la prueba de dominio correspondiente.
+Las correcciones mantienen intacto el contrato de versionado: el BDD solo añade `commitSha` cuando existe, el mock declara explícitamente sus parámetros y `PostgresExecutionRepository` instancia `ExecutionModel` al reconstruir una ejecución.
+
+Durante la corrección se produjo además una sustitución incompleta temporal del archivo `spike/bdd/architecture.steps.ts`; fue restaurado inmediatamente desde el estado versionado anterior y la corrección quedó aplicada sobre el archivo completo. No se considera una pérdida funcional persistente del repositorio.
 
 ## Verificación observada
 
-- CI del commit anterior: **fallido en TypeScript**.
-- Causa principal: fixtures legacy sin `versionContext` y constructor BDD desactualizado.
-- Corrección del constructor BDD: implementada.
-- Compatibilidad legacy explícita: implementada y cubierta por prueba.
-- Preservación de `startedAt`: corregida.
-- Corrección de trazabilidad arquitectónica: implementada; `F3-ARCHITECTURE-TRACEABILITY.md` ya no declara que la implementación productiva esté “no iniciada”.
-- Nuevo CI de la corrección: pendiente de conclusión observable.
+- CI `34087002631`, commit `906f6887`: **fallido en TypeScript**.
+- Error BDD `TS2379`: corregido.
+- Error de tipado del mock `TS2352/TS2493`: corregido.
+- Error de instancia `TS1361` en `PostgresExecutionRepository`: corregido.
+- Nuevo CI tras estas correcciones: pendiente de conclusión observable.
+- No se declara verde ningún gate hasta disponer de conclusión `success` observable.
 
 ## Persistencia y versionado
 
@@ -29,30 +30,24 @@ Las referencias mínimas de versionado continúan persistidas como campos de pri
 
 El valor `legacy-unknown` se utiliza únicamente cuando la información histórica realmente no existía; no representa una versión metodológica válida.
 
-## Corrección de documentación
-
-README, `PROJECT-STATUS.md`, ADR-015, `PENDING-DECISIONS.md` y la trazabilidad arquitectónica deben distinguir permanentemente entre diseño, implementación, regresiones detectadas y validación CI. La documentación no marcará un cambio como verde hasta observar la conclusión del workflow correspondiente.
-
-## Estado comprobado
-
-### Frente 1 — Núcleo funcional
+## Frente 1 — Núcleo funcional
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 Existen capacidades para gestión de objetivos, escenarios y suites, ejecución, observaciones, evidencia, resultados, hallazgos, reportes, trazabilidad, seguridad de ejecución y quality gates.
 
-### Frente 2 — Evaluación observable
+## Frente 2 — Evaluación observable
 **Estado:** Baseline ejecutable parcial.
 
 Existen modelos de medición, criterios y planes ejecutables, validaciones de riesgo, repetición, trazabilidad de evaluación asistida por IA, catálogo de evidencia y una regla determinista conectada a una ejecución tangible.
 
 Continúan pendientes la aprobación metodológica definitiva, scoring/agregación, pesos, tratamiento final de estados y validación de criterios semánticos con casos controlados.
 
-### Frente 3 — Arquitectura
+## Frente 3 — Arquitectura
 **Estado:** Baseline materializada parcialmente; spike técnico aún abierto.
 
 La solución ya materializa TypeScript estricto, monolito modular, arquitectura hexagonal, Playwright mediante adaptadores, GitHub Actions y PostgreSQL con migraciones reproducibles. Esto no constituye por sí solo una validación completa del spike.
 
-### Persistencia
+## Persistencia
 **Estado:** Schema MVP reproducible y repositorio PostgreSQL de `Execution` implementados; el gate de CI de la corrección actual está pendiente.
 
 ## Versionado
@@ -63,7 +58,7 @@ Las versiones metodológicas son independientes del producto. Una ejecución his
 
 ## Próximo incremento
 
-Observar el nuevo CI y corregir cualquier regresión adicional. Con CI en verde, cerrar este incremento y continuar con la validación histórica de dos contextos metodológicos distintos sobre ejecuciones independientes. Después se retomará el siguiente gate del spike F3.
+Observar el nuevo CI y corregir cualquier regresión adicional. Con CI en verde, cerrar este incremento y validar dos ejecuciones independientes con contextos metodológicos distintos, verificando separación e inmutabilidad histórica. Después se retomará el siguiente gate del spike F3.
 
 ## Regla de documentación
 
