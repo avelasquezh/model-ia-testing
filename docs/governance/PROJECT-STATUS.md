@@ -3,24 +3,26 @@
 **Fecha:** 2026-09-07  
 **Versión de producto declarada:** `0.1.0`  
 **Rama:** `main`  
-**Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 con baseline ejecutable parcial y F3 en validación técnica.
+**Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 con baseline ejecutable parcial y F3 **VALIDADO**.
 
-## Incremento actual — SPIKE-008 evidencia auditable
+## Incremento actual — cierre del spike técnico F3
 
-**Estado:** manifiesto de evidencia implementado; ejecución del spike pendiente de conclusión observable.
+**Estado:** F3 VALIDADO; siguiente trabajo centrado en completar las decisiones pendientes del producto y preparar el siguiente frente de desarrollo.
 
-La validación anterior quedó cerrada con CI y Architecture Spike en verde sobre `d1e7abbc`. El siguiente gate del spike es SPIKE-008, que exige un artifact con metadata vinculada inequívocamente al workflow run.
+La validación anterior quedó cerrada con CI y Architecture Spike en verde sobre `6392c352`. Posteriormente se implementó y verificó SPIKE-008, y el run `34089149510` completó todos los gates del spike con resultado **success**.
 
-Se implementó `scripts/create-evidence-manifest.ts`, que genera `artifacts/spike-008-evidence-manifest.json` a partir del contexto de GitHub Actions. El manifiesto registra versión de esquema, gate, workflow, `runId`, `runUrl`, `commitSha`, `ref`, timestamp y SHA-256 de los archivos de evidencia encontrados. El workflow del spike ejecuta esta generación después de las pruebas y antes de publicar el artifact.
+El artifact `architecture-spike-evidence` fue publicado y su manifiesto `artifacts/spike-008-evidence-manifest.json` registra el `runId`, `runUrl`, `commitSha`, `ref`, timestamp y hashes SHA-256 de la evidencia publicada. El digest del artifact es `sha256:50fdcb7f797593a84b770a7b5a6f82bfe3603726b4fc8eb56dfd50a48844e169`.
 
 ## Verificación observada
 
-- CI `34088059883`, commit `d1e7abbc`: **success**.
-- Architecture Spike `34088059889`, commit `d1e7abbc`: **success**.
-- SPIKE-008: implementación realizada en `e2c602fc` y conectada al workflow en `e70992f5`.
-- Especificación del spike actualizada en `3fb8db18`.
-- Nuevo workflow generado por este incremento: pendiente de conclusión observable.
-- No se declara SPIKE-008 validado hasta comprobar el artifact y su metadata en una ejecución completada.
+- CI `34088800826`, commit `6392c352`: **success** en TypeScript, migraciones PostgreSQL, pruebas, BDD, Playwright y quality gate.
+- Architecture Spike `34088800815`, commit `6392c352`: **success**, incluida la validación de aislamiento histórico entre ejecuciones independientes.
+- Architecture Spike `34089149510`, commit `3fb8db18`: **success** en SPIKE-001 a SPIKE-012.
+- SPIKE-008: manifiesto generado y publicado correctamente en el artifact.
+- SPIKE-010: regla de dependencias arquitectónicas pasa.
+- SPIKE-011: configuración válida e inválida pasa según contrato.
+- SPIKE-012: logging estructurado correlacionado por `runId` pasa.
+- F3-TECHNICAL-SPIKE.md: cerrado como **VALIDADO** en `bf0f98b1`.
 
 ## Persistencia y versionado
 
@@ -41,12 +43,12 @@ Existen modelos de medición, criterios y planes ejecutables, validaciones de ri
 Continúan pendientes la aprobación metodológica definitiva, scoring/agregación, pesos, tratamiento final de estados y validación de criterios semánticos con casos controlados.
 
 ## Frente 3 — Arquitectura
-**Estado:** Baseline materializada parcialmente; persistencia, versionado y pipeline técnico validados; SPIKE-008 activo.
+**Estado:** **VALIDADO**.
 
-La solución ya materializa TypeScript estricto, monolito modular, arquitectura hexagonal, Playwright mediante adaptadores, GitHub Actions y PostgreSQL con migraciones reproducibles. El siguiente objetivo es demostrar trazabilidad auditable de los artefactos producidos por cada run.
+La combinación TypeScript + Node.js + arquitectura hexagonal + PostgreSQL + Cucumber/Gherkin + Playwright + GitHub Actions quedó validada mediante el spike ejecutable. La evidencia incluye compilación, pruebas de dominio/aplicación, BDD, browser automation, persistencia, controles arquitectónicos, configuración, observabilidad y trazabilidad auditable de artefactos.
 
 ## Persistencia
-**Estado:** Schema MVP reproducible, repositorio PostgreSQL de `Execution`, migraciones y pruebas de versionado implementados. Integración PostgreSQL y aislamiento entre ejecuciones independientes validados.
+**Estado:** Schema MVP reproducible, repositorio PostgreSQL de `Execution`, migraciones y pruebas de versionado implementados y validados.
 
 ## Versionado
 
@@ -56,7 +58,7 @@ Las versiones metodológicas son independientes del producto. Una ejecución his
 
 ## Próximo incremento
 
-Verificar SPIKE-008 en Actions, comprobando que el manifiesto generado contiene `runId` y `commitSha` correctos y que se publica junto con los artefactos. Si el gate queda verde, continuar con SPIKE-009 y la consolidación formal del resultado del spike.
+Con F3 cerrado, el siguiente foco es el Frente 2: consolidar el contrato metodológico de evaluación observable antes de introducir scoring global. La prioridad inmediata es convertir las decisiones pendientes de dimensiones, criterios, estados, pesos y criterios críticos en contratos deterministas y pruebas de casos controlados.
 
 ## Regla de documentación
 
