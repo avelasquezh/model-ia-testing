@@ -45,6 +45,11 @@ jobs:
       - name: SPIKE-001 TypeScript
         run: npm run build
 
+      - name: SPIKE-007 PostgreSQL migrations
+        env:
+          DATABASE_URL: postgresql://spike:spike@localhost:5432/spike
+        run: npm run db:migrate
+
       - name: SPIKE-002/003/006/010/011/012 Unit and architecture tests
         env:
           NODE_ENV: test
@@ -57,11 +62,6 @@ jobs:
 
       - name: SPIKE-005 Playwright
         run: npm run test:browser
-
-      - name: SPIKE-007 PostgreSQL migrations
-        env:
-          DATABASE_URL: postgresql://spike:spike@localhost:5432/spike
-        run: npm run db:migrate
 
       - name: SPIKE-007 PostgreSQL repository boundary
         env:
