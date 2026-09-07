@@ -8,8 +8,9 @@ type PersistedObservation = Omit<ExecutionObservation, 'startedAt' | 'observedAt
   screenshotBase64?: string;
 };
 
-type PersistedError = Omit<ExecutionTechnicalError, 'occurredAt'> & {
+type PersistedError = Omit<ExecutionTechnicalError, 'occurredAt' | 'turnIndex'> & {
   occurredAt: string;
+  turnIndex?: number;
 };
 
 export type ExecutionRow = {
