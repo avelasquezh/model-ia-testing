@@ -1,4 +1,5 @@
 import type { CriterionEvidenceType, CriterionType } from './Criterion.js';
+import type { EvaluationSelectionContextProps } from './EvaluationSelectionContext.js';
 
 export const CRITERION_APPLICABILITY = ['APPLICABLE', 'NOT_APPLICABLE'] as const;
 export type CriterionApplicability = (typeof CRITERION_APPLICABILITY)[number];
@@ -21,6 +22,7 @@ export type EvaluationPlanProps = {
   readonly context: string;
   readonly scope: EvaluationPlanScope;
   readonly items: readonly EvaluationPlanItemProps[];
+  readonly selectionContext?: EvaluationSelectionContextProps;
 };
 
 export class EvaluationPlan {
@@ -28,6 +30,27 @@ export class EvaluationPlan {
     if (!props.executionId.trim()) throw new Error('Evaluation plan execution id is required');
     if (!props.context.trim()) throw new Error('Evaluation plan context is required');
     if (props.items.length === 0) throw new Error('Evaluation plan must contain at least one criterion');
+
+    if (props.selectionContext) {
+      if (!props.selectionContext.scenarioId.trim()) {
+        throw new Error('Evaluation plan selection scenario id is required');
+      }
+      if (!Number.isInteger(props.selectionContext.scenarioVersion) || props.selectionContext.scenarioVersion < 1) {
+        throw new Error('Evaluation plan selection scenario version must be a positive integer');
+      }
+      if (!props.selectionContext.executionContext.trim()) {
+        throw new Error('Evaluation plan selection execution context is required');
+      }
+      if (props.selectionContext.executionContext !== props.context) {
+        throw new Error('Evaluation plan selection context does not match evaluation plan context');
+      }
+      if (props.selectionContext.scope !== props.scope) {
+        throw new Error('Evaluation plan selection scope does not match evaluation plan scope');
+      }
+      if (props.selectionContext.selectedCriterionIds.length === 0) {
+        throw new Error('Evaluation plan selection must contain at least one criterion id');
+      }
+    }
 
     const ids = new Set<string>();
     for (const item of props.items) {
@@ -42,6 +65,20 @@ export class EvaluationPlan {
         throw new Error(`Duplicate criterion in evaluation plan: ${item.criterionId}`);
       }
       ids.add(item.criterionId);
+    }
+
+    if (props.selectionContext) {
+      const selected = new Set(props.selectionContext.selectedCriterionIds);
+      for (const item of props.items) {
+        if (!selected.has(item.criterionId)) {
+          throw new Error(`Evaluation plan contains unselected criterion: ${item.criterionId}`);
+        }
+      }
+      for (const criterionId of selected) {
+        if (!ids.has(criterionId)) {
+          throw new Error(`Selected criterion is missing from evaluation plan: ${criterionId}`);
+        }
+      }
     }
   }
 
