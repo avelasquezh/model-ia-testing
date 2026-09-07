@@ -2,7 +2,7 @@
 
 ## Estado
 
-**IMPLEMENTADO; pendiente de validación CI.**
+**CERRADO / VALIDADO.**
 
 ## Propósito
 
@@ -49,43 +49,15 @@ La interpretación debe conservar exactamente la clasificación de cobertura:
 
 ## Trazabilidad
 
-El resultado conserva por separado los identificadores de:
-
-- criterios aplicables;
-- criterios no aplicables;
-- criterios evaluados;
-- criterios no evaluados;
-- criterios con evidencia insuficiente;
-- criterios inconclusos.
-
-Además conserva `executionId` y una `basis` determinista para explicar la interpretación.
+El resultado conserva por separado los identificadores de criterios aplicables, no aplicables, evaluados, no evaluados, con evidencia insuficiente e inconclusos. Además conserva `executionId` y una `basis` determinista.
 
 ## Separación de responsabilidades
 
-F2-36 no convierte cobertura en decisión:
-
-`Coverage → Coverage Interpretation`
-
-es distinto de:
-
-`Criterion Evaluation → Explicit Decision`
-
-F2-31 continúa siendo responsable de la decisión explícita por criterio y F2-32/F2-33/F2-34 de su agregación dentro del alcance aplicable.
+F2-36 no convierte cobertura en decisión. `Coverage → Coverage Interpretation` es distinto de `Criterion Evaluation → Explicit Decision`. F2-31 continúa siendo responsable de la decisión explícita por criterio y F2-32/F2-33/F2-34 de su agregación dentro del alcance aplicable.
 
 ## Límites
 
-F2-36 no introduce:
-
-- porcentajes de cobertura;
-- score;
-- ponderaciones;
-- aceptación o rechazo global;
-- compensación entre criterios;
-- criterios críticos;
-- thresholds;
-- reglas de parada;
-- agregación entre ejecuciones o escenarios;
-- inferencia automática de aplicabilidad.
+F2-36 no introduce porcentajes de cobertura, score, ponderaciones, aceptación o rechazo global, compensación entre criterios, criterios críticos, thresholds, reglas de parada, agregación entre ejecuciones o escenarios ni inferencia automática de aplicabilidad.
 
 ## Salida implementada
 
@@ -96,15 +68,8 @@ F2-36 no introduce:
 
 ## Criterio de salida
 
-F2-36 queda validado cuando CI y Architecture Spike demuestren como mínimo:
+La validación final quedó demostrada por CI `34142357978` y Architecture Spike `34142357977`, ambos completamente exitosos, incluyendo TypeScript, pruebas unitarias, BDD, Playwright, migraciones PostgreSQL y Quality Gate.
 
-- cobertura completa;
-- cobertura parcial;
-- cobertura no resuelta;
-- ausencia total de criterios aplicables;
-- separación de cobertura respecto de aceptación/rechazo;
-- rechazo de combinaciones inconsistentes.
+## Siguiente paso
 
-## Próximo paso
-
-Con F2-36 validado, el siguiente paso puede estudiar métricas descriptivas de cobertura por ejecución, sin convertirlas en scoring ni calidad global.
+F2-37 formaliza métricas descriptivas de cobertura por ejecución, sin convertirlas en scoring ni calidad global.

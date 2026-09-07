@@ -3,11 +3,12 @@
 **Fecha:** 2026-09-07  
 **Versión de producto declarada:** `0.1.0`  
 **Rama:** `main`  
+**Avance estimado del MVP:** **72%**  
 **Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 en consolidación metodológica ejecutable y F3 **VALIDADO**.
 
-## Incrementos cerrados — F2-23 a F2-35
+## Incrementos cerrados — F2-23 a F2-37
 
-F2-23 a F2-35 permanecen **CERRADOS / VALIDADOS** según la evidencia CI y Architecture Spike registrada en este documento.
+F2-23 a F2-37 permanecen **CERRADOS / VALIDADOS** según la evidencia CI y Architecture Spike registrada en este documento.
 
 ## Incremento cerrado — F2-32 contrato de agregación de decisiones
 
@@ -67,9 +68,9 @@ La validación final de F2-35 quedó cerrada con CI `34122575495` y Architecture
 
 F2-35 no introduce porcentajes de cobertura, score, ponderaciones, aceptación/rechazo global, compensación entre criterios, criterios críticos, reglas de parada, agregación entre ejecuciones/escenarios ni inferencia automática de aplicabilidad.
 
-## Incremento actual — F2-36 interpretación de cobertura por ejecución
+## Incremento cerrado — F2-36 interpretación de cobertura por ejecución
 
-**Estado:** **IMPLEMENTADO; pendiente de validación CI**.
+**Estado:** **CERRADO / VALIDADO**.
 
 F2-36 formaliza la interpretación metodológica del conjunto de estados de cobertura de una ejecución. El resultado distingue `COVERAGE_COMPLETE`, `COVERAGE_PARTIAL`, `COVERAGE_UNRESOLVED` y `NO_APPLICABLE_COVERAGE`.
 
@@ -77,9 +78,27 @@ F2-36 formaliza la interpretación metodológica del conjunto de estados de cobe
 
 La implementación está en `EvaluationCoverageInterpretation` e `InterpretEvaluationCoverage`, con pruebas unitarias y Architecture Spike específicas.
 
+La validación final quedó cerrada con CI `34142357978` y Architecture Spike `34142357977`, ambos completamente exitosos.
+
 F2-36 conserva trazabilidad por `executionId` y por grupos de criterios, rechaza clasificaciones inconsistentes y mantiene la interpretación separada de decisiones y scoring.
 
 F2-36 no introduce porcentajes de cobertura, score, ponderaciones, aceptación/rechazo global, compensación entre criterios, criterios críticos, thresholds, reglas de parada, agregación entre ejecuciones/escenarios ni inferencia automática de aplicabilidad.
+
+## Incremento cerrado — F2-37 métricas descriptivas de cobertura por ejecución
+
+**Estado:** **CERRADO / VALIDADO**.
+
+F2-37 cuantifica descriptivamente la cobertura de una ejecución a partir de `EvaluationCoverageInterpretation`.
+
+El resultado conserva `applicableCount`, `evaluatedCount`, `notEvaluatedCount`, `insufficientEvidenceCount`, `inconclusiveCount` y `notApplicableCount`.
+
+Los ratios descriptivos usan exclusivamente `applicableCount` como denominador: `evaluatedCoverageRatio`, `incompleteCoverageRatio` y `unresolvedCoverageRatio`. Cuando no existen criterios aplicables, los ratios son `null`.
+
+La implementación está en `EvaluationCoverageMetrics` y `MeasureEvaluationCoverage`, con pruebas unitarias y Architecture Spike específicas. Las invariantes garantizan que los conteos representen exactamente todos los criterios aplicables y que los ratios coincidan con ellos.
+
+La validación final quedó cerrada con CI `34143059354` y Architecture Spike `34143059356`, ambos completamente exitosos en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
+
+F2-37 es puramente descriptivo y no introduce score, ponderaciones, thresholds, criterios críticos, reglas de parada, aceptación/rechazo global, agregación entre ejecuciones/escenarios, significancia estadística ni evaluación semántica con IA.
 
 ## Persistencia y versionado
 
@@ -91,9 +110,9 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-35 cerrado/validado; F2-36 implementado y en validación.
+**Estado:** F2-37 cerrado/validado.
 
-La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio → interpretación de cobertura por ejecución.
+La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio → interpretación de cobertura por ejecución → métricas descriptivas de cobertura por ejecución.
 
 Todavía quedan fuera scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación entre ejecuciones/escenarios y método productivo de evaluación semántica con IA.
 
@@ -108,9 +127,11 @@ La versión de producto permanece en `0.1.0`. No se incrementará por cada commi
 
 Las versiones metodológicas son independientes del producto y deben mantenerse reconstruibles junto con la identidad de ejecución y procedencia técnica.
 
-## Próximo incremento
+## Próximo incremento — F2-38
 
-Validar F2-36 en CI. Con la baseline verde, el siguiente paso será estudiar métricas descriptivas de cobertura por ejecución, sin convertirlas en scoring ni calidad global.
+Formalizar las condiciones metodológicas de comparabilidad entre ejecuciones antes de introducir cualquier comparación o agregación entre métricas de cobertura.
+
+La regla será conservar explícitamente escenario, versión, contexto de evaluación, condiciones comparables y procedencia suficiente. Ninguna diferencia de condiciones se interpretará automáticamente como variabilidad del sistema.
 
 ## Regla de documentación
 

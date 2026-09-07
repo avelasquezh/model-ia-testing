@@ -2,7 +2,7 @@
 
 ## Estado
 
-**IMPLEMENTADO; pendiente de validación CI.**
+**CERRADO / VALIDADO.**
 
 ## Propósito
 
@@ -16,22 +16,15 @@ Las métricas consumen únicamente las clasificaciones ya establecidas. No vuelv
 
 ## Métricas
 
-Para cada ejecución se conservan los siguientes conteos:
+Para cada ejecución se conservan `applicableCount`, `evaluatedCount`, `notEvaluatedCount`, `insufficientEvidenceCount`, `inconclusiveCount` y `notApplicableCount`.
 
-- `applicableCount`: número de criterios aplicables.
-- `evaluatedCount`: criterios con evaluación concluyente (`PASS` o `FAIL`).
-- `notEvaluatedCount`: criterios aplicables no evaluados.
-- `insufficientEvidenceCount`: criterios aplicables con evidencia insuficiente (`NOT_EVALUABLE`).
-- `inconclusiveCount`: criterios aplicables con evaluación inconclusa.
-- `notApplicableCount`: criterios seleccionados marcados como `NOT_APPLICABLE`.
-
-La distribución de criterios aplicables debe satisfacer:
+La distribución de criterios aplicables satisface:
 
 `evaluatedCount + notEvaluatedCount + insufficientEvidenceCount + inconclusiveCount = applicableCount`
 
 ## Ratios descriptivos
 
-Los ratios usan exclusivamente `applicableCount` como denominador.
+Los ratios usan exclusivamente `applicableCount` como denominador:
 
 `evaluatedCoverageRatio = evaluatedCount / applicableCount`
 
@@ -39,44 +32,19 @@ Los ratios usan exclusivamente `applicableCount` como denominador.
 
 `unresolvedCoverageRatio = (insufficientEvidenceCount + inconclusiveCount) / applicableCount`
 
-Los ratios se expresan entre `0` y `1`, no como porcentaje presentado al usuario. Cuando `applicableCount = 0`, todos los ratios son `null` para evitar interpretar una división por cero como cobertura cero.
+Los ratios están entre `0` y `1`. Cuando `applicableCount = 0`, son `null` para evitar convertir la ausencia de denominador en una cobertura de cero.
 
 ## Invariantes
 
-`EvaluationCoverageMetrics` rechaza:
-
-- conteos negativos o no enteros;
-- distribuciones que no representan exactamente todos los criterios aplicables;
-- ratios fuera de `[0,1]`;
-- ratios no nulos cuando no existen criterios aplicables;
-- ratios que no coinciden con los conteos subyacentes.
+`EvaluationCoverageMetrics` rechaza conteos negativos o no enteros, distribuciones incompletas, ratios fuera de `[0,1]`, ratios no nulos sin criterios aplicables y ratios que no coinciden con sus conteos.
 
 ## Separación de responsabilidades
 
-F2-37 es puramente descriptivo:
-
-`Coverage Interpretation → Coverage Metrics`
-
-no implica:
-
-`Coverage Metrics → Acceptance`
-
-La decisión explícita continúa separada en F2-31/F2-32/F2-33/F2-34.
+F2-37 es puramente descriptivo. `Coverage Interpretation → Coverage Metrics` no implica `Coverage Metrics → Acceptance`. La decisión explícita continúa separada en F2-31/F2-32/F2-33/F2-34.
 
 ## Límites
 
-F2-37 no introduce:
-
-- score;
-- ponderaciones;
-- thresholds;
-- criterios críticos;
-- reglas de parada;
-- aceptación o rechazo global;
-- inferencia automática de aplicabilidad;
-- agregación entre ejecuciones o escenarios;
-- significancia estadística;
-- evaluación semántica con IA.
+F2-37 no introduce score, ponderaciones, thresholds, criterios críticos, reglas de parada, aceptación o rechazo global, inferencia automática de aplicabilidad, agregación entre ejecuciones o escenarios, significancia estadística ni evaluación semántica con IA.
 
 ## Salida implementada
 
@@ -88,14 +56,8 @@ F2-37 no introduce:
 
 ## Criterio de salida
 
-F2-37 queda validado cuando CI y Architecture Spike demuestren como mínimo:
+La validación final quedó demostrada por CI `34143059354` y Architecture Spike `34143059356`, ambos completamente exitosos, incluyendo TypeScript, pruebas unitarias, BDD, Playwright, migraciones PostgreSQL y Quality Gate.
 
-- conteo correcto de categorías de cobertura;
-- cálculo de ratios sobre criterios aplicables únicamente;
-- tratamiento explícito de cero criterios aplicables mediante `null`;
-- rechazo de distribuciones y ratios inconsistentes;
-- independencia respecto de aceptación/rechazo y scoring.
+## Siguiente paso
 
-## Próximo paso
-
-Con F2-37 validado, el siguiente incremento debe decidir si existe una necesidad metodológica real de comparar estas métricas entre ejecuciones bajo condiciones comparables. No se introduce esa agregación hasta formalizar primero sus condiciones de comparabilidad.
+F2-38 deberá formalizar primero las condiciones de comparabilidad necesarias para observar estas métricas entre ejecuciones, antes de introducir cualquier comparación o agregación.
