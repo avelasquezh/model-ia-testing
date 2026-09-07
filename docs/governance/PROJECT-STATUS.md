@@ -53,4 +53,4 @@ Persistir las referencias del `EvaluationVersionContext` asociadas a `Execution`
 
 ## Regla de documentación
 
-Cada incremento o corrección debe actualizar este documento con el estado verificable resultante. Los cambios de comportamiento deberán incluir la actualización de estado en el mismo commit siempre que sea técnicamente viable.
+Cada incremento o corrección debe actualizar este documento con el estado verificable resultante. Los cambios de comportamiento deben incluir la actualización de estado en el mismo commit siempre que sea técnicamente viable.
