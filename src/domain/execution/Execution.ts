@@ -1,3 +1,4 @@
+import { EvaluationPlan } from '../evaluation/EvaluationPlan.js';
 import { EvaluationVersionContext } from '../versioning/EvaluationVersionContext.js';
 import type { ExecutionObservation } from './ExecutionObservation.js';
 import type { ExecutionTechnicalError } from './ExecutionTechnicalError.js';
@@ -24,6 +25,7 @@ export type ExecutionProps = {
   readonly targetUrl: string;
   readonly status: ExecutionStatus;
   readonly versionContext?: EvaluationVersionContext;
+  readonly evaluationPlan?: EvaluationPlan;
   readonly startedAt?: Date;
   readonly finishedAt?: Date;
   readonly observations?: readonly ExecutionObservation[];
@@ -47,6 +49,21 @@ export class Execution {
     if (!props.targetUrl.trim()) throw new Error('Execution target URL is required');
     if (!Number.isInteger(props.scenarioVersion) || props.scenarioVersion < 1) {
       throw new Error('Execution scenario version must be a positive integer');
+    }
+
+    if (props.evaluationPlan) {
+      if (props.evaluationPlan.props.executionId !== props.id) {
+        throw new Error('Execution evaluation plan id must match execution id');
+      }
+      const selection = props.evaluationPlan.props.selectionContext;
+      if (selection) {
+        if (selection.scenarioId !== props.scenarioId) {
+          throw new Error('Execution evaluation plan scenario id must match execution scenario id');
+        }
+        if (selection.scenarioVersion !== props.scenarioVersion) {
+          throw new Error('Execution evaluation plan scenario version must match execution scenario version');
+        }
+      }
     }
 
     this.props = {
