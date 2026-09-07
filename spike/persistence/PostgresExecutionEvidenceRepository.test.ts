@@ -8,9 +8,16 @@ import { PostgresExecutionRepository } from '../../src/infrastructure/persistenc
 
 const databaseUrl = process.env.DATABASE_URL;
 
+const requireDatabaseUrl = (): string => {
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL is required for the PostgreSQL execution evidence spike');
+  }
+  return databaseUrl;
+};
+
 describe.skipIf(!databaseUrl)('PostgreSQL execution evidence repository', () => {
   it('persists and reconstructs evidence linked to an execution', async () => {
-    const database = new PostgresDatabase({ connectionString: databaseUrl });
+    const database = new PostgresDatabase({ connectionString: requireDatabaseUrl() });
     const executionRepository = new PostgresExecutionRepository(database);
     const evidenceRepository = new PostgresExecutionEvidenceRepository(database);
     const targetId = `target-${randomUUID()}`;
@@ -128,7 +135,7 @@ describe.skipIf(!databaseUrl)('PostgreSQL execution evidence repository', () => 
   });
 
   it('returns undefined when evidence does not exist', async () => {
-    const database = new PostgresDatabase({ connectionString: databaseUrl });
+    const database = new PostgresDatabase({ connectionString: requireDatabaseUrl() });
     const repository = new PostgresExecutionEvidenceRepository(database);
     try {
       await expect(repository.findByExecutionId(`missing-${randomUUID()}`)).resolves.toBeUndefined();
