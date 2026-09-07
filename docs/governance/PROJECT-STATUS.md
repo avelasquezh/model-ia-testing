@@ -3,7 +3,7 @@
 **Fecha:** 2026-09-07  
 **Versión de producto declarada:** `0.1.0`  
 **Rama:** `main`  
-**Avance estimado del MVP:** **78%**  
+**Avance estimado del MVP:** **80%**  
 **Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 en consolidación metodológica ejecutable y F3 **VALIDADO**.
 
 ## Incrementos cerrados — F2-23 a F2-37
@@ -61,6 +61,21 @@ La validación final quedó registrada sobre el commit `6a55bf1d168e37049e385ef5
 
 CI completó correctamente TypeScript, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate. El Architecture Spike completó correctamente TypeScript, pruebas unitarias/arquitectura, BDD, Playwright, migraciones PostgreSQL, integración de repositorio/versionado, manifiesto de evidencia, artefactos y Quality Gate.
 
+## Incremento activo — F2-41 validación controlada de dimensiones y criterios candidatos
+
+**Estado:** **EN VALIDACIÓN**.
+
+F2-41 convierte en protocolo ejecutable la decisión pendiente del Frente 2 sobre la observabilidad y reproducibilidad de los criterios candidatos. Se cubre un caso representativo de cada dimensión D1–D7.
+
+La validación comprueba explícitamente entrada reproducible, precondiciones, comportamiento esperado, evidencia requerida, mecanismo de observación, regla de decisión y limitaciones. Para criterios asistidos por IA se conserva evidencia primaria y se identifica la asistencia de IA; esto no convierte a la IA en fuente única de evidencia.
+
+El estado de la metodología candidata permanece `DRAFT`. F2-41 no congela la taxonomía, no crea un score de calidad y no introduce interpretación de mejora/regresión.
+
+Artefactos materializados:
+
+- `docs/evaluation/F2-41-CONTROLLED-CRITERIA-VALIDATION.md`;
+- `spike/evaluation/candidate-criteria-validation.test.ts`.
+
 ## Persistencia y versionado
 
 Las referencias de versionado continúan persistidas como campos de primera clase. El plan metodológico se conserva en `evaluation_plan` y las condiciones comparables mediante `condition_fingerprint`. La reconstrucción de `Execution` mantiene ambos metadatos.
@@ -71,9 +86,9 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-40 **CERRADO / VALIDADO**.
+**Estado:** F2-41 **EN VALIDACIÓN**.
 
-La secuencia materializada llega hasta: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio → interpretación de cobertura por ejecución → métricas descriptivas de cobertura por ejecución → comparabilidad metodológica entre ejecuciones → comparación descriptiva de métricas de cobertura → interpretación descriptiva de diferencias entre ejecuciones.
+La secuencia materializada llega hasta: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio → interpretación de cobertura por ejecución → métricas descriptivas de cobertura por ejecución → comparabilidad metodológica entre ejecuciones → comparación descriptiva de métricas de cobertura → interpretación descriptiva de diferencias entre ejecuciones → validación controlada de dimensiones y criterios candidatos.
 
 Todavía quedan fuera la interpretación normativa de diferencias entre ejecuciones, scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación entre escenarios y método productivo de evaluación semántica con IA.
 
@@ -90,7 +105,7 @@ Las versiones metodológicas son independientes del producto y deben mantenerse 
 
 ## Próximo paso
 
-F2-40 está cerrado. El siguiente incremento debe definirse antes de introducir cualquier juicio normativo sobre diferencias entre ejecuciones. Se mantiene explícitamente fuera del MVP actual la conversión de diferencias descriptivas en mejora, regresión, aceptación, rechazo, scoring o causalidad.
+Completar la ejecución de F2-41 en CI. Solo los criterios candidatos que demuestren observabilidad, reproducibilidad, evidencia suficiente e interpretación explícita podrán avanzar a una versión consolidada del catálogo. El scoring global y cualquier juicio normativo sobre diferencias entre ejecuciones continúan bloqueados.
 
 ## Regla de documentación
 
