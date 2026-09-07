@@ -1,10 +1,8 @@
-# F2-14 — Validación metodológica del tratamiento estadístico de la variabilidad
+# F2-28 — Validación metodológica del tratamiento estadístico de la variabilidad
 
 ## 1. Propósito
 
-Definir y validar un tratamiento estadístico descriptivo mínimo para conjuntos de repeticiones, sin convertir todavía los resultados en una política de aceptación, un score global o un umbral comercial.
-
-Este incremento continúa F2-13: las repeticiones conservan identidad y condiciones comparables; ahora se valida cómo resumir su comportamiento sin ocultar la variabilidad ni confundir una muestra con una verdad poblacional.
+Definir y validar un tratamiento estadístico descriptivo mínimo para conjuntos de repeticiones, sin convertir los resultados en una política automática de aceptación, un score global o un umbral comercial.
 
 ## 2. Principio rector
 
@@ -12,119 +10,110 @@ La cadena metodológica es:
 
 `Ejecuciones individuales → distribución observada → indicador descriptivo → incertidumbre → interpretación`
 
-No:
-
-`Ejecuciones → promedio/porcentaje → aprobación automática`
+La estadística informa la muestra observada; no sustituye la evidencia ni determina por sí sola el juicio de calidad.
 
 ## 3. Propiedades validadas
 
 ### STAT-V01 — Denominador explícito
 
-Los indicadores de PASS/PARTIAL/FAIL deben declarar su denominador.
+Los indicadores de `PASSED`, `PARTIALLY_PASSED` y `FAILED` declaran como denominador `N_evaluable`.
 
-Para tasas de resultados evaluables, `INCONCLUSIVE` y `NOT_EVALUABLE` permanecen fuera del denominador de resultados evaluables y se reportan separadamente.
+`N_evaluable = N_pass + N_partial + N_fail`.
+
+`INCONCLUSIVE` y `NOT_EVALUABLE` permanecen fuera de ese denominador y se reportan por separado.
 
 ### STAT-V02 — Distribución preservada
 
-El tratamiento estadístico no sustituye los resultados individuales. La distribución por estado debe continuar siendo auditable.
+El tratamiento estadístico no sustituye los resultados individuales. La distribución por estado continúa siendo auditable mediante las ejecuciones que forman el `RepetitionSet`.
 
-### STAT-V03 — Tasa observada
+### STAT-V03 — Tasas observadas
 
-Para un resultado `X` dentro de ejecuciones evaluables:
+Para un estado evaluable `X`:
 
-`Tasa(X) = cantidad de ejecuciones con X / cantidad de ejecuciones evaluables`
+`rate(X) = N_X / N_evaluable`.
 
-La tasa es descriptiva de la muestra observada.
+La tasa es descriptiva de la muestra observada y no una afirmación exacta sobre la población.
 
 ### STAT-V04 — Incertidumbre explícita
 
-Una proporción observada no debe presentarse como una estimación exacta de la población. Para proporciones se valida como candidato descriptivo el intervalo de Wilson al 95%, con `z = 1.96`.
+Para proporciones se utiliza como indicador descriptivo el intervalo de Wilson al 95%, con `z = 1.96`.
 
-El intervalo expresa incertidumbre de muestreo; no es un umbral de aceptación.
+El intervalo cuantifica incertidumbre de muestreo; no funciona como límite de aceptación ni como prueba de significancia.
 
-### STAT-V05 — Muestra insuficiente
+### STAT-V05 — Sin resultados evaluables
 
-Si ninguna repetición es evaluable, no se calcula una tasa PASS/FAIL/PARTIAL. Se conserva el conjunto como `INCONCLUSIVE`/`NOT_EVALUABLE` según corresponda.
+Cuando `N_evaluable = 0`, no se calculan tasas ni intervalos para `PASSED`, `PARTIALLY_PASSED` o `FAILED`.
+
+La ausencia de resultados evaluables no se transforma automáticamente en un fallo.
 
 ### STAT-V06 — Separación entre indicador y juicio
 
-Una tasa o intervalo no determina por sí mismo si un chatbot es aceptable, defectuoso o estadísticamente significativo.
+Una tasa, distribución o intervalo no determina por sí mismo si existe un defecto reproducible, si el producto es aceptable o cuándo deben detenerse las repeticiones.
 
-## 4. Tratamiento mínimo validado
+## 4. Tratamiento mínimo
 
-Para cada conjunto comparable de repeticiones se recomienda conservar:
+Para cada conjunto comparable se conservan:
 
 | Indicador | Descripción |
 |---|---|
-| `N_total` | Total de ejecuciones del conjunto |
+| `N_total` | Total de ejecuciones |
 | `N_evaluable` | PASS + PARTIAL + FAIL |
 | `N_inconclusive` | Ejecuciones INCONCLUSIVE |
 | `N_not_evaluable` | Ejecuciones NOT_EVALUABLE |
-| `N_pass` | Ejecuciones PASS |
-| `N_partial` | Ejecuciones PARTIAL |
-| `N_fail` | Ejecuciones FAIL |
-| `rate_X` | Proporción observada de X sobre `N_evaluable` |
-| `CI95_X` | Intervalo Wilson de la proporción, cuando `N_evaluable > 0` |
+| `N_pass` | Ejecuciones PASSED |
+| `N_partial` | Ejecuciones PARTIALLY_PASSED |
+| `N_fail` | Ejecuciones FAILED |
+| `rate_X` | Tasa observada de X sobre `N_evaluable` |
+| `CI95_X` | Intervalo Wilson al 95% cuando `N_evaluable > 0` |
 
-## 5. Ejemplo metodológico
+Los estados técnicos `ERROR` y `CANCELLED` permanecen visibles y fuera del denominador evaluable.
+
+## 5. Ejemplo
 
 Para:
 
-`PASS, PASS, FAIL, INCONCLUSIVE, NOT_EVALUABLE`
+`PASSED, PASSED, FAILED, INCONCLUSIVE, NOT_EVALUABLE`
 
 se obtiene:
 
-- `N_total = 5`
-- `N_evaluable = 3`
-- `N_inconclusive = 1`
-- `N_not_evaluable = 1`
-- `N_pass = 2`
-- `N_fail = 1`
-- tasa PASS observada = `2/3`
-- tasa FAIL observada = `1/3`
+- `N_total = 5`;
+- `N_evaluable = 3`;
+- `N_pass = 2`;
+- `N_fail = 1`;
+- `N_inconclusive = 1`;
+- `N_not_evaluable = 1`;
+- `rate(PASSED) = 2/3`;
+- `rate(FAILED) = 1/3`.
 
-Las tasas no se calculan sobre 5 porque eso mezclaría estados indeterminados con resultados evaluables.
+Los estados indeterminados no se mezclan con resultados evaluables.
 
 ## 6. Intervalo de Wilson
 
-Para una proporción observada `p = x/n` y `z = 1.96`:
+Para una proporción `p = x/n` y `z = 1.96`:
 
 `center = (p + z²/(2n)) / (1 + z²/n)`
 
 `margin = z/(1 + z²/n) × sqrt((p(1-p) + z²/(4n))/n)`
 
-`CI95 = [max(0, center-margin), min(1, center+margin)]`
+`CI95 = [max(0, center-margin), min(1, center+margin)]`.
 
-La implementación del spike valida la estructura matemática y sus límites `[0,1]`.
+El resultado queda acotado en `[0,1]`.
 
-## 7. Lo que NO queda definido
+## 7. Límites metodológicos
 
-Este incremento no establece:
+F2-28 no establece:
 
 - tamaño universal de muestra;
-- umbral mínimo de PASS;
-- umbral máximo de FAIL;
-- regla de parada de repeticiones;
+- umbral mínimo o máximo de resultados;
+- regla de parada;
 - prueba de significancia obligatoria;
-- comparación entre versiones;
+- comparación automática entre versiones;
 - score global;
 - ponderaciones por dimensión;
-- política comercial de aceptación/rechazo.
+- política comercial de aceptación o rechazo.
 
-Tampoco se afirma que el intervalo de Wilson sea el método definitivo para todos los tipos de criterio. Es un método candidato para proporciones binarias/nominales y deberá revisarse cuando se definan los tipos de métricas definitivos.
+Wilson se adopta como tratamiento descriptivo para proporciones. Su adecuación a otros tipos de métricas deberá revisarse cuando se formalicen métricas adicionales.
 
-## 8. Relación con INCONCLUSIVE y NOT_EVALUABLE
+## 8. Criterio de salida
 
-Los estados indeterminados son información metodológica y no errores estadísticos.
-
-`INCONCLUSIVE` indica que existe una ejecución evaluable en principio pero la evidencia disponible no permite concluir.
-
-`NOT_EVALUABLE` indica que el criterio no puede evaluarse bajo las condiciones disponibles.
-
-Ambos deben permanecer visibles y separados de `FAIL`.
-
-## 9. Criterio de salida
-
-Queda validado un tratamiento estadístico descriptivo mínimo basado en distribución, denominador explícito, tasas observadas e intervalo de Wilson como indicador de incertidumbre para proporciones.
-
-La estadística informa la variabilidad observada; no decide por sí sola la calidad del producto ni introduce scoring o política de aceptación.
+Queda validado un tratamiento estadístico descriptivo mínimo basado en distribución, denominador explícito, tasas observadas e intervalo de Wilson, preservando la trazabilidad de las ejecuciones individuales y separando indicador estadístico de juicio metodológico.
