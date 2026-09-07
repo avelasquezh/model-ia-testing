@@ -97,4 +97,54 @@ describe('PostgreSQL execution versioning integration', () => {
       await database.close();
     }
   });
+
+  it('keeps methodological contexts isolated across independent executions', async () => {
+    const database = new PostgresDatabase();
+    const repository = new PostgresExecutionRepository(database);
+    const contextA = new EvaluationVersionContext({
+      productVersion: '0.1.0',
+      evaluationMethodVersion: 'method-a-v1',
+      criterionCatalogVersion: 'criteria-a-v1',
+      decisionRulesVersion: 'rules-a-v1',
+      evaluatorVersion: 'evaluator-a',
+    });
+    const contextB = new EvaluationVersionContext({
+      productVersion: '0.1.0',
+      evaluationMethodVersion: 'method-b-v2',
+      criterionCatalogVersion: 'criteria-b-v2',
+      decisionRulesVersion: 'rules-b-v2',
+      evaluatorVersion: 'evaluator-b',
+    });
+    const executionA = new Execution({
+      id: `independent-a-${Date.now()}`,
+      scenarioId: 'scenario-1', scenarioVersion: 1,
+      targetId: 'target-1', targetUrl: 'https://example.com', status: 'PENDING',
+      versionContext: contextA,
+    });
+    const executionB = new Execution({
+      id: `independent-b-${Date.now()}`,
+      scenarioId: 'scenario-1', scenarioVersion: 1,
+      targetId: 'target-1', targetUrl: 'https://example.com', status: 'PENDING',
+      versionContext: contextB,
+    });
+
+    try {
+      await seedDependencies(database);
+      await repository.save(executionA);
+      await repository.save(executionB);
+
+      const restoredA = await repository.findById(executionA.props.id);
+      const restoredB = await repository.findById(executionB.props.id);
+
+      expect(restoredA?.props.versionContext.props).toEqual(contextA.props);
+      expect(restoredB?.props.versionContext.props).toEqual(contextB.props);
+      expect(restoredA?.props.versionContext.props).not.toEqual(restoredB?.props.versionContext.props);
+    } finally {
+      await database.query('DELETE FROM executions WHERE id IN ($1, $2)', [
+        executionA.props.id,
+        executionB.props.id,
+      ]);
+      await database.close();
+    }
+  });
 });
