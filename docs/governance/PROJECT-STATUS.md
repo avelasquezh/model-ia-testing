@@ -53,6 +53,25 @@ La especificación quedó documentada en `docs/evaluation/F2-STATISTICAL-VARIABI
 
 La evidencia CI `34109718014` y Architecture Spike `34109718012` resultó exitosa en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
 
+## Incremento actual — F2-29 interpretación metodológica de indicadores
+
+**Estado:** **IMPLEMENTADO; pendiente de validación CI**.
+
+F2-29 incorpora una interpretación determinista sobre las estadísticas de repetición, separando la descripción estadística del juicio de calidad.
+
+Los estados interpretativos son:
+
+- `NON_COMPARABLE`: las condiciones de ejecución no permiten interpretar la distribución como variabilidad homogénea;
+- `NO_EVALUABLE_OBSERVATION`: no existen resultados `PASS`, `PARTIAL` o `FAIL` evaluables;
+- `CONSISTENT_OBSERVED`: todas las ejecuciones evaluables observadas comparten el mismo resultado;
+- `VARIABLE_OBSERVED`: existen al menos dos resultados evaluables distintos dentro de condiciones comparables.
+
+La precedencia es determinista: no comparabilidad → ausencia de resultados evaluables → consistencia observada → variabilidad observada.
+
+Ningún estado interpretativo determina aceptación, rechazo, defecto reproducible, significancia estadística, score, regla de parada ni calidad global del producto.
+
+La especificación queda documentada en `docs/evaluation/F2-29-STATISTICAL-INTERPRETATION.md`.
+
 ## Persistencia y versionado
 
 Las referencias de versionado continúan persistidas como campos de primera clase. El plan metodológico se conserva en `evaluation_plan` y las condiciones comparables mediante `condition_fingerprint`. La reconstrucción de `Execution` mantiene ambos metadatos.
@@ -63,9 +82,9 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-28 cerrado/validado.
+**Estado:** F2-28 cerrado/validado; F2-29 implementado y en validación.
 
-La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva. Todavía quedan fuera scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación global y método productivo de evaluación semántica con IA.
+La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación metodológica. Todavía quedan fuera scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación global y método productivo de evaluación semántica con IA.
 
 ## Frente 3 — Arquitectura
 **Estado:** **VALIDADO**.
@@ -80,7 +99,7 @@ Las versiones metodológicas son independientes del producto y deben mantenerse 
 
 ## Próximo incremento
 
-Definir reglas explícitas de interpretación metodológica de los indicadores estadísticos y sus límites de inferencia. El objetivo será separar claramente indicador, evidencia y juicio antes de introducir scoring o agregación global.
+Validar F2-29 en CI. Con la baseline verde, definir el contrato de juicio metodológico y sus condiciones explícitas de aplicación antes de introducir scoring o agregación global.
 
 ## Regla de documentación
 
