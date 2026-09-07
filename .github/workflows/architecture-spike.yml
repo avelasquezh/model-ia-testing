@@ -66,7 +66,7 @@ jobs:
       - name: SPIKE-007 PostgreSQL repository boundary
         env:
           DATABASE_URL: postgresql://spike:spike@localhost:5432/spike
-        run: npm test -- spike/persistence/PostgresMigration.test.ts
+        run: npm test -- spike/persistence/PostgresMigration.test.ts spike/persistence/PostgresExecutionRepository.test.ts spike/persistence/PostgresExecutionEvidenceRepository.test.ts
 
       - name: Publish test artifacts
         if: always()
