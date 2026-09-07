@@ -80,6 +80,9 @@ jobs:
           DATABASE_URL: postgresql://spike:spike@127.0.0.1:5432/spike
         run: npm test -- spike/persistence/PostgresMigration.test.ts spike/persistence/PostgresExecutionVersioning.integration.test.ts
 
+      - name: SPIKE-008 Evidence manifest
+        run: npx tsx scripts/create-evidence-manifest.ts
+
       - name: Publish test artifacts
         if: always()
         uses: actions/upload-artifact@v5
@@ -88,6 +91,7 @@ jobs:
           path: |
             artifacts/
             test-results/
+            playwright-report/
           if-no-files-found: ignore
 
       - name: Quality gate
