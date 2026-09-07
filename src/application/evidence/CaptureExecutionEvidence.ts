@@ -27,12 +27,14 @@ export class CaptureExecutionEvidence {
       executionId: execution.props.id,
       targetId: execution.props.targetId,
       targetUrl: execution.props.targetUrl,
-      targetConfiguration: execution.props.targetConfiguration,
       scenarioVersion: execution.props.scenarioVersion,
       testSystemVersion: input.testSystemVersion,
       transcript: execution.props.observations ?? [],
       errors: execution.props.errors ?? [],
       capturedAt: new Date(),
+      ...(execution.props.targetConfiguration
+        ? { targetConfiguration: execution.props.targetConfiguration }
+        : {}),
     });
 
     await this.evidence.save(captured);
