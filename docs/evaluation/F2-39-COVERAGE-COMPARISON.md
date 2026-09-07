@@ -1,6 +1,6 @@
 # F2-39 — Comparación descriptiva de métricas de cobertura
 
-**Estado:** EN VALIDACIÓN
+**Estado:** CERRADO / VALIDADO
 
 ## Propósito
 
@@ -65,6 +65,10 @@ Una futura interpretación de diferencias, si fuese necesaria, deberá definirse
 - `src/application/evaluation/CompareEvaluationCoverage.test.ts`
 - `spike/evaluation/coverage-comparison-validation.test.ts`
 
-## Criterio de salida
+## Validación final
 
-F2-39 podrá cerrarse cuando TypeScript, pruebas unitarias/aplicación, BDD, Playwright, migraciones y Architecture Spike finalicen correctamente en CI, y la evidencia quede registrada en `PROJECT-STATUS.md`.
+- CI `34147632091` — SUCCESS.
+- Architecture Spike `34147632105` — SUCCESS.
+- TypeScript, PostgreSQL migrations, unit/application tests, BDD, Playwright y quality gate — SUCCESS.
+
+F2-39 queda cerrado con evidencia ejecutable y sin introducir interpretación causal ni juicio de calidad.
