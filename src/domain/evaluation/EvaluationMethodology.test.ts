@@ -75,7 +75,7 @@ describe('EvaluationMethodology', () => {
           version: '1.0',
           status: 'DRAFT',
           dimensions: [dimension],
-          criteria: [{ ...criterion, type: 'NUMERIC', measurementMethod: undefined }],
+          criteria: [{ ...criterion, type: 'NUMERIC', measurementMethod: '' }],
         }),
     ).toThrow('must declare a measurement method');
   });
