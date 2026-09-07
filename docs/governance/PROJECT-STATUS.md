@@ -37,8 +37,6 @@ Se delimitó el núcleo obligatorio mediante D1 Corrección funcional observable
 
 `Execution` conserva `conditionFingerprint` y PostgreSQL lo persiste mediante `004_execution_repeatability.sql`. `AnalyzeRepetitionSet` conserva la distribución completa y la comparabilidad de condiciones sin convertir variabilidad en score.
 
-La evidencia CI y Architecture Spike sobre la baseline F2-27 resultó exitosa en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
-
 ## Incremento cerrado — F2-28 tratamiento estadístico descriptivo de la variabilidad
 
 **Estado:** **CERRADO / VALIDADO**.
@@ -69,6 +67,20 @@ La especificación está documentada en `docs/evaluation/F2-29-STATISTICAL-INTER
 
 La evidencia CI `34113055452` y Architecture Spike `34113055442` resultó exitosa en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
 
+## Incremento actual — F2-30 contrato de juicio metodológico
+
+**Estado:** **IMPLEMENTADO; pendiente de validación CI**.
+
+F2-30 establece la frontera entre interpretación estadística y juicio metodológico. El contrato permite `OBSERVED_CONSISTENT`, `OBSERVED_VARIABLE` y `NO_JUDGMENT`, derivados de manera determinista de F2-29.
+
+`NON_COMPARABLE` y `NO_EVALUABLE_OBSERVATION` producen `NO_JUDGMENT`; `CONSISTENT_OBSERVED` produce `OBSERVED_CONSISTENT`; `VARIABLE_OBSERVED` produce `OBSERVED_VARIABLE`.
+
+Cada juicio conserva una `basis` explicativa y sigue siendo derivado: no sustituye evidencia, ejecuciones, distribución, estadísticas ni interpretación.
+
+F2-30 no introduce aceptación/rechazo, umbrales, scoring, ponderaciones, reglas de parada, significancia estadística, defectos críticos ni agregación global.
+
+La especificación está documentada en `docs/evaluation/F2-30-METHODOLOGICAL-JUDGMENT.md`.
+
 ## Persistencia y versionado
 
 Las referencias de versionado continúan persistidas como campos de primera clase. El plan metodológico se conserva en `evaluation_plan` y las condiciones comparables mediante `condition_fingerprint`. La reconstrucción de `Execution` mantiene ambos metadatos.
@@ -79,9 +91,9 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-29 cerrado/validado.
+**Estado:** F2-29 cerrado/validado; F2-30 implementado y en validación.
 
-La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación metodológica. Todavía quedan fuera scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación global y método productivo de evaluación semántica con IA.
+La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico limitado. Todavía quedan fuera scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación global y método productivo de evaluación semántica con IA.
 
 ## Frente 3 — Arquitectura
 **Estado:** **VALIDADO**.
@@ -96,7 +108,7 @@ Las versiones metodológicas son independientes del producto y deben mantenerse 
 
 ## Próximo incremento
 
-Definir el contrato de juicio metodológico y sus condiciones explícitas de aplicación, manteniendo separación entre evidencia, indicador, interpretación y juicio. El score y la agregación global solo deben aparecer después de validar ese contrato.
+Validar F2-30 en CI. Con la baseline verde, el siguiente paso será definir un contrato explícito para decisiones de aceptación/rechazo y agregación, únicamente a partir de criterios y reglas metodológicas formalmente aprobados.
 
 ## Regla de documentación
 
