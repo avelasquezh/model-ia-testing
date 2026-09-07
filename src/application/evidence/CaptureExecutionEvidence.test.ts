@@ -22,6 +22,12 @@ describe('CaptureExecutionEvidence', () => {
       scenarioVersion: 3,
       targetId: 'target-001',
       targetUrl: 'https://example.com/chat',
+      targetConfiguration: {
+        id: 'target-001',
+        name: 'Demo chatbot',
+        url: 'https://example.com/chat',
+        status: 'ACTIVE',
+      },
       status: 'PENDING',
     }).start(startedAt);
     const finished = running.finish(
@@ -55,6 +61,7 @@ describe('CaptureExecutionEvidence', () => {
       executionId: 'execution-001',
       targetId: 'target-001',
       targetUrl: 'https://example.com/chat',
+      targetConfiguration: finished.props.targetConfiguration,
       scenarioVersion: 3,
       testSystemVersion: '0.1.0',
       transcript: finished.props.observations,

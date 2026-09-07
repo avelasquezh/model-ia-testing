@@ -1,3 +1,4 @@
+import type { EffectiveTargetConfiguration } from '../target/EffectiveTargetConfiguration.js';
 import type { ExecutionObservation } from '../execution/ExecutionObservation.js';
 import type { ExecutionTechnicalError } from '../execution/ExecutionTechnicalError.js';
 
@@ -6,6 +7,7 @@ export type ExecutionEvidenceProps = {
   readonly executionId: string;
   readonly targetId: string;
   readonly targetUrl: string;
+  readonly targetConfiguration?: EffectiveTargetConfiguration;
   readonly scenarioVersion: number;
   readonly testSystemVersion: string;
   readonly transcript: readonly ExecutionObservation[];
