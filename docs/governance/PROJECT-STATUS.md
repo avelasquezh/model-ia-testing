@@ -67,6 +67,20 @@ La validación final de F2-35 quedó cerrada con CI `34122575495` y Architecture
 
 F2-35 no introduce porcentajes de cobertura, score, ponderaciones, aceptación/rechazo global, compensación entre criterios, criterios críticos, reglas de parada, agregación entre ejecuciones/escenarios ni inferencia automática de aplicabilidad.
 
+## Incremento actual — F2-36 interpretación de cobertura por ejecución
+
+**Estado:** **IMPLEMENTADO; pendiente de validación CI**.
+
+F2-36 formaliza la interpretación metodológica del conjunto de estados de cobertura de una ejecución. El resultado distingue `COVERAGE_COMPLETE`, `COVERAGE_PARTIAL`, `COVERAGE_UNRESOLVED` y `NO_APPLICABLE_COVERAGE`.
+
+`COVERAGE_COMPLETE` significa que todos los criterios aplicables tienen evaluación concluyente (`PASS` o `FAIL`), sin implicar aceptación. `COVERAGE_PARTIAL` identifica cobertura con al menos una evaluación concluyente y además criterios aplicables pendientes o no resueltos. `COVERAGE_UNRESOLVED` identifica ausencia de evaluaciones concluyentes con evidencia insuficiente o resultados inconclusos. `NO_APPLICABLE_COVERAGE` representa una selección sin criterios aplicables.
+
+La implementación está en `EvaluationCoverageInterpretation` e `InterpretEvaluationCoverage`, con pruebas unitarias y Architecture Spike específicas.
+
+F2-36 conserva trazabilidad por `executionId` y por grupos de criterios, rechaza clasificaciones inconsistentes y mantiene la interpretación separada de decisiones y scoring.
+
+F2-36 no introduce porcentajes de cobertura, score, ponderaciones, aceptación/rechazo global, compensación entre criterios, criterios críticos, thresholds, reglas de parada, agregación entre ejecuciones/escenarios ni inferencia automática de aplicabilidad.
+
 ## Persistencia y versionado
 
 Las referencias de versionado continúan persistidas como campos de primera clase. El plan metodológico se conserva en `evaluation_plan` y las condiciones comparables mediante `condition_fingerprint`. La reconstrucción de `Execution` mantiene ambos metadatos.
@@ -77,9 +91,9 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-35 cerrado/validado.
+**Estado:** F2-35 cerrado/validado; F2-36 implementado y en validación.
 
-La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio.
+La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio → interpretación de cobertura por ejecución.
 
 Todavía quedan fuera scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación entre ejecuciones/escenarios y método productivo de evaluación semántica con IA.
 
@@ -96,7 +110,7 @@ Las versiones metodológicas son independientes del producto y deben mantenerse 
 
 ## Próximo incremento
 
-El siguiente incremento será formalizar la interpretación de cobertura por ejecución, manteniendo separadas la cobertura descriptiva, la decisión explícita y el scoring global.
+Validar F2-36 en CI. Con la baseline verde, el siguiente paso será estudiar métricas descriptivas de cobertura por ejecución, sin convertirlas en scoring ni calidad global.
 
 ## Regla de documentación
 
