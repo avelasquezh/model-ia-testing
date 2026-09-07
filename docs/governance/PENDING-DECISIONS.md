@@ -4,10 +4,10 @@ Este registro distingue decisiones metodológicas aún no aprobadas de decisione
 
 ## Metodología de evaluación
 
-- Validar dimensiones y criterios definitivos del Frente 2 mediante casos reales/controlados. **F2-41 activo: protocolo controlado definido y pendiente de evidencia CI; la taxonomía continúa en DRAFT.**
+- Validar dimensiones y criterios definitivos del Frente 2 mediante casos reales/controlados. **F2-41 cerrado: aptitud estructural demostrada; F2-42 inicia validación empírica controlada sobre un target ejecutable.**
 - Definir tratamiento estadístico de repetición y variabilidad cuando exista evidencia suficiente.
 - Definir límites de confianza/incertidumbre si las métricas lo requieren.
-- Validar el rol de IA en criterios semánticos.
+- Validar el rol de IA en criterios semánticos mediante evidencia controlada y método reproducible.
 
 ## Calificación
 
@@ -40,7 +40,7 @@ Las decisiones arquitectónicas documentadas como ADR pueden pasar a estado vali
 
 ## Validación técnica pendiente
 
-F3 ya está validado mediante el Architecture Spike `34089149510`. El trabajo metodológico de F2 ya no está bloqueado por arquitectura y continúa con contratos y casos controlados.
+F3 ya está validado mediante el Architecture Spike `34089149510`. El trabajo metodológico de F2 ya no está bloqueado por arquitectura y continúa con contratos, casos controlados y validación empírica.
 
 ## Automatización
 
@@ -56,6 +56,6 @@ F3 ya está validado mediante el Architecture Spike `34089149510`. El trabajo me
 
 ## Próximo punto de decisión
 
-Completar la validación de F2-41 mediante CI y casos controlados, y con su evidencia determinar qué dimensiones y criterios candidatos permanecen en el catálogo ejecutable. El scoring global continúa explícitamente bloqueado hasta cerrar estas decisiones.
+Ejecutar F2-42 sobre un target conversacional controlado y medir repetibilidad de evidencia para criterios candidatos seleccionados. El scoring global continúa explícitamente bloqueado hasta cerrar estas decisiones.
 
 Ninguna decisión marcada como Pendiente deberá considerarse aprobada por defecto durante la implementación.
