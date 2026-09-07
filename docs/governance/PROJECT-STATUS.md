@@ -3,7 +3,7 @@
 **Fecha:** 2026-09-07  
 **Versión de producto declarada:** `0.1.0`  
 **Rama:** `main`  
-**Avance estimado del MVP:** **72%**  
+**Avance estimado del MVP:** **73%**  
 **Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 en consolidación metodológica ejecutable y F3 **VALIDADO**.
 
 ## Incrementos cerrados — F2-23 a F2-37
@@ -100,6 +100,22 @@ La validación final quedó cerrada con CI `34143059354` y Architecture Spike `3
 
 F2-37 es puramente descriptivo y no introduce score, ponderaciones, thresholds, criterios críticos, reglas de parada, aceptación/rechazo global, agregación entre ejecuciones/escenarios, significancia estadística ni evaluación semántica con IA.
 
+## Incremento en validación — F2-38 comparabilidad metodológica entre ejecuciones
+
+**Estado:** **EN VALIDACIÓN**.
+
+F2-38 formaliza la comparabilidad como precondición antes de comparar métricas de cobertura entre ejecuciones.
+
+La implementación introduce `EvaluationComparability` y `AssessEvaluationComparability`. La comparabilidad exige coincidencia de escenario, versión de escenario, método de evaluación, catálogo de criterios, reglas de decisión, fingerprint de condiciones, contexto y alcance del `EvaluationPlan`, criterios seleccionados y aplicabilidad.
+
+La identidad de producto bajo prueba (`productVersion`) permanece como dimensión explícita de comparación y no bloquea por sí sola la comparabilidad metodológica.
+
+El resultado distingue `COMPARABLE`, `NON_COMPARABLE` e `INSUFFICIENT_EVIDENCE`, y conserva razones auditables. Una incompatibilidad demostrable prevalece sobre la falta de evidencia; la falta de evidencia por sí sola no se interpreta como variabilidad del sistema.
+
+La implementación y pruebas están en `src/domain/evaluation/EvaluationComparability.ts`, `src/application/evaluation/AssessEvaluationComparability.ts` y `spike/evaluation/comparability-validation.test.ts`.
+
+La comparación efectiva de métricas queda reservada para F2-39.
+
 ## Persistencia y versionado
 
 Las referencias de versionado continúan persistidas como campos de primera clase. El plan metodológico se conserva en `evaluation_plan` y las condiciones comparables mediante `condition_fingerprint`. La reconstrucción de `Execution` mantiene ambos metadatos.
@@ -110,11 +126,11 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-37 cerrado/validado.
+**Estado:** F2-38 en validación.
 
-La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio → interpretación de cobertura por ejecución → métricas descriptivas de cobertura por ejecución.
+La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio → interpretación de cobertura por ejecución → métricas descriptivas de cobertura por ejecución → comparabilidad metodológica entre ejecuciones.
 
-Todavía quedan fuera scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación entre ejecuciones/escenarios y método productivo de evaluación semántica con IA.
+Todavía quedan fuera la comparación descriptiva entre ejecuciones, scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación entre escenarios y método productivo de evaluación semántica con IA.
 
 ## Frente 3 — Arquitectura
 **Estado:** **VALIDADO**.
@@ -127,12 +143,12 @@ La versión de producto permanece en `0.1.0`. No se incrementará por cada commi
 
 Las versiones metodológicas son independientes del producto y deben mantenerse reconstruibles junto con la identidad de ejecución y procedencia técnica.
 
-## Próximo incremento — F2-38
+## Próximo incremento — F2-39
 
-Formalizar las condiciones metodológicas de comparabilidad entre ejecuciones antes de introducir cualquier comparación o agregación entre métricas de cobertura.
-
-La regla será conservar explícitamente escenario, versión, contexto de evaluación, condiciones comparables y procedencia suficiente. Ninguna diferencia de condiciones se interpretará automáticamente como variabilidad del sistema.
+Comparar descriptivamente métricas de cobertura únicamente entre ejecuciones que satisfagan la precondición de comparabilidad de F2-38. La comparación deberá conservar explícitamente las dimensiones que difieren, especialmente la versión del producto bajo prueba, sin convertir diferencias de condiciones en variabilidad.
 
 ## Regla de documentación
 
 Cada incremento o corrección debe actualizar este documento con el estado verificable resultante. Los cambios de comportamiento deben incluir la actualización de estado en el mismo commit siempre que sea técnicamente viable.
+
+<!-- f2-38-status-refresh -->
