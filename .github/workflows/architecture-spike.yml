@@ -42,6 +42,19 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      - name: Wait for PostgreSQL
+        env:
+          PGPASSWORD: spike
+        run: |
+          for attempt in {1..30}; do
+            if pg_isready -h 127.0.0.1 -p 5432 -U spike -d spike; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "PostgreSQL did not become ready on 127.0.0.1:5432"
+          exit 1
+
       - name: SPIKE-001 TypeScript
         run: npm run build
 
@@ -49,8 +62,7 @@ jobs:
         env:
           NODE_ENV: test
           TARGET_TIMEOUT_MS: 5000
-          DATABASE_URL: postgresql://spike:spike@localhost:5432/spike
-        run: npm test
+        run: npm test -- --exclude 'spike/persistence/Postgres*.test.ts'
 
       - name: SPIKE-004 BDD Cucumber
         run: npm run test:bdd
@@ -60,13 +72,13 @@ jobs:
 
       - name: SPIKE-007 PostgreSQL migrations
         env:
-          DATABASE_URL: postgresql://spike:spike@localhost:5432/spike
+          DATABASE_URL: postgresql://spike:spike@127.0.0.1:5432/spike
         run: npm run db:migrate
 
-      - name: SPIKE-007 PostgreSQL repository boundary
+      - name: SPIKE-007 PostgreSQL repository boundary and versioning integration
         env:
-          DATABASE_URL: postgresql://spike:spike@localhost:5432/spike
-        run: npm test -- spike/persistence/PostgresMigration.test.ts
+          DATABASE_URL: postgresql://spike:spike@127.0.0.1:5432/spike
+        run: npm test -- spike/persistence/PostgresMigration.test.ts spike/persistence/PostgresExecutionVersioning.integration.test.ts
 
       - name: Publish test artifacts
         if: always()
