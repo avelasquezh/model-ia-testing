@@ -5,21 +5,19 @@
 **Rama:** `main`  
 **Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 en consolidación metodológica ejecutable y F3 **VALIDADO**.
 
-## Incremento actual — F2-23 invariantes del contexto de versionado metodológico
+## Incremento cerrado — F2-23 invariantes del contexto de versionado metodológico
 
-**Estado:** Definición implementada; pendiente de validación CI y pruebas del incremento.
+**Estado:** **CERRADO / VALIDADO**.
 
-Se formalizaron las invariantes que deben cumplirse para que una ejecución nueva sea históricamente reconstruible. El contexto debe llegar explícitamente a la ejecución nueva, conservar las referencias mínimas de versionado y no utilizar la normalización `legacy-unknown` como sustituto silencioso. El alcance excluye deliberadamente scoring, pesos, agregación estadística y taxonomía definitiva.
+Se formalizaron las invariantes que deben cumplirse para que una ejecución nueva sea históricamente reconstruible. El contexto llega explícitamente a la ejecución nueva, conserva las referencias mínimas de versionado y no utiliza la normalización `legacy-unknown` como sustituto silencioso. El alcance excluye deliberadamente scoring, pesos, agregación estadística y taxonomía definitiva.
 
 La especificación quedó documentada en `docs/evaluation/F2-23-VERSION-CONTEXT-INVARIANTS.md`.
 
-## Verificación observada
+## Evidencia de cierre F2-23
 
-- CI `34088800826`, commit `6392c352`: **success** en TypeScript, migraciones PostgreSQL, pruebas, BDD, Playwright y quality gate.
-- Architecture Spike `34089149510`, commit `3fb8db18`: **success** en SPIKE-001 a SPIKE-012.
-- El incremento F2-22 quedó implementado, pero su validación CI posterior no se considera aprobada hasta contar con evidencia final.
-- SPIKE-008: manifiesto generado y publicado correctamente en el artifact.
-- F3-TECHNICAL-SPIKE.md: cerrado como **VALIDADO** en `bf0f98b1`.
+- CI `34091970313`, commit `8cbd5953`: **success** en TypeScript/unit tests, migraciones PostgreSQL, BDD, Playwright E2E y quality gate.
+- Architecture Spike `34091970295`, commit `8cbd5953`: **success** en SPIKE-001 a SPIKE-012, incluyendo frontera PostgreSQL/versioning y quality gate.
+- La evidencia confirma que el incremento F2-23 quedó integrado sin regresiones en la baseline ejecutable.
 
 ## Persistencia y versionado
 
@@ -55,7 +53,7 @@ Las versiones metodológicas son independientes del producto. Una ejecución his
 
 ## Próximo incremento
 
-Validar CI del F2-23 y comprobar las invariantes mediante pruebas reales. Si queda verde, el siguiente frente será delimitar mediante casos controlados qué dimensiones y criterios candidatos entran realmente al MVP. Después se formalizará el tratamiento de repetición y variabilidad antes de diseñar scoring global.
+Con F2-23 cerrado, el siguiente frente será delimitar mediante casos controlados qué dimensiones y criterios candidatos entran realmente al MVP. Después se formalizará el tratamiento de repetición y variabilidad antes de diseñar scoring global.
 
 ## Regla de documentación
 
