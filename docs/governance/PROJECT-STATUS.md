@@ -83,19 +83,37 @@ La especificación está documentada en `docs/evaluation/F2-30-METHODOLOGICAL-JU
 
 La evidencia CI `34113505026` y Architecture Spike `34113504953` resultó exitosa en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
 
-## Incremento actual — F2-31 contrato explícito de decisión de evaluación
+## Incremento cerrado — F2-31 contrato explícito de decisión de evaluación
 
-**Estado:** **IMPLEMENTADO; pendiente de validación CI**.
+**Estado:** **CERRADO / VALIDADO**.
 
 F2-31 introduce `EvaluationDecisionResult` con los estados `ACCEPTED`, `REJECTED` y `UNDECIDED`.
 
-`BuildEvaluationDecision` recibe el estado de una evaluación de criterio y una regla metodológica explícita y versionada. La decisión se deriva exclusivamente de esa regla; el componente no contiene una regla universal de aceptación ni rechazo.
+`BuildEvaluationDecision` recibe el estado de evaluación de un criterio y una regla metodológica explícita y versionada. La decisión se deriva exclusivamente de esa regla; el componente no contiene una regla universal de aceptación ni rechazo.
 
 Cada decisión conserva `ruleVersion` y `basis`, permitiendo reconstruir qué regla produjo el resultado y por qué fue obtenido.
 
 F2-31 no introduce `PASS = ACCEPTED`, `FAIL = REJECTED`, agregación de múltiples criterios, ponderaciones, scoring, umbrales estadísticos, reglas de parada, significancia, defectos críticos ni aceptación global del producto.
 
 La especificación está documentada en `docs/evaluation/F2-31-EXPLICIT-EVALUATION-DECISION.md`.
+
+La evidencia CI `34114068278` y Architecture Spike `34114068335` resultó exitosa en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
+
+## Incremento actual — F2-32 contrato de agregación de decisiones
+
+**Estado:** **IMPLEMENTADO; pendiente de validación CI**.
+
+F2-32 define la combinación de decisiones individuales de múltiples criterios sin introducir scoring, ponderaciones ni porcentajes.
+
+`EvaluationDecisionAggregationResult` conserva el resultado agregado, el número de criterios, la distribución de `ACCEPTED`, `REJECTED` y `UNDECIDED`, los identificadores de criterios incluidos, la precedencia aplicada y una `basis` explicativa.
+
+La precedencia metodológica es explícita y conservadora: `REJECTED > UNDECIDED > ACCEPTED`. En consecuencia, un rechazo domina; sin rechazos, una decisión indeterminada domina; únicamente un conjunto completamente aceptado produce `ACCEPTED`.
+
+La agregación rechaza listas vacías y criterios duplicados. No reinterpretará la evidencia ni sustituirá las reglas versionadas que produjeron las decisiones individuales.
+
+F2-32 no introduce scoring, pesos, promedios, porcentajes de calidad, umbrales estadísticos, significancia, reglas de parada, defectos críticos, agregación entre ejecuciones/escenarios ni aceptación global del producto.
+
+La especificación está documentada en `docs/evaluation/F2-32-DECISION-AGGREGATION.md`.
 
 ## Persistencia y versionado
 
@@ -107,9 +125,9 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-30 cerrado/validado; F2-31 implementado y en validación.
+**Estado:** F2-31 cerrado/validado; F2-32 implementado y en validación.
 
-La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada. Todavía quedan fuera scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación global y método productivo de evaluación semántica con IA.
+La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones de múltiples criterios. Todavía quedan fuera scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación entre ejecuciones/escenarios y método productivo de evaluación semántica con IA.
 
 ## Frente 3 — Arquitectura
 **Estado:** **VALIDADO**.
@@ -124,7 +142,7 @@ Las versiones metodológicas son independientes del producto y deben mantenerse 
 
 ## Próximo incremento
 
-Validar F2-31 en CI. Con la baseline verde, el siguiente paso será establecer, por separado, una política explícita de agregación de múltiples criterios y precedencia de estados indeterminados, sin convertirla en scoring global por defecto.
+Validar F2-32 en CI. Con la baseline verde, el siguiente paso será estudiar la relación entre el conjunto de criterios seleccionados por `EvaluationPlan` y la decisión agregada, manteniendo separadas la agregación metodológica y cualquier futuro scoring global.
 
 ## Regla de documentación
 
