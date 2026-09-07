@@ -25,14 +25,14 @@ const execution = new Execution({
 
 describe('PostgresExecutionRepository', () => {
   it('persists version references as first-class execution fields', async () => {
-    const query = vi.fn(async () => ({ rows: [], rowCount: 1 }));
+    const query = vi.fn(async (_sql: string, params?: unknown[]) => ({ rows: [], rowCount: 1, params }));
     const database = { query } as unknown as PostgresDatabase;
     const repository = new PostgresExecutionRepository(database);
 
     await repository.save(execution);
 
     expect(query).toHaveBeenCalledTimes(1);
-    const values = query.mock.calls[0]?.[1] as unknown[];
+    const values = query.mock.calls[0]?.[1] ?? [];
     expect(values).toEqual(expect.arrayContaining([
       '0.1.0',
       'f2-method-0.1',
