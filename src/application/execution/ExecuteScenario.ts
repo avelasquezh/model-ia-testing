@@ -13,6 +13,7 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 export type ExecuteScenarioInput = {
   readonly scenarioId: string;
   readonly evaluationSelection?: EvaluationSelectionContext;
+  readonly conditionFingerprint?: string;
   readonly timeoutMs?: number;
   readonly signal?: AbortSignal;
 };
@@ -32,6 +33,10 @@ export class ExecuteScenario {
   public async execute(input: ExecuteScenarioInput): Promise<Execution> {
     const scenario = await this.scenarios.findById(input.scenarioId);
     if (!scenario) throw new Error('Scenario not found');
+
+    if (input.conditionFingerprint !== undefined && !input.conditionFingerprint.trim()) {
+      throw new Error('Execution condition fingerprint must not be empty');
+    }
 
     if (input.evaluationSelection) {
       if (input.evaluationSelection.props.scenarioId !== scenario.props.id) {
@@ -75,6 +80,7 @@ export class ExecuteScenario {
       status: 'PENDING',
       versionContext: this.versionContext,
       ...(evaluationPlan ? { evaluationPlan } : {}),
+      ...(input.conditionFingerprint !== undefined ? { conditionFingerprint: input.conditionFingerprint } : {}),
     }).start();
 
     await this.executions.save(running);
