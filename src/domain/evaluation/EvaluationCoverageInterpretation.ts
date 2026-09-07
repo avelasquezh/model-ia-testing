@@ -35,12 +35,21 @@ export class EvaluationCoverageInterpretation {
       props.insufficientEvidenceCriterionIds,
       props.inconclusiveCriterionIds,
     ];
-    const seen = new Set<string>();
-    for (const group of groups) {
-      for (const criterionId of group) {
+    const groupNames = [
+      'applicableCriterionIds',
+      'notApplicableCriterionIds',
+      'evaluatedCriterionIds',
+      'notEvaluatedCriterionIds',
+      'insufficientEvidenceCriterionIds',
+      'inconclusiveCriterionIds',
+    ] as const;
+
+    for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
+      const seen = new Set<string>();
+      for (const criterionId of groups[groupIndex]) {
         if (!criterionId.trim()) throw new Error('Coverage interpretation criterion id is required');
         if (seen.has(criterionId)) {
-          throw new Error(`Criterion appears in multiple coverage interpretation groups: ${criterionId}`);
+          throw new Error(`Duplicate criterion in coverage interpretation group '${groupNames[groupIndex]}': ${criterionId}`);
         }
         seen.add(criterionId);
       }
@@ -87,6 +96,11 @@ export class EvaluationCoverageInterpretation {
     ]);
     if (classifiedApplicable.size !== applicableSet.size) {
       throw new Error('Coverage interpretation applicable criteria must be completely classified');
+    }
+    for (const criterionId of applicableSet) {
+      if (!classifiedApplicable.has(criterionId)) {
+        throw new Error(`Applicable criterion is not classified: ${criterionId}`);
+      }
     }
 
     if (props.status === 'NO_APPLICABLE_COVERAGE' && applicableSet.size > 0) {
