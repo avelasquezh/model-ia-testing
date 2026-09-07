@@ -28,7 +28,6 @@ export class EvaluationCoverageInterpretation {
     if (!props.basis.trim()) throw new Error('Evaluation coverage interpretation basis is required');
 
     const groups: readonly (readonly string[])[] = [
-      props.applicableCriterionIds,
       props.notApplicableCriterionIds,
       props.evaluatedCriterionIds,
       props.notEvaluatedCriterionIds,
@@ -36,7 +35,6 @@ export class EvaluationCoverageInterpretation {
       props.inconclusiveCriterionIds,
     ];
     const groupNames = [
-      'applicableCriterionIds',
       'notApplicableCriterionIds',
       'evaluatedCriterionIds',
       'notEvaluatedCriterionIds',
@@ -45,8 +43,9 @@ export class EvaluationCoverageInterpretation {
     ] as const;
 
     for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
+      const group = groups[groupIndex]!;
       const seen = new Set<string>();
-      for (const criterionId of groups[groupIndex]) {
+      for (const criterionId of group) {
         if (!criterionId.trim()) throw new Error('Coverage interpretation criterion id is required');
         if (seen.has(criterionId)) {
           throw new Error(`Duplicate criterion in coverage interpretation group '${groupNames[groupIndex]}': ${criterionId}`);
