@@ -1,6 +1,6 @@
 # Frente 1 — Especificación de Requisitos
 
-**Versión:** 0.2  
+**Versión:** 0.3  
 **Estado:** Draft para validación  
 
 ## Propósito
@@ -21,6 +21,7 @@ Evaluación y calificación quedan fuera de esta baseline.
 - Entradas, respuestas y resultados esperados.
 - Ejecución automatizada.
 - Evidencia: transcript, timestamps, duración, screenshots, URL y errores observables.
+- Observación incremental de evidencia durante la ejecución cuando el canal de visualización esté disponible.
 - Resultados por escenario.
 - Hallazgos.
 - Reportes.
@@ -85,7 +86,7 @@ Estados iniciales previstos: `PENDING`, `RUNNING`, `PASSED`, `FAILED`, `PARTIALL
 - REQ-F1-029: Conservar transcript.
 - REQ-F1-030: Registrar timestamps relevantes.
 - REQ-F1-031: Registrar duraciones relevantes.
-- REQ-F1-032: Capturar screenshots.
+- REQ-F1-032: Capturar screenshots y poner cada captura a disposición de observación durante la ejecución, sin esperar al estado final, cuando exista el canal de visualización configurado.
 - REQ-F1-033: Registrar URL utilizada.
 - REQ-F1-034: Registrar errores técnicos observados.
 - REQ-F1-035: Asociar evidencia con ejecución.
@@ -199,7 +200,7 @@ Estados iniciales previstos: `PENDING`, `RUNNING`, `PASSED`, `FAILED`, `PARTIALL
 
 ## Criterio de aceptación del MVP
 
-El MVP deberá demostrar de extremo a extremo: registrar objetivo, crear escenario, ejecutar mediante Playwright, completar una interacción multi-turno, capturar evidencia, producir resultado, asociar evidencia, registrar un hallazgo cuando corresponda, generar reporte, mantener trazabilidad y validar el producto mediante GitHub Actions.
+El MVP deberá demostrar de extremo a extremo: registrar objetivo, crear escenario, ejecutar mediante Playwright, completar una interacción multi-turno, capturar evidencia con screenshots observables durante la ejecución, producir resultado, asociar evidencia, registrar un hallazgo cuando corresponda, generar reporte, mantener trazabilidad y validar el producto mediante GitHub Actions.
 
 ## Pendientes explícitos
 

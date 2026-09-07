@@ -9,6 +9,7 @@
     "test": "vitest run",
     "test:bdd": "cucumber-js",
     "test:browser": "playwright test",
+    "evidence:viewer": "tsx src/infrastructure/evidence/serve-live-evidence.ts",
     "test:architecture": "npm run build && npm test && npm run test:bdd && npm run test:browser"
   },
   "engines": {

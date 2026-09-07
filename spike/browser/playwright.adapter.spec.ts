@@ -1,14 +1,18 @@
 import { test, expect } from '@playwright/test';
-import { PlaywrightBrowserAdapter } from '../infrastructure/PlaywrightBrowserAdapter.js';
+import { PlaywrightBrowserAdapter } from '../../src/infrastructure/execution/playwright/PlaywrightBrowserAdapter.js';
 
-test('SPIKE-005: Playwright adapter interacts with a controlled page', async () => {
+test('SPIKE-005: Playwright adapter opens and navigates a controlled page', async () => {
   const adapter = new PlaywrightBrowserAdapter();
-  await adapter.open('data:text/html,<html><body>controlled target</body></html>');
+  const session = await adapter.open();
 
   try {
-    const response = await adapter.sendMessage('hello');
-    expect(response).toContain('controlled target');
+    await session.navigate(
+      'data:text/html,<html><body><h1>controlled target</h1></body></html>',
+      5_000,
+    );
+
+    await expect(session.page.getByRole('heading', { name: 'controlled target' })).toBeVisible();
   } finally {
-    await adapter.close();
+    await session.close();
   }
 });

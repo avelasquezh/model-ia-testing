@@ -1,39 +1,81 @@
 import { Given, Then, When } from '@cucumber/cucumber';
 import { expect } from 'vitest';
-import { Scenario } from '../domain/Scenario.js';
-import { ExecuteScenario } from '../application/ExecuteScenario.js';
-import type { BrowserPort } from '../application/ports/BrowserPort.js';
-import type { Evidence, EvidencePort } from '../application/ports/EvidencePort.js';
+import { Scenario } from '../../src/domain/scenario/Scenario.js';
+import { Target } from '../../src/domain/target/Target.js';
+import { ExecuteScenario } from '../../src/application/execution/ExecuteScenario.js';
+import type { TargetAvailabilityPort } from '../../src/application/ports/TargetPorts.js';
+import { InMemoryScenarioRepository } from '../../src/infrastructure/persistence/InMemoryScenarioRepository.js';
+import { InMemoryTargetRepository } from '../../src/infrastructure/persistence/InMemoryTargetRepository.js';
+import { InMemoryExecutionRepository } from '../../src/infrastructure/persistence/InMemoryExecutionRepository.js';
+import { FakeExecutionRunner } from '../../src/infrastructure/execution/FakeExecutionRunner.js';
 
-class ControlledBrowser implements BrowserPort {
-  public async open(_targetUrl: string): Promise<void> {}
-  public async sendMessage(message: string): Promise<string> { return `response:${message}`; }
-  public async close(): Promise<void> {}
+const scenarios = new InMemoryScenarioRepository();
+const targets = new InMemoryTargetRepository();
+const executions = new InMemoryExecutionRepository();
+
+class FixedIds {
+  private current = 0;
+
+  public generate(): string {
+    this.current += 1;
+    return `bdd-execution-${this.current}`;
+  }
 }
 
-class ControlledEvidence implements EvidencePort {
-  public readonly items: Evidence[] = [];
-  public async capture(item: Evidence): Promise<void> { this.items.push(item); }
-}
+let executionId: string;
+let scenarioVersion: number;
+let executionStatus: string;
 
-let scenario: Scenario;
-let runId: string;
-let evidence: ControlledEvidence;
+Given('an active target and a versioned conversational scenario', async () => {
+  await targets.save(new Target({
+    id: 'bdd-target',
+    name: 'BDD target',
+    url: 'https://example.invalid',
+    status: 'ACTIVE',
+  }));
 
-Given('a valid scenario with one conversational step', () => {
-  scenario = new Scenario('BDD-001', [{ message: 'hello', expectedResponse: 'response' }]);
+  const scenario = new Scenario({
+    id: 'bdd-scenario',
+    targetId: 'bdd-target',
+    name: 'Greeting conversation',
+    objective: 'Verify conversational execution',
+    description: 'Acceptance-level multi-turn scenario',
+    inputs: [{ value: 'hello' }, { value: 'continue' }],
+    expectedBehavior: 'The runner completes the conversation successfully',
+    finishConditions: [{ description: 'Execution reaches a terminal status' }],
+    version: 2,
+  });
+
+  await scenarios.save(scenario);
+  scenarioVersion = scenario.props.version;
 });
 
-When('the scenario is executed with controlled adapters', async () => {
-  evidence = new ControlledEvidence();
-  runId = await new ExecuteScenario(new ControlledBrowser(), evidence).execute(scenario, 'https://example.invalid');
+When('the scenario is executed with a controlled runner', async () => {
+  const available: TargetAvailabilityPort = { isAvailable: async () => true };
+  const runner = new FakeExecutionRunner({ status: 'PASSED' });
+
+  const execution = await new ExecuteScenario(
+    scenarios,
+    targets,
+    executions,
+    new FixedIds(),
+    runner,
+    available,
+  ).execute({ scenarioId: 'bdd-scenario' });
+
+  executionId = execution.props.id;
+  executionStatus = execution.props.status;
 });
 
-Then('a run identifier is returned', () => {
-  expect(runId).toMatch(/[0-9a-f-]{36}/);
+Then('the execution finishes with the runner outcome', () => {
+  expect(executionStatus).toBe('PASSED');
 });
 
-Then('evidence is correlated with that run', () => {
-  expect(evidence.items).toHaveLength(1);
-  expect(evidence.items[0]?.runId).toBe(runId);
+Then('the execution preserves the scenario version', async () => {
+  const execution = await executions.findById(executionId);
+  expect(execution?.props.scenarioVersion).toBe(scenarioVersion);
+});
+
+Then('the execution identifier is available for traceability', () => {
+  expect(executionId).toBe('bdd-execution-1');
 });
