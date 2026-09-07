@@ -9,7 +9,7 @@ class InMemoryCriterionCatalog implements CriterionCatalog {
   }
 }
 
-const criteria = [
+const criteria: Criterion[] = [
   new Criterion({
     id: 'D1-C01',
     dimensionId: 'D1',
@@ -80,7 +80,9 @@ describe('ComposeEvaluationPlan', () => {
   });
 
   it('rejects duplicate criterion identifiers in the catalog', async () => {
-    const duplicated = [criteria[0], criteria[0]];
+    const firstCriterion = criteria[0];
+    if (!firstCriterion) throw new Error('Expected test criterion to exist');
+    const duplicated: Criterion[] = [firstCriterion, firstCriterion];
     const useCase = new ComposeEvaluationPlan(new InMemoryCriterionCatalog(duplicated));
 
     await expect(useCase.compose({ executionId: 'execution-18-004', context: 'web-chatbot' })).rejects.toThrow(
