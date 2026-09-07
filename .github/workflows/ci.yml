@@ -14,6 +14,20 @@ jobs:
     name: TypeScript and unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -35,7 +49,14 @@ jobs:
       - name: TypeScript
         run: npm run build
 
+      - name: PostgreSQL migrations
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+        run: npm run db:migrate
+
       - name: Unit and application tests
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
         run: npm test
 
       - name: Publish quality evidence
