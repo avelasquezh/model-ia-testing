@@ -11,12 +11,13 @@
 
 Se incorporó `src/domain/evaluation/EvaluationMethodology.ts` como contrato ejecutable para representar una metodología observable sin introducir todavía scoring global. El contrato exige dimensiones y criterios identificables, relaciones consistentes, evidencia requerida, reglas explícitas, limitaciones y método de medición para criterios numéricos.
 
-Se agregaron pruebas unitarias que cubren aceptación del contrato, dimensiones inexistentes, identificadores duplicados, método de medición numérico y declaración de evidencia. La especificación del incremento quedó documentada en `docs/evaluation/F2-22-METHODOLOGICAL-CONTRACT.md`.
+Se agregaron pruebas unitarias que cubren aceptación del contrato, dimensiones inexistentes, identificadores duplicados, método de medición numérico y declaración de evidencia. La prueba de criterio numérico fue ajustada para respetar `exactOptionalPropertyTypes` sin alterar la regla probada. La especificación del incremento quedó documentada en `docs/evaluation/F2-22-METHODOLOGICAL-CONTRACT.md`.
 
 ## Verificación observada
 
 - CI `34088800826`, commit `6392c352`: **success** en TypeScript, migraciones PostgreSQL, pruebas, BDD, Playwright y quality gate.
 - Architecture Spike `34089149510`, commit `3fb8db18`: **success** en SPIKE-001 a SPIKE-012.
+- Las ejecuciones activadas por el incremento F2 estaban en curso y no se consideran evidencia de aprobación hasta finalizar.
 - SPIKE-008: manifiesto generado y publicado correctamente en el artifact.
 - F3-TECHNICAL-SPIKE.md: cerrado como **VALIDADO** en `bf0f98b1`.
 
