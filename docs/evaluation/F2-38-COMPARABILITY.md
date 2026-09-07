@@ -1,6 +1,6 @@
 # F2-38 — Comparabilidad metodológica entre ejecuciones
 
-**Estado:** EN VALIDACIÓN
+**Estado:** CERRADO / VALIDADO
 
 ## Propósito
 
@@ -10,7 +10,7 @@ La comparabilidad no expresa calidad, aceptación, rechazo ni variabilidad del m
 
 ## Cadena metodológica
 
-`EvaluationSelectionContext → EvaluationPlan → EvaluationCoverage → EvaluationCoverageInterpretation → EvaluationCoverageMetrics → EvaluationComparability → comparación descriptiva futura (F2-39)`
+`EvaluationSelectionContext → EvaluationPlan → EvaluationCoverage → EvaluationCoverageInterpretation → EvaluationCoverageMetrics → EvaluationComparability → F2-39 comparación descriptiva`
 
 ## Condiciones exigidas
 
@@ -49,7 +49,7 @@ Una comparación requiere dos ejecuciones distintas.
 
 `NON_COMPARABLE` requiere al menos una incompatibilidad real y no puede utilizar una mera falta de evidencia como causa.
 
-`INSUFFICIENT_EVIDENCE` exige una causa explícita de evidencia insuficiente.
+`INSUFFICIENT_EVIDENCE` exige una causa explícita de evidencia insuficiente y no puede coexistir con una incompatibilidad concreta.
 
 La comparación valida además que cada `EvaluationPlan` pertenezca a su ejecución y que su selección conserve la identidad y versión del escenario.
 
@@ -57,7 +57,7 @@ La comparación valida además que cada `EvaluationPlan` pertenezca a su ejecuci
 
 F2-38 no calcula diferencias de métricas, no determina mejora o regresión, no agrega ejecuciones, no aplica thresholds, no genera score, no aplica pesos, no realiza inferencia estadística y no concluye aceptación o rechazo.
 
-La comparación descriptiva queda reservada para F2-39 una vez demostrada esta precondición.
+La comparación descriptiva queda implementada en F2-39 una vez demostrada esta precondición.
 
 ## Implementación y validación
 
@@ -69,4 +69,10 @@ Implementación:
 - `src/domain/evaluation/EvaluationComparability.test.ts`
 - `spike/evaluation/comparability-validation.test.ts`
 
-La evidencia CI y Architecture Spike se añadirá al cierre de F2-38 después de la validación completa.
+Validación final:
+
+- CI `34147107688` — SUCCESS.
+- Architecture Spike `34147107582` — SUCCESS.
+- TypeScript, PostgreSQL migrations, unit/application tests, BDD, Playwright y quality gate — SUCCESS.
+
+La corrección final de fixtures quedó registrada en el commit `064564213d2a0186c33674552a98592c058c7875`.
