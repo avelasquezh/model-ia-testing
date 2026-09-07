@@ -39,17 +39,19 @@ Se delimitó el núcleo obligatorio mediante D1 Corrección funcional observable
 
 La evidencia CI y Architecture Spike sobre la baseline F2-27 resultó exitosa en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
 
-## Incremento actual — F2-28 tratamiento estadístico descriptivo de la variabilidad
+## Incremento cerrado — F2-28 tratamiento estadístico descriptivo de la variabilidad
 
-**Estado:** **IMPLEMENTADO; pendiente de validación CI**.
+**Estado:** **CERRADO / VALIDADO**.
 
-Se incorpora `ProportionInterval` con intervalo Wilson al 95% para proporciones, manteniendo los límites `[0,1]` y validando conteos y parámetros.
+`ProportionInterval` implementa intervalo Wilson al 95% para proporciones, manteniendo límites `[0,1]` y validando conteos y parámetros.
 
 `AnalyzeRepetitionStatistics` calcula `N_total`, `N_evaluable`, estados indeterminados y técnicos, distribución PASS/PARTIAL/FAIL y tasas observadas con denominador explícito `N_evaluable`. Cuando no existen ejecuciones evaluables, las tasas permanecen `null`.
 
 Los intervalos de Wilson son indicadores descriptivos de incertidumbre. No establecen umbrales de aceptación, significancia obligatoria, tamaño de muestra, regla de parada, score ni agregación global.
 
-La especificación está documentada en `docs/evaluation/F2-28-STATISTICAL-VARIABILITY-TREATMENT.md`. La validación metodológica de referencia se mantiene en `docs/evaluation/F2-STATISTICAL-VARIABILITY-VALIDATION.md`.
+La especificación quedó documentada en `docs/evaluation/F2-STATISTICAL-VARIABILITY-VALIDATION.md` y el diseño ejecutable en `docs/evaluation/F2-28-STATISTICAL-VARIABILITY-TREATMENT.md`.
+
+La evidencia CI `34109718014` y Architecture Spike `34109718012` resultó exitosa en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
 
 ## Persistencia y versionado
 
@@ -61,7 +63,7 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-27 cerrado/validado; F2-28 implementado y en validación.
+**Estado:** F2-28 cerrado/validado.
 
 La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva. Todavía quedan fuera scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación global y método productivo de evaluación semántica con IA.
 
@@ -78,7 +80,7 @@ Las versiones metodológicas son independientes del producto y deben mantenerse 
 
 ## Próximo incremento
 
-Validar F2-28 en CI y, con la baseline verde, definir reglas explícitas de interpretación estadística y sus límites antes de introducir cualquier scoring o agregación global.
+Definir reglas explícitas de interpretación metodológica de los indicadores estadísticos y sus límites de inferencia. El objetivo será separar claramente indicador, evidencia y juicio antes de introducir scoring o agregación global.
 
 ## Regla de documentación
 
