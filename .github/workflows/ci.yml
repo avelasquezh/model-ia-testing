@@ -36,7 +36,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: npm
       - name: Install dependencies
         run: npm install
       - name: Install Playwright browsers for adapter tests
@@ -75,7 +74,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: npm
       - name: Install dependencies
         run: npm install
       - name: BDD
@@ -93,7 +91,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: npm
       - name: Install dependencies
         run: npm install
       - name: Install Playwright browsers
