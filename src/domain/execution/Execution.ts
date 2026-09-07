@@ -59,7 +59,7 @@ export class Execution {
     if (this.props.status !== 'PENDING') {
       throw new Error('Only pending executions can start');
     }
-    return new Execution({ ...this.props, status: 'RUNNING' });
+    return new Execution({ ...this.props, status: 'RUNNING', startedAt });
   }
 
   public finish(
