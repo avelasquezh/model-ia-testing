@@ -5,6 +5,23 @@ import { Execution } from '../../src/domain/execution/Execution.js';
 import { EvaluationVersionContext } from '../../src/domain/versioning/EvaluationVersionContext.js';
 
 describe('PostgreSQL execution versioning integration', () => {
+  const seedDependencies = async (database: PostgresDatabase) => {
+    await database.query(`
+      INSERT INTO targets(id, name, url, status)
+      VALUES ('target-1', 'Integration Target', 'https://example.com', 'ACTIVE')
+      ON CONFLICT (id) DO NOTHING
+    `);
+    await database.query(`
+      INSERT INTO scenarios(
+        id, version, target_id, name, objective, description,
+        expected_behavior, inputs, finish_conditions
+      ) VALUES (
+        'scenario-1', 1, 'target-1', 'Integration Scenario', 'Versioning',
+        'Versioning integration', 'Persists version context', '[]'::jsonb, '[]'::jsonb
+      ) ON CONFLICT (id, version) DO NOTHING
+    `);
+  };
+
   it('round-trips version references through the executions table', async () => {
     const database = new PostgresDatabase();
     const repository = new PostgresExecutionRepository(database);
@@ -18,30 +35,13 @@ describe('PostgreSQL execution versioning integration', () => {
     });
     const execution = new Execution({
       id: `versioning-${Date.now()}`,
-      scenarioId: 'scenario-1',
-      scenarioVersion: 1,
-      targetId: 'target-1',
-      targetUrl: 'https://example.com',
-      status: 'PENDING',
+      scenarioId: 'scenario-1', scenarioVersion: 1,
+      targetId: 'target-1', targetUrl: 'https://example.com', status: 'PENDING',
       versionContext: context,
     });
 
     try {
-      await database.query(`
-        INSERT INTO targets(id, name, url, status)
-        VALUES ('target-1', 'Integration Target', 'https://example.com', 'ACTIVE')
-        ON CONFLICT (id) DO NOTHING
-      `);
-      await database.query(`
-        INSERT INTO scenarios(
-          id, version, target_id, name, objective, description,
-          expected_behavior, inputs, finish_conditions
-        ) VALUES (
-          'scenario-1', 1, 'target-1', 'Integration Scenario', 'Versioning',
-          'Versioning integration', 'Persists version context', '[]'::jsonb, '[]'::jsonb
-        ) ON CONFLICT (id, version) DO NOTHING
-      `);
-
+      await seedDependencies(database);
       await repository.save(execution);
       const restored = await repository.findById(execution.props.id);
 
@@ -50,6 +50,50 @@ describe('PostgreSQL execution versioning integration', () => {
       expect(restored?.props.status).toBe('PENDING');
     } finally {
       await database.query('DELETE FROM executions WHERE id = $1', [execution.props.id]);
+      await database.close();
+    }
+  });
+
+  it('does not mutate historical version references when the same execution is updated', async () => {
+    const database = new PostgresDatabase();
+    const repository = new PostgresExecutionRepository(database);
+    const originalContext = new EvaluationVersionContext({
+      productVersion: '0.1.0',
+      evaluationMethodVersion: 'method-v1',
+      criterionCatalogVersion: 'criteria-v1',
+      decisionRulesVersion: 'rules-v1',
+    });
+    const updatedContext = new EvaluationVersionContext({
+      productVersion: '0.1.0',
+      evaluationMethodVersion: 'method-v2',
+      criterionCatalogVersion: 'criteria-v2',
+      decisionRulesVersion: 'rules-v2',
+    });
+    const executionId = `historical-${Date.now()}`;
+
+    const original = new Execution({
+      id: executionId,
+      scenarioId: 'scenario-1', scenarioVersion: 1,
+      targetId: 'target-1', targetUrl: 'https://example.com', status: 'PENDING',
+      versionContext: originalContext,
+    });
+    const updated = new Execution({
+      ...original.props,
+      status: 'PASSED',
+      finishedAt: new Date('2026-09-07T01:00:05Z'),
+      versionContext: updatedContext,
+    });
+
+    try {
+      await seedDependencies(database);
+      await repository.save(original);
+      await repository.save(updated);
+      const restored = await repository.findById(executionId);
+
+      expect(restored?.props.status).toBe('PASSED');
+      expect(restored?.props.versionContext.props).toEqual(originalContext.props);
+    } finally {
+      await database.query('DELETE FROM executions WHERE id = $1', [executionId]);
       await database.close();
     }
   });

@@ -7,19 +7,20 @@
 
 ## Incremento actual — versionado auditable persistido
 
-**Estado:** implementado y cubierto por pruebas unitarias y prueba de integración PostgreSQL.
+**Estado:** implementado; pruebas unitarias, aplicación y prueba de integración PostgreSQL incluidas. El gate CI del incremento debe considerarse pendiente hasta que su workflow termine.
 
-El contexto `EvaluationVersionContext` ya forma parte obligatoria de `Execution` y es propagado desde `ExecuteScenario`/`ExecuteSuite`. Además, las referencias mínimas de versionado se persisten como campos de primera clase en `executions` mediante la migración `003_execution_versioning.sql`. Se añadió un adaptador PostgreSQL para guardar y reconstruir una ejecución con su contexto de versión.
+El contexto `EvaluationVersionContext` forma parte obligatoria de `Execution` y es propagado desde `ExecuteScenario`/`ExecuteSuite`. Las referencias mínimas de versionado se persisten como campos de primera clase en `executions` mediante `003_execution_versioning.sql`. El adaptador `PostgresExecutionRepository` permite guardar y reconstruir la ejecución con su contexto.
 
-La migración normaliza ejecuciones históricas que no tenían referencias metodológicas conocidas con `legacy-unknown`. Esto no inventa una versión histórica: identifica explícitamente la ausencia de información.
+Se añadió una prueba de inmutabilidad histórica: actualizar el estado de una ejecución no puede reemplazar las referencias metodológicas con las de otra versión. La migración usa `legacy-unknown` para datos históricos sin versión conocida; esto representa ausencia de información y no inventa una versión.
 
 ## Verificación del incremento
 
 - Contrato de versión: probado.
 - Inmutabilidad del contexto durante el ciclo de `Execution`: probado.
 - Persistencia PostgreSQL del contexto: implementada.
-- Recuperación PostgreSQL del contexto: cubierta por prueba de integración.
-- CI del commit: ejecutándose; su conclusión debe verificarse antes de declarar el incremento como validado por CI.
+- Recuperación PostgreSQL del contexto: cubierta por integración.
+- Protección de referencias ante actualización de una ejecución existente: cubierta por integración.
+- CI del commit: iniciado; la conclusión todavía no ha sido observada.
 
 ## Corrección de documentación
 
@@ -45,7 +46,7 @@ Continúan pendientes la aprobación metodológica definitiva, scoring/agregaci�
 La solución ya materializa TypeScript estricto, monolito modular, arquitectura hexagonal, Playwright mediante adaptadores, GitHub Actions y PostgreSQL con migraciones reproducibles. Esto no constituye por sí solo una validación completa del spike.
 
 ### Persistencia
-**Estado:** Schema MVP reproducible y repositorio PostgreSQL de `Execution` implementados; validación operacional completa aún pendiente.
+**Estado:** Schema MVP reproducible y repositorio PostgreSQL de `Execution` implementados; validación operacional integral aún pendiente del gate CI.
 
 ## Versionado
 
@@ -55,7 +56,7 @@ Las versiones metodológicas son independientes del producto. Una ejecución his
 
 ## Próximo incremento
 
-Cerrar la verificación CI del incremento actual. Si el gate queda en verde, continuar con la validación histórica de cambio de versión metodológica sin mutación retroactiva de resultados. Después se retomará el siguiente gate del spike F3.
+Registrar la conclusión del gate CI y, si queda en verde, validar formalmente el cambio de versión metodológica sin mutación retrospectiva. Luego continuar con el siguiente gate del spike F3.
 
 ## Regla de documentación
 
