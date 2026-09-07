@@ -5,26 +5,32 @@
 **Rama:** `main`  
 **Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 con baseline ejecutable parcial y F3 en validación técnica.
 
-## Incremento actual — versionado auditable persistido
+## Incremento actual — corrección del contrato de versionado
 
-**Estado:** implementado; pruebas unitarias, aplicación y prueba de integración PostgreSQL incluidas. El gate CI del incremento debe considerarse pendiente hasta que su workflow termine.
+**Estado:** corrección implementada; pendiente de nuevo resultado CI.
 
-El contexto `EvaluationVersionContext` forma parte obligatoria de `Execution` y es propagado desde `ExecuteScenario`/`ExecuteSuite`. Las referencias mínimas de versionado se persisten como campos de primera clase en `executions` mediante `003_execution_versioning.sql`. El adaptador `PostgresExecutionRepository` permite guardar y reconstruir la ejecución con su contexto.
+El primer CI posterior a la integración del contexto de versionado falló en compilación. La causa observada fue que el nuevo contrato de `Execution` rompió fixtures legacy y un step BDD que aún utilizaba el constructor anterior de `ExecuteScenario`. No se relajó la persistencia ni se eliminó el versionado del agregado.
 
-Se añadió una prueba de inmutabilidad histórica: actualizar el estado de una ejecución no puede reemplazar las referencias metodológicas con las de otra versión. La migración usa `legacy-unknown` para datos históricos sin versión conocida; esto representa ausencia de información y no inventa una versión.
+La corrección normaliza explícitamente una ausencia de contexto en construcciones legacy a `legacy-unknown`, mientras que las ejecuciones nuevas creadas por `ExecuteScenario` siguen recibiendo un `EvaluationVersionContext` explícito. También se corrigió la preservación de `startedAt` durante `Execution.start()` y se actualizó la prueba de dominio correspondiente.
 
-## Verificación del incremento
+## Verificación observada
 
-- Contrato de versión: probado.
-- Inmutabilidad del contexto durante el ciclo de `Execution`: probado.
-- Persistencia PostgreSQL del contexto: implementada.
-- Recuperación PostgreSQL del contexto: cubierta por integración.
-- Protección de referencias ante actualización de una ejecución existente: cubierta por integración.
-- CI del commit: iniciado; la conclusión todavía no ha sido observada.
+- CI del commit anterior: **fallido en TypeScript**.
+- Causa principal: fixtures legacy sin `versionContext` y constructor BDD desactualizado.
+- Corrección del constructor BDD: implementada.
+- Compatibilidad legacy explícita: implementada y cubierta por prueba.
+- Preservación de `startedAt`: corregida.
+- Nuevo CI de la corrección: pendiente de conclusión observable.
+
+## Persistencia y versionado
+
+Las referencias mínimas de versionado continúan persistidas como campos de primera clase en `executions` mediante `003_execution_versioning.sql`. `PostgresExecutionRepository` reconstruye el `EvaluationVersionContext` al recuperar una ejecución. Las actualizaciones de estado no sustituyen esas referencias.
+
+El valor `legacy-unknown` se utiliza únicamente cuando la información histórica realmente no existía; no representa una versión metodológica válida.
 
 ## Corrección de documentación
 
-README, `PROJECT-STATUS.md`, ADR-015 y `PENDING-DECISIONS.md` se mantienen alineados con el nivel real de implementación. Los documentos diferencian diseño, implementación y validación.
+README, `PROJECT-STATUS.md`, ADR-015 y `PENDING-DECISIONS.md` deben distinguir permanentemente entre diseño, implementación, regresiones detectadas y validación CI. La documentación no marcará un cambio como verde hasta observar la conclusión del workflow correspondiente.
 
 ## Estado comprobado
 
@@ -46,7 +52,7 @@ Continúan pendientes la aprobación metodológica definitiva, scoring/agregaci�
 La solución ya materializa TypeScript estricto, monolito modular, arquitectura hexagonal, Playwright mediante adaptadores, GitHub Actions y PostgreSQL con migraciones reproducibles. Esto no constituye por sí solo una validación completa del spike.
 
 ### Persistencia
-**Estado:** Schema MVP reproducible y repositorio PostgreSQL de `Execution` implementados; validación operacional integral aún pendiente del gate CI.
+**Estado:** Schema MVP reproducible y repositorio PostgreSQL de `Execution` implementados; el gate de CI de la corrección actual está pendiente.
 
 ## Versionado
 
@@ -56,7 +62,7 @@ Las versiones metodológicas son independientes del producto. Una ejecución his
 
 ## Próximo incremento
 
-Registrar la conclusión del gate CI y, si queda en verde, validar formalmente el cambio de versión metodológica sin mutación retrospectiva. Luego continuar con el siguiente gate del spike F3.
+Observar el nuevo CI y corregir cualquier regresión adicional. Con CI en verde, cerrar este incremento y continuar con la validación histórica de dos contextos metodológicos distintos sobre ejecuciones independientes. Después se retomará el siguiente gate del spike F3.
 
 ## Regla de documentación
 
