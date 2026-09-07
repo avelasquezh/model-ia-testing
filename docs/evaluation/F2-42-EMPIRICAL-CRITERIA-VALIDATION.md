@@ -8,18 +8,15 @@ F2-42 extiende F2-41 desde la aptitud estructural del protocolo hacia evidencia 
 
 La finalidad es comprobar si criterios candidatos seleccionados pueden observarse y reproducirse mediante evidencia real de ejecución, sin convertir el resultado en una evaluación global de calidad.
 
-## Alcance
+## Alcance empírico
 
-Se validan cuatro propiedades especialmente adecuadas para el MVP actual:
+El target controlado existente permite validar directamente tres candidatos:
 
 - D1-C01 — respuesta funcional esperada;
-- D3-C01 — retención de dato conversacional;
 - D6-C01 — tiempo hasta respuesta observable;
 - D7-C02 — entrada de mensaje utilizable.
 
-D2-C01 no se valida empíricamente todavía porque depende de un método de comparación semántica asistida por IA que sigue metodológicamente abierto.
-
-D4 y D5 permanecen como candidatos para una fase posterior con protocolos específicos.
+D3-C01 no se incluye todavía porque el target utilizado en este spike no conserva contexto conversacional entre turnos. D2-C01 permanece fuera por depender de un método de comparación semántica asistida por IA que sigue metodológicamente abierto. D4 y D5 requieren protocolos específicos adicionales.
 
 ## Diseño controlado
 
@@ -37,7 +34,7 @@ La repetición se utiliza para verificar estabilidad del mecanismo de observaci�
 
 ## Evidencia primaria
 
-La prueba debe conservar evidencia de la ejecución observable, incluyendo transcript/observación, interacción, screenshot y timing cuando corresponda.
+La prueba conserva evidencia de ejecución observable mediante las observaciones generadas por el runner, incluyendo respuesta, timestamps, duración y screenshot cuando el adaptador las proporciona. La publicación de evidencia se verifica mediante `ExecutionEvidencePublisher`.
 
 La evidencia primaria permanece separada de cualquier interpretación posterior.
 
@@ -54,7 +51,9 @@ Estas etiquetas no significan PASS/FAIL del chatbot.
 
 ## Criterio de salida
 
-F2-42 se considerará validado cuando las ejecuciones controladas completen los escenarios seleccionados, la evidencia primaria sea capturada y la clasificación metodológica sea reproducible o explicablemente variable.
+F2-42 se considerará validado cuando los casos seleccionados completen ejecuciones repetidas bajo las mismas condiciones, la evidencia primaria sea capturada y la estabilidad del mecanismo de observación pueda demostrarse sin introducir inferencias internas.
+
+La imposibilidad de demostrar un criterio con el target controlado debe quedar registrada como limitación o `NOT_OBSERVABLE`, no como defecto del producto.
 
 ## Límites
 
