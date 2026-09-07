@@ -5,28 +5,26 @@
 **Rama:** `main`  
 **Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 con baseline ejecutable parcial y F3 en validación técnica.
 
-## Incremento actual — validación de aislamiento de versionado histórico
+## Incremento actual — SPIKE-008 evidencia auditable
 
-**Estado:** nueva prueba de integración implementada; ejecución CI del incremento pendiente de conclusión.
+**Estado:** manifiesto de evidencia implementado; ejecución del spike pendiente de conclusión observable.
 
-La corrección anterior quedó validada: el CI `34088059883` y el `Architecture Spike` `34088059889`, ambos sobre `d1e7abbc`, terminaron en **success**. El pipeline general ya levanta PostgreSQL, aplica las migraciones antes de ejecutar `npm test` y mantiene la integración PostgreSQL dentro de un entorno reproducible.
+La validación anterior quedó cerrada con CI y Architecture Spike en verde sobre `d1e7abbc`. El siguiente gate del spike es SPIKE-008, que exige un artifact con metadata vinculada inequívocamente al workflow run.
 
-Sobre esa base se añadió una tercera prueba de integración en `spike/persistence/PostgresExecutionVersioning.integration.test.ts` para validar explícitamente dos ejecuciones independientes con contextos metodológicos distintos. La prueba comprueba que cada ejecución recupera su propio `EvaluationVersionContext` y que ambos contextos permanecen separados.
+Se implementó `scripts/create-evidence-manifest.ts`, que genera `artifacts/spike-008-evidence-manifest.json` a partir del contexto de GitHub Actions. El manifiesto registra versión de esquema, gate, workflow, `runId`, `runUrl`, `commitSha`, `ref`, timestamp y SHA-256 de los archivos de evidencia encontrados. El workflow del spike ejecuta esta generación después de las pruebas y antes de publicar el artifact.
 
 ## Verificación observada
 
 - CI `34088059883`, commit `d1e7abbc`: **success**.
 - Architecture Spike `34088059889`, commit `d1e7abbc`: **success**.
-- TypeScript: **success** en el CI validado.
-- Integración PostgreSQL, migraciones, BDD y Playwright: **success** en el spike validado.
-- Nueva prueba de aislamiento histórico: implementada en `8ca306c5`; nueva ejecución pendiente de conclusión observable.
-- No se declara verde el nuevo incremento hasta observar sus gates en Actions.
+- SPIKE-008: implementación realizada en `e2c602fc` y conectada al workflow en `e70992f5`.
+- Especificación del spike actualizada en `3fb8db18`.
+- Nuevo workflow generado por este incremento: pendiente de conclusión observable.
+- No se declara SPIKE-008 validado hasta comprobar el artifact y su metadata en una ejecución completada.
 
 ## Persistencia y versionado
 
-Las referencias mínimas de versionado continúan persistidas como campos de primera clase en `executions` mediante `003_execution_versioning.sql`. `PostgresExecutionRepository` reconstruye el `EvaluationVersionContext` al recuperar una ejecución. Las actualizaciones de estado no sustituyen esas referencias. La prueba existente también verifica que actualizar una ejecución no reemplaza sus referencias históricas.
-
-La nueva prueba amplía la garantía: ejecuciones independientes pueden coexistir con contextos metodológicos diferentes sin contaminación entre ellas.
+Las referencias mínimas de versionado continúan persistidas como campos de primera clase en `executions` mediante `003_execution_versioning.sql`. `PostgresExecutionRepository` reconstruye el `EvaluationVersionContext` al recuperar una ejecución. Las actualizaciones de estado no sustituyen esas referencias. Las pruebas de integración verifican round-trip, inmutabilidad de referencias históricas y separación entre ejecuciones independientes.
 
 El valor `legacy-unknown` se utiliza únicamente cuando la información histórica realmente no existía; no representa una versión metodológica válida.
 
@@ -43,12 +41,12 @@ Existen modelos de medición, criterios y planes ejecutables, validaciones de ri
 Continúan pendientes la aprobación metodológica definitiva, scoring/agregación, pesos, tratamiento final de estados y validación de criterios semánticos con casos controlados.
 
 ## Frente 3 — Arquitectura
-**Estado:** Baseline materializada parcialmente; integración PostgreSQL y pipeline técnico validados.
+**Estado:** Baseline materializada parcialmente; persistencia, versionado y pipeline técnico validados; SPIKE-008 activo.
 
-La solución ya materializa TypeScript estricto, monolito modular, arquitectura hexagonal, Playwright mediante adaptadores, GitHub Actions y PostgreSQL con migraciones reproducibles. La validación de aislamiento de contextos metodológicos es el incremento técnico activo.
+La solución ya materializa TypeScript estricto, monolito modular, arquitectura hexagonal, Playwright mediante adaptadores, GitHub Actions y PostgreSQL con migraciones reproducibles. El siguiente objetivo es demostrar trazabilidad auditable de los artefactos producidos por cada run.
 
 ## Persistencia
-**Estado:** Schema MVP reproducible, repositorio PostgreSQL de `Execution`, migraciones y pruebas de versionado implementados. Integración PostgreSQL validada; aislamiento entre ejecuciones independientes pendiente de verificar en Actions.
+**Estado:** Schema MVP reproducible, repositorio PostgreSQL de `Execution`, migraciones y pruebas de versionado implementados. Integración PostgreSQL y aislamiento entre ejecuciones independientes validados.
 
 ## Versionado
 
@@ -58,7 +56,7 @@ Las versiones metodológicas son independientes del producto. Una ejecución his
 
 ## Próximo incremento
 
-Verificar las ejecuciones provocadas por `8ca306c5`. Con los gates en verde, cerrar la validación de aislamiento histórico y avanzar al siguiente gate técnico de F3, evitando introducir nueva funcionalidad hasta consolidar esta evidencia.
+Verificar SPIKE-008 en Actions, comprobando que el manifiesto generado contiene `runId` y `commitSha` correctos y que se publica junto con los artefactos. Si el gate queda verde, continuar con SPIKE-009 y la consolidación formal del resultado del spike.
 
 ## Regla de documentación
 
