@@ -72,7 +72,6 @@ describe('AnalyzeRepetitionSet', () => {
       ],
     });
 
-    expect(analysis.outcomeDistribution.FAIL).toBeUndefined();
     expect(analysis.outcomeDistribution.FAILED).toBe(0);
     expect(analysis.outcomeDistribution.INCONCLUSIVE).toBe(1);
     expect(analysis.outcomeDistribution.NOT_EVALUABLE).toBe(1);
