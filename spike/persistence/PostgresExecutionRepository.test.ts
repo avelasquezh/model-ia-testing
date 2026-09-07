@@ -6,9 +6,16 @@ import { PostgresExecutionRepository } from '../../src/infrastructure/persistenc
 
 const databaseUrl = process.env.DATABASE_URL;
 
+const requireDatabaseUrl = (): string => {
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL is required for PostgreSQL repository integration tests');
+  }
+  return databaseUrl;
+};
+
 describe.skipIf(!databaseUrl)('PostgreSQL execution repository', () => {
   it('persists and reconstructs a complete execution', async () => {
-    const database = new PostgresDatabase({ connectionString: databaseUrl });
+    const database = new PostgresDatabase({ connectionString: requireDatabaseUrl() });
     const repository = new PostgresExecutionRepository(database);
     const targetId = `target-${randomUUID()}`;
     const scenarioId = `scenario-${randomUUID()}`;
@@ -113,7 +120,7 @@ describe.skipIf(!databaseUrl)('PostgreSQL execution repository', () => {
   });
 
   it('returns null when the execution does not exist', async () => {
-    const database = new PostgresDatabase({ connectionString: databaseUrl });
+    const database = new PostgresDatabase({ connectionString: requireDatabaseUrl() });
     const repository = new PostgresExecutionRepository(database);
     try {
       await expect(repository.findById(`missing-${randomUUID()}`)).resolves.toBeNull();
