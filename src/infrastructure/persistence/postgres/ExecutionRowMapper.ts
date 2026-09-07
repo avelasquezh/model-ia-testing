@@ -94,6 +94,8 @@ export const executionToRowValues = (execution: Execution) => [
 export const executionFromRow = (row: ExecutionRow): Execution => {
   const observations = (row.observations as PersistedObservation[]).map(deserializeObservation);
   const errors = (row.errors as PersistedError[]).map(deserializeError);
+  const startedAt = toDate(row.started_at);
+  const finishedAt = toDate(row.finished_at);
   const props: ExecutionProps = {
     id: row.id,
     scenarioId: row.scenario_id,
@@ -103,14 +105,8 @@ export const executionFromRow = (row: ExecutionRow): Execution => {
     status: row.status,
     observations,
     errors,
+    ...(startedAt ? { startedAt } : {}),
+    ...(finishedAt ? { finishedAt } : {}),
   };
-  const startedAt = toDate(row.started_at);
-  const finishedAt = toDate(row.finished_at);
-  if (startedAt) {
-    Object.assign(props, { startedAt });
-  }
-  if (finishedAt) {
-    Object.assign(props, { finishedAt });
-  }
   return new Execution(props);
 };
