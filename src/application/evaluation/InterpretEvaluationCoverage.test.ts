@@ -74,11 +74,11 @@ describe('EvaluationCoverageInterpretation invariants', () => {
     basis: 'deterministic test basis',
   };
 
-  it('rejects criteria repeated inside interpretation groups', () => {
+  it('rejects duplicate criteria inside a single interpretation group', () => {
     expect(() => new EvaluationCoverageInterpretation({
       ...base,
       evaluatedCriterionIds: ['C1', 'C1'],
-    })).toThrow('multiple coverage interpretation groups');
+    })).toThrow("Duplicate criterion in coverage interpretation group 'evaluatedCriterionIds'");
   });
 
   it('rejects COVERAGE_COMPLETE with unresolved criteria', () => {
