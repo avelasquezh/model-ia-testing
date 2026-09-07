@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { PostgresExecutionRepository } from './PostgresExecutionRepository.js';
 import { Execution } from '../../../domain/execution/Execution.js';
+import { EvaluationPlan } from '../../../domain/evaluation/EvaluationPlan.js';
 import { EvaluationVersionContext } from '../../../domain/versioning/EvaluationVersionContext.js';
 import type { PostgresDatabase } from './PostgresDatabase.js';
 
@@ -13,6 +14,28 @@ const versionContext = new EvaluationVersionContext({
   commitSha: 'abcdef123456',
 });
 
+const evaluationPlan = new EvaluationPlan({
+  executionId: 'execution-1',
+  context: 'web-chatbot',
+  scope: 'MVP_CORE',
+  selectionContext: {
+    scenarioId: 'scenario-1',
+    scenarioVersion: 2,
+    executionContext: 'web-chatbot',
+    scope: 'MVP_CORE',
+    selectedCriterionIds: ['D1-C01'],
+  },
+  items: [{
+    criterionId: 'D1-C01',
+    dimensionId: 'D1',
+    type: 'BOOLEAN',
+    applicability: 'APPLICABLE',
+    reason: "Criterion selected for execution context 'web-chatbot' within scope 'MVP_CORE'",
+    requiredEvidence: ['TRANSCRIPT'],
+    ruleVersion: '1.0',
+  }],
+});
+
 const execution = new Execution({
   id: 'execution-1',
   scenarioId: 'scenario-1',
@@ -21,10 +44,11 @@ const execution = new Execution({
   targetUrl: 'https://example.com',
   status: 'PENDING',
   versionContext,
+  evaluationPlan,
 });
 
 describe('PostgresExecutionRepository', () => {
-  it('persists version references as first-class execution fields', async () => {
+  it('persists version references and the evaluation plan as first-class execution state', async () => {
     const query = vi.fn(async (_sql: string, params?: unknown[]) => ({ rows: [], rowCount: 1, params }));
     const database = { query } as unknown as PostgresDatabase;
     const repository = new PostgresExecutionRepository(database);
@@ -41,9 +65,10 @@ describe('PostgresExecutionRepository', () => {
       'evaluator-1',
       'abcdef123456',
     ]));
+    expect(values).toContain(JSON.stringify(evaluationPlan.props));
   });
 
-  it('reconstructs an execution and its version context from PostgreSQL rows', async () => {
+  it('reconstructs an execution, its version context and its evaluation plan from PostgreSQL rows', async () => {
     const database = {
       query: vi.fn(async () => ({
         rows: [{
@@ -59,6 +84,7 @@ describe('PostgresExecutionRepository', () => {
           decision_rules_version: 'f2-rules-0.1',
           evaluator_version: 'evaluator-1',
           commit_sha: 'abcdef123456',
+          evaluation_plan: evaluationPlan.props,
           started_at: new Date('2026-09-07T01:00:00Z'),
           finished_at: new Date('2026-09-07T01:00:05Z'),
           observations: [{
@@ -83,6 +109,9 @@ describe('PostgresExecutionRepository', () => {
     expect(restored?.props.versionContext.props.decisionRulesVersion).toBe('f2-rules-0.1');
     expect(restored?.props.versionContext.props.evaluatorVersion).toBe('evaluator-1');
     expect(restored?.props.versionContext.props.commitSha).toBe('abcdef123456');
+    expect(restored?.props.evaluationPlan?.props.scope).toBe('MVP_CORE');
+    expect(restored?.props.evaluationPlan?.props.selectionContext).toEqual(evaluationPlan.props.selectionContext);
+    expect(restored?.props.evaluationPlan?.props.items.map((item) => item.criterionId)).toEqual(['D1-C01']);
     expect(restored?.props.observations?.[0]?.response).toBe('Hola');
     expect(restored?.props.observations?.[0]?.durationMs).toBe(1000);
   });
