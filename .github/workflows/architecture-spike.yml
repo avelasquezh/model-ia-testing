@@ -58,6 +58,16 @@ jobs:
       - name: SPIKE-005 Playwright
         run: npm run test:browser
 
+      - name: SPIKE-007 PostgreSQL migrations
+        env:
+          DATABASE_URL: postgresql://spike:spike@localhost:5432/spike
+        run: npm run db:migrate
+
+      - name: SPIKE-007 PostgreSQL repository boundary
+        env:
+          DATABASE_URL: postgresql://spike:spike@localhost:5432/spike
+        run: npm test -- spike/persistence/PostgresMigration.test.ts
+
       - name: Publish test artifacts
         if: always()
         uses: actions/upload-artifact@v5
