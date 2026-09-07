@@ -87,8 +87,9 @@ describe('AggregateEvaluationPlanDecisions', () => {
         decisions: [
           { criterionId: 'C1', decision: decision('ACCEPTED') },
           { criterionId: 'C1', decision: decision('ACCEPTED') },
+          { criterionId: 'C2', decision: decision('ACCEPTED') },
         ],
       }),
-    ).toThrow('exactly the selected criteria');
+    ).toThrow('Duplicate criterion decision: C1');
   });
 });
