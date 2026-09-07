@@ -106,7 +106,11 @@ export const executionFromRow = (row: ExecutionRow): Execution => {
   };
   const startedAt = toDate(row.started_at);
   const finishedAt = toDate(row.finished_at);
-  if (startedAt) props.startedAt = startedAt;
-  if (finishedAt) props.finishedAt = finishedAt;
+  if (startedAt) {
+    Object.assign(props, { startedAt });
+  }
+  if (finishedAt) {
+    Object.assign(props, { finishedAt });
+  }
   return new Execution(props);
 };
