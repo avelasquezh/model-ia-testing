@@ -21,6 +21,10 @@ export class ComposeEvaluationPlan {
     if (!input.executionId.trim()) throw new Error('Execution id is required');
     if (!input.context.trim()) throw new Error('Evaluation context is required');
 
+    if (input.selection && input.scope && input.selection.props.scope !== input.scope) {
+      throw new Error('Evaluation selection scope does not match requested evaluation scope');
+    }
+
     const scope = input.selection?.props.scope ?? input.scope ?? 'CATALOG';
     if (input.selection) {
       if (input.selection.props.executionContext !== input.context) {
@@ -63,12 +67,20 @@ export class ComposeEvaluationPlan {
         };
       });
 
-    return new EvaluationPlan({
+    const basePlan = {
       executionId: input.executionId,
       context: input.context,
       scope,
       items,
-      selectionContext: input.selection?.props,
-    });
+    };
+
+    if (input.selection) {
+      return new EvaluationPlan({
+        ...basePlan,
+        selectionContext: input.selection.props,
+      });
+    }
+
+    return new EvaluationPlan(basePlan);
   }
 }
