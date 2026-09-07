@@ -47,6 +47,7 @@ describe('ComposeEvaluationPlan', () => {
 
     expect(plan.props.executionId).toBe('execution-18-001');
     expect(plan.props.context).toBe('web-chatbot');
+    expect(plan.props.scope).toBe('CATALOG');
     expect(plan.applicableCriteria.map((item) => item.criterionId)).toEqual(['D1-C01', 'D6-C01']);
     expect(plan.notApplicableCriteria.map((item) => item.criterionId)).toEqual(['D6-C05']);
     expect(plan.props.items[0]).toMatchObject({
@@ -56,6 +57,19 @@ describe('ComposeEvaluationPlan', () => {
       requiredEvidence: ['TRANSCRIPT'],
       ruleVersion: '1.0',
     });
+  });
+
+  it('composes only the explicit MVP core scope', async () => {
+    const useCase = new ComposeEvaluationPlan(new InMemoryCriterionCatalog(criteria));
+    const plan = await useCase.compose({
+      executionId: 'execution-24-001',
+      context: 'web-chatbot',
+      scope: 'MVP_CORE',
+    });
+
+    expect(plan.props.scope).toBe('MVP_CORE');
+    expect(plan.props.items.map((item) => item.criterionId)).toEqual(['D1-C01', 'D6-C01']);
+    expect(plan.props.items.every((item) => item.criterionId !== 'D6-C05')).toBe(true);
   });
 
   it('does not turn a non-applicable criterion into FAIL', async () => {
