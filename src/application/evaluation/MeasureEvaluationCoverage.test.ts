@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { EvaluationCoverage } from '../../domain/evaluation/EvaluationCoverage.js';
 import { EvaluationCoverageInterpretation } from '../../domain/evaluation/EvaluationCoverageInterpretation.js';
 import { MeasureEvaluationCoverage } from './MeasureEvaluationCoverage.js';
 
@@ -29,28 +28,16 @@ describe('MeasureEvaluationCoverage', () => {
   });
 
   it('returns null ratios for NO_APPLICABLE_COVERAGE', () => {
-    const coverage = new EvaluationCoverage({
+    const result = measure.measure(interpretation({
       executionId: 'exec-1',
-      entries: [
-        { criterionId: 'C1', status: 'NOT_APPLICABLE' },
-        { criterionId: 'C2', status: 'NOT_APPLICABLE' },
-      ],
-    });
-    const result = measure.measure(new (class extends EvaluationCoverageInterpretation {
-      public constructor() {
-        super({
-          executionId: coverage.props.executionId,
-          status: 'NO_APPLICABLE_COVERAGE',
-          applicableCriterionIds: [],
-          notApplicableCriterionIds: ['C1', 'C2'],
-          evaluatedCriterionIds: [],
-          notEvaluatedCriterionIds: [],
-          insufficientEvidenceCriterionIds: [],
-          inconclusiveCriterionIds: [],
-          basis: 'derived from coverage',
-        });
-      }
-    })());
+      status: 'NO_APPLICABLE_COVERAGE',
+      applicableCriterionIds: [],
+      notApplicableCriterionIds: ['C1', 'C2'],
+      evaluatedCriterionIds: [],
+      notEvaluatedCriterionIds: [],
+      insufficientEvidenceCriterionIds: [],
+      inconclusiveCriterionIds: [],
+    }));
 
     expect(result.props.applicableCount).toBe(0);
     expect(result.props.notApplicableCount).toBe(2);
