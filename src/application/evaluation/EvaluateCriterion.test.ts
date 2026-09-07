@@ -16,6 +16,7 @@ const criterion = new Criterion({
 const plan = new EvaluationPlan({
   executionId: 'execution-1',
   context: 'web-chatbot',
+  scope: 'MVP_CORE',
   items: [{
     criterionId: criterion.props.id,
     dimensionId: criterion.props.dimensionId,
