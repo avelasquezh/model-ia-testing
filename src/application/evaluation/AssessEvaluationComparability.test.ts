@@ -39,6 +39,7 @@ const defaultItems: EvaluationPlan['props']['items'] = [
 const plan = (
   executionId: string,
   overrides: {
+    scenarioId?: string;
     context?: string;
     scope?: EvaluationPlan['props']['scope'];
     items?: EvaluationPlan['props']['items'];
@@ -47,13 +48,14 @@ const plan = (
   const context = overrides.context ?? 'chatbot-web';
   const scope = overrides.scope ?? 'MVP_CORE';
   const items = overrides.items ?? defaultItems;
+  const scenarioId = overrides.scenarioId ?? 'scenario-1';
   return new EvaluationPlan({
     executionId,
     context,
     scope,
     items,
     selectionContext: {
-      scenarioId: 'scenario-1',
+      scenarioId,
       scenarioVersion: 2,
       executionContext: context,
       scope,
@@ -84,7 +86,9 @@ const execution = (
     productVersion: overrides.productVersion ?? '0.1.0',
     evaluationMethodVersion: overrides.evaluationMethodVersion ?? 'f2-method-0.1',
   }),
-  evaluationPlan: overrides.evaluationPlan ?? plan(id),
+  evaluationPlan: overrides.evaluationPlan ?? plan(id, {
+    scenarioId: overrides.scenarioId ?? 'scenario-1',
+  }),
   ...(overrides.omitConditionFingerprint ? {} : {
     conditionFingerprint: overrides.conditionFingerprint ?? 'cond-A',
   }),
