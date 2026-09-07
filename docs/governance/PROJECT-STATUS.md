@@ -23,9 +23,9 @@ La especificación está documentada en `docs/evaluation/F2-32-DECISION-AGGREGAT
 
 La evidencia CI `34116193123` y Architecture Spike `34116193050` resultó exitosa en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
 
-## Incremento actual — F2-33 vinculación de agregación con EvaluationPlan
+## Incremento cerrado — F2-33 vinculación de agregación con EvaluationPlan
 
-**Estado:** **IMPLEMENTADO; pendiente de validación CI**.
+**Estado:** **CERRADO / VALIDADO**.
 
 F2-33 garantiza que la agregación de decisiones solo pueda consumir exactamente los criterios autorizados por `EvaluationPlan`.
 
@@ -35,7 +35,21 @@ La agregación subyacente conserva la precedencia definida en F2-32 y sus invari
 
 La especificación está documentada en `docs/evaluation/F2-33-EVALUATION-PLAN-AGGREGATION-BINDING.md`.
 
+La validación final de F2-33 quedó cerrada con CI `34120248920` y Architecture Spike `34120248891`, ambos exitosos en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
+
 F2-33 no introduce scoring, ponderaciones, porcentajes globales, agregación entre ejecuciones/escenarios, reglas de parada, significancia estadística ni aceptación global del producto.
+
+## Incremento actual — F2-34 aplicabilidad y agregación de decisiones
+
+**Estado:** **IMPLEMENTADO; pendiente de validación CI**.
+
+F2-34 formaliza la relación entre `EvaluationPlan.applicability` y la agregación de decisiones. Los criterios `APPLICABLE` reciben decisiones y participan en la agregación; los criterios `NOT_APPLICABLE` permanecen trazables en el plan pero quedan fuera de la agregación.
+
+`NOT_APPLICABLE` no se transforma en `REJECTED`, `UNDECIDED` ni `ACCEPTED`. Cuando todos los criterios seleccionados son `NOT_APPLICABLE`, el resultado agregado es `null`, preservando la diferencia entre no aplicabilidad y aceptación.
+
+La implementación está en `AggregateApplicableEvaluationPlanDecisions` y la especificación en `docs/evaluation/F2-34-APPLICABILITY-AGGREGATION.md`.
+
+F2-34 no introduce scoring, ponderaciones, porcentajes, compensación entre criterios, criterios críticos, reglas de parada, agregación entre ejecuciones/escenarios ni inferencia automática de aplicabilidad.
 
 ## Persistencia y versionado
 
@@ -47,9 +61,9 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-32 cerrado/validado; F2-33 implementado y en validación.
+**Estado:** F2-33 cerrado/validado; F2-34 implementado y en validación.
 
-La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado.
+La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación.
 
 Todavía quedan fuera scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación entre ejecuciones/escenarios y método productivo de evaluación semántica con IA.
 
@@ -66,7 +80,7 @@ Las versiones metodológicas son independientes del producto y deben mantenerse 
 
 ## Próximo incremento
 
-Validar F2-33 en CI. Con la baseline verde, el siguiente paso será formalizar la relación entre `applicability` (`APPLICABLE` / `NOT_APPLICABLE`) y la agregación, definiendo cómo se representa un criterio seleccionado pero no aplicable sin contaminar la decisión agregada.
+Validar F2-34 en CI. Con la baseline verde, el siguiente paso será formalizar la cobertura metodológica de criterios aplicables, no aplicables, no evaluados e inconclusos, manteniéndola separada del scoring global.
 
 ## Regla de documentación
 
