@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ExecuteScenario } from './ExecuteScenario.js';
+import { EvaluationVersionContext } from '../../domain/versioning/EvaluationVersionContext.js';
 import { FakeExecutionRunner } from '../../infrastructure/execution/FakeExecutionRunner.js';
 import { InMemoryExecutionRepository } from '../../infrastructure/persistence/InMemoryExecutionRepository.js';
 import { InMemoryScenarioRepository } from '../../infrastructure/persistence/InMemoryScenarioRepository.js';
@@ -15,6 +16,13 @@ describe('ExecuteScenario', () => {
     expectedBehavior: 'Responds to greeting', finishConditions: [{ description: 'Assistant responds' }], version: 2,
   });
 
+  const versionContext = new EvaluationVersionContext({
+    productVersion: '0.1.0',
+    evaluationMethodVersion: 'f2-method-0.1',
+    criterionCatalogVersion: 'f2-criteria-0.1',
+    decisionRulesVersion: 'f2-rules-0.1',
+  });
+
   class FixedIds {
     private current = 0;
     generate(): string {
@@ -27,6 +35,16 @@ describe('ExecuteScenario', () => {
     isAvailable: async () => true,
   };
 
+  const createExecuteScenario = (
+    scenarios: InMemoryScenarioRepository,
+    targets: InMemoryTargetRepository,
+    executions: InMemoryExecutionRepository,
+    runner: FakeExecutionRunner,
+    availability: TargetAvailabilityPort = available,
+  ) => new ExecuteScenario(
+    scenarios, targets, executions, new FixedIds(), runner, availability, versionContext,
+  );
+
   it('delegates execution to the runner and persists its terminal state and observations', async () => {
     const targets = new InMemoryTargetRepository();
     const scenarios = new InMemoryScenarioRepository();
@@ -36,30 +54,17 @@ describe('ExecuteScenario', () => {
     const secondStartedAt = new Date('2026-09-05T22:00:00.500Z');
     const secondObservedAt = new Date('2026-09-05T22:00:01.000Z');
     const observations = [
-      {
-        input: 'Hola',
-        response: 'Hola, ¿en qué puedo ayudarte?',
-        startedAt: firstStartedAt,
-        observedAt: firstObservedAt,
-        durationMs: 500,
-      },
-      {
-        input: '¿Cómo estás?',
-        response: 'Estoy bien.',
-        startedAt: secondStartedAt,
-        observedAt: secondObservedAt,
-        durationMs: 500,
-      },
+      { input: 'Hola', response: 'Hola, ¿en qué puedo ayudarte?', startedAt: firstStartedAt, observedAt: firstObservedAt, durationMs: 500 },
+      { input: '¿Cómo estás?', response: 'Estoy bien.', startedAt: secondStartedAt, observedAt: secondObservedAt, durationMs: 500 },
     ];
     const runner = new FakeExecutionRunner({ status: 'PASSED', observations });
     await targets.save(new Target({ id: 'target-1', name: 'Demo', url: 'https://example.com', status: 'ACTIVE' }));
     await scenarios.save(scenario);
 
-    const execution = await new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner, available).execute({
-      scenarioId: 'scenario-1',
-    });
+    const execution = await createExecuteScenario(scenarios, targets, executions, runner).execute({ scenarioId: 'scenario-1' });
 
     expect(execution.props.status).toBe('PASSED');
+    expect(execution.props.versionContext).toBe(versionContext);
     expect(execution.props.finishedAt).toBeInstanceOf(Date);
     expect(execution.props.observations).toEqual(observations);
     expect(execution.props.errors).toEqual([]);
@@ -76,23 +81,16 @@ describe('ExecuteScenario', () => {
     const scenarios = new InMemoryScenarioRepository();
     const executions = new InMemoryExecutionRepository();
     const occurredAt = new Date('2026-09-05T22:00:02.000Z');
-    const errors = [{
-      code: 'Error',
-      message: 'interaction failure',
-      operation: 'SEND' as const,
-      turnIndex: 1,
-      occurredAt,
-    }];
+    const errors = [{ code: 'Error', message: 'interaction failure', operation: 'SEND' as const, turnIndex: 1, occurredAt }];
     const runner = new FakeExecutionRunner({ status: 'ERROR', errors });
     await targets.save(new Target({ id: 'target-1', name: 'Demo', url: 'https://example.com', status: 'ACTIVE' }));
     await scenarios.save(scenario);
 
-    const execution = await new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner, available).execute({
-      scenarioId: 'scenario-1',
-    });
+    const execution = await createExecuteScenario(scenarios, targets, executions, runner).execute({ scenarioId: 'scenario-1' });
 
     expect(execution.props.status).toBe('ERROR');
     expect(execution.props.errors).toEqual(errors);
+    expect(execution.props.versionContext).toBe(versionContext);
     expect(await executions.findById(execution.props.id)).toBe(execution);
   });
 
@@ -105,12 +103,11 @@ describe('ExecuteScenario', () => {
     await targets.save(new Target({ id: 'target-1', name: 'Demo', url: 'https://example.com', status: 'ACTIVE' }));
     await scenarios.save(scenario);
 
-    const execution = await new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner, available).execute({
-      scenarioId: 'scenario-1',
-    });
+    const execution = await createExecuteScenario(scenarios, targets, executions, runner).execute({ scenarioId: 'scenario-1' });
 
     expect(execution.props.status).toBe('ERROR');
     expect(execution.props.finishedAt).toBeInstanceOf(Date);
+    expect(execution.props.versionContext).toBe(versionContext);
     expect(await executions.findById(execution.props.id)).toBe(execution);
   });
 
@@ -122,9 +119,7 @@ describe('ExecuteScenario', () => {
     await targets.save(new Target({ id: 'target-1', name: 'Demo', url: 'https://example.com', status: 'INACTIVE' }));
     await scenarios.save(scenario);
 
-    await expect(new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner, available).execute({
-      scenarioId: 'scenario-1',
-    })).rejects.toThrow('Target must be active to execute');
+    await expect(createExecuteScenario(scenarios, targets, executions, runner).execute({ scenarioId: 'scenario-1' })).rejects.toThrow('Target must be active to execute');
     expect(runner.calls).toHaveLength(0);
   });
 
@@ -133,15 +128,11 @@ describe('ExecuteScenario', () => {
     const scenarios = new InMemoryScenarioRepository();
     const executions = new InMemoryExecutionRepository();
     const runner = new FakeExecutionRunner();
-    const unavailable: TargetAvailabilityPort = {
-      isAvailable: async () => false,
-    };
+    const unavailable: TargetAvailabilityPort = { isAvailable: async () => false };
     await targets.save(new Target({ id: 'target-1', name: 'Demo', url: 'https://example.com', status: 'ACTIVE' }));
     await scenarios.save(scenario);
 
-    await expect(new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner, unavailable).execute({
-      scenarioId: 'scenario-1',
-    })).rejects.toThrow('Target is not available');
+    await expect(createExecuteScenario(scenarios, targets, executions, runner, unavailable).execute({ scenarioId: 'scenario-1' })).rejects.toThrow('Target is not available');
     expect(runner.calls).toHaveLength(0);
     expect(await executions.findById('id-1')).toBeNull();
   });

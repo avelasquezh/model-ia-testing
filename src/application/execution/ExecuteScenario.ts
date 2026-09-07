@@ -1,4 +1,5 @@
 import { Execution } from '../../domain/execution/Execution.js';
+import type { EvaluationVersionContext } from '../../domain/versioning/EvaluationVersionContext.js';
 import type { IdGenerator, TargetAvailabilityPort } from '../ports/TargetPorts.js';
 import type { ExecutionRepository } from '../ports/ExecutionRepository.js';
 import type { ExecutionRunner, ExecutionRunnerOptions } from '../ports/ExecutionRunner.js';
@@ -21,6 +22,7 @@ export class ExecuteScenario {
     private readonly ids: IdGenerator,
     private readonly runner: ExecutionRunner,
     private readonly availability: TargetAvailabilityPort,
+    private readonly versionContext: EvaluationVersionContext,
   ) {}
 
   public async execute(input: ExecuteScenarioInput): Promise<Execution> {
@@ -46,6 +48,7 @@ export class ExecuteScenario {
       targetId: target.props.id,
       targetUrl: target.props.url,
       status: 'PENDING',
+      versionContext: this.versionContext,
     }).start();
 
     await this.executions.save(running);

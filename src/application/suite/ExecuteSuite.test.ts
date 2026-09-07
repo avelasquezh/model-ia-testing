@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ExecuteScenario } from '../execution/ExecuteScenario.js';
 import { ExecuteSuite } from './ExecuteSuite.js';
+import { EvaluationVersionContext } from '../../domain/versioning/EvaluationVersionContext.js';
 import { Scenario } from '../../domain/scenario/Scenario.js';
 import { Suite } from '../../domain/suite/Suite.js';
 import { Target } from '../../domain/target/Target.js';
@@ -13,55 +14,50 @@ import type { TargetAvailabilityPort } from '../ports/TargetPorts.js';
 
 class FixedIds {
   private current = 0;
-
-  generate(): string {
-    this.current += 1;
-    return `execution-${this.current}`;
-  }
+  generate(): string { this.current += 1; return `execution-${this.current}`; }
 }
 
-const available: TargetAvailabilityPort = {
-  isAvailable: async () => true,
-};
+const available: TargetAvailabilityPort = { isAvailable: async () => true };
+
+const versionContext = new EvaluationVersionContext({
+  productVersion: '0.1.0', evaluationMethodVersion: 'f2-method-0.1',
+  criterionCatalogVersion: 'f2-criteria-0.1', decisionRulesVersion: 'f2-rules-0.1',
+});
 
 const makeScenario = (id: string): Scenario => new Scenario({
-  id,
-  targetId: 'target-001',
-  name: `Scenario ${id}`,
-  objective: 'Validate conversational behavior',
-  description: 'Scenario used by suite execution tests',
-  inputs: [{ value: 'Hola' }],
-  expectedBehavior: 'Responds to the greeting',
-  finishConditions: [{ description: 'A response is received' }],
-  version: 1,
+  id, targetId: 'target-001', name: `Scenario ${id}`,
+  objective: 'Validate conversational behavior', description: 'Scenario used by suite execution tests',
+  inputs: [{ value: 'Hola' }], expectedBehavior: 'Responds to the greeting',
+  finishConditions: [{ description: 'A response is received' }], version: 1,
 });
 
 describe('ExecuteSuite', () => {
+  const buildExecuteScenario = (
+    scenarios: InMemoryScenarioRepository,
+    targets: InMemoryTargetRepository,
+    executions: InMemoryExecutionRepository,
+    runner: FakeExecutionRunner,
+  ) => new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner, available, versionContext);
+
   it('executes suite scenarios sequentially and returns their executions', async () => {
     const suites = new InMemorySuiteRepository();
     const scenarios = new InMemoryScenarioRepository();
     const targets = new InMemoryTargetRepository();
     const executions = new InMemoryExecutionRepository();
     const runner = new FakeExecutionRunner({ status: 'INCONCLUSIVE', observations: [] });
-    const executeScenario = new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner, available);
+    const executeScenario = buildExecuteScenario(scenarios, targets, executions, runner);
     const executeSuite = new ExecuteSuite(suites, executeScenario);
 
     await targets.save(new Target({ id: 'target-001', name: 'Demo', url: 'https://example.com', status: 'ACTIVE' }));
     await scenarios.save(makeScenario('scenario-001'));
     await scenarios.save(makeScenario('scenario-002'));
-    await suites.save(new Suite({
-      id: 'suite-001',
-      name: 'Regression',
-      scenarioIds: ['scenario-001', 'scenario-002'],
-    }));
+    await suites.save(new Suite({ id: 'suite-001', name: 'Regression', scenarioIds: ['scenario-001', 'scenario-002'] }));
 
     const result = await executeSuite.execute({ suiteId: 'suite-001', timeoutMs: 5_000 });
 
     expect(result).toHaveLength(2);
-    expect(result.map((execution) => execution.props.scenarioId)).toEqual([
-      'scenario-001',
-      'scenario-002',
-    ]);
+    expect(result.map((execution) => execution.props.scenarioId)).toEqual(['scenario-001', 'scenario-002']);
+    expect(result.every((execution) => execution.props.versionContext === versionContext)).toBe(true);
     expect(runner.calls).toHaveLength(2);
     expect(runner.calls[0]?.input.scenario.props.id).toBe('scenario-001');
     expect(runner.calls[1]?.input.scenario.props.id).toBe('scenario-002');
@@ -75,7 +71,7 @@ describe('ExecuteSuite', () => {
     const targets = new InMemoryTargetRepository();
     const executions = new InMemoryExecutionRepository();
     const runner = new FakeExecutionRunner();
-    const executeScenario = new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner, available);
+    const executeScenario = buildExecuteScenario(scenarios, targets, executions, runner);
     const executeSuite = new ExecuteSuite(suites, executeScenario);
 
     await expect(executeSuite.execute({ suiteId: 'missing' })).rejects.toThrow('Suite not found');
@@ -88,24 +84,21 @@ describe('ExecuteSuite', () => {
     const targets = new InMemoryTargetRepository();
     const executions = new InMemoryExecutionRepository();
     const runner = new FakeExecutionRunner({ status: 'CANCELLED', observations: [] });
-    const executeScenario = new ExecuteScenario(scenarios, targets, executions, new FixedIds(), runner, available);
+    const executeScenario = buildExecuteScenario(scenarios, targets, executions, runner);
     const executeSuite = new ExecuteSuite(suites, executeScenario);
     const controller = new AbortController();
 
     await targets.save(new Target({ id: 'target-001', name: 'Demo', url: 'https://example.com', status: 'ACTIVE' }));
     await scenarios.save(makeScenario('scenario-001'));
     await scenarios.save(makeScenario('scenario-002'));
-    await suites.save(new Suite({
-      id: 'suite-001',
-      name: 'Regression',
-      scenarioIds: ['scenario-001', 'scenario-002'],
-    }));
+    await suites.save(new Suite({ id: 'suite-001', name: 'Regression', scenarioIds: ['scenario-001', 'scenario-002'] }));
 
     controller.abort();
     const result = await executeSuite.execute({ suiteId: 'suite-001', signal: controller.signal });
 
     expect(result).toHaveLength(1);
     expect(result[0]?.props.status).toBe('CANCELLED');
+    expect(result[0]?.props.versionContext).toBe(versionContext);
     expect(runner.calls).toHaveLength(1);
   });
 });

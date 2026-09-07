@@ -1,3 +1,4 @@
+import type { EvaluationVersionContext } from '../versioning/EvaluationVersionContext.js';
 import type { ExecutionObservation } from './ExecutionObservation.js';
 import type { ExecutionTechnicalError } from './ExecutionTechnicalError.js';
 
@@ -22,6 +23,7 @@ export type ExecutionProps = {
   readonly targetId: string;
   readonly targetUrl: string;
   readonly status: ExecutionStatus;
+  readonly versionContext: EvaluationVersionContext;
   readonly startedAt?: Date;
   readonly finishedAt?: Date;
   readonly observations?: readonly ExecutionObservation[];
@@ -37,6 +39,7 @@ export class Execution {
     if (!Number.isInteger(props.scenarioVersion) || props.scenarioVersion < 1) {
       throw new Error('Execution scenario version must be a positive integer');
     }
+    if (!props.versionContext) throw new Error('Execution version context is required');
   }
 
   public start(startedAt: Date = new Date()): Execution {
