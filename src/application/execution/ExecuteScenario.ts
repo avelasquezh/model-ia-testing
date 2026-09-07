@@ -1,5 +1,4 @@
 import { ComposeEvaluationPlan } from '../evaluation/ComposeEvaluationPlan.js';
-import { EvaluationPlan } from '../../domain/evaluation/EvaluationPlan.js';
 import type { EvaluationSelectionContext } from '../../domain/evaluation/EvaluationSelectionContext.js';
 import { Execution } from '../../domain/execution/Execution.js';
 import type { EvaluationVersionContext } from '../../domain/versioning/EvaluationVersionContext.js';
@@ -27,7 +26,7 @@ export class ExecuteScenario {
     private readonly runner: ExecutionRunner,
     private readonly availability: TargetAvailabilityPort,
     private readonly versionContext: EvaluationVersionContext,
-    private readonly composeEvaluationPlan: ComposeEvaluationPlan,
+    private readonly composeEvaluationPlan?: ComposeEvaluationPlan,
   ) {}
 
   public async execute(input: ExecuteScenarioInput): Promise<Execution> {
@@ -40,6 +39,9 @@ export class ExecuteScenario {
       }
       if (input.evaluationSelection.props.scenarioVersion !== scenario.props.version) {
         throw new Error('Evaluation selection scenario version does not match scenario version');
+      }
+      if (!this.composeEvaluationPlan) {
+        throw new Error('Evaluation plan composer is required for contextual evaluation selection');
       }
     }
 
@@ -57,7 +59,7 @@ export class ExecuteScenario {
 
     const executionId = this.ids.generate();
     const evaluationPlan = input.evaluationSelection
-      ? await this.composeEvaluationPlan.compose({
+      ? await this.composeEvaluationPlan!.compose({
           executionId,
           context: input.evaluationSelection.props.executionContext,
           selection: input.evaluationSelection,
