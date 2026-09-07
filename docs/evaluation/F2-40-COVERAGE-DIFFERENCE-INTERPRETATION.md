@@ -1,6 +1,6 @@
 # F2-40 — Interpretación descriptiva de diferencias entre ejecuciones
 
-**Estado:** EN VALIDACIÓN
+**Estado:** CERRADO / VALIDADO
 
 ## Propósito
 
@@ -75,6 +75,19 @@ Cualquier juicio normativo posterior deberá consumir esta interpretación como 
 - `src/application/evaluation/InterpretEvaluationCoverageDifference.test.ts`
 - `spike/evaluation/difference-interpretation-validation.test.ts`
 
+## Evidencia de validación
+
+La implementación quedó presente en `main` durante la ejecución del commit `6a55bf1d168e37049e385ef5824766bbb0bd0395`.
+
+CI: ejecución `34167130840` (`#286`) completada con éxito en los cuatro gates:
+
+- TypeScript y pruebas unitarias/aplicación;
+- BDD acceptance tests;
+- Playwright E2E;
+- Quality Gate.
+
+Architecture Spike: ejecución `34167130834` completada con éxito, incluyendo TypeScript, pruebas unitarias/arquitectura, BDD, Playwright, migraciones PostgreSQL, integración de repositorio/versionado, manifiesto de evidencia, publicación de artefactos y Quality Gate.
+
 ## Criterio de salida
 
-F2-40 podrá cerrarse cuando TypeScript, pruebas unitarias/aplicación, BDD, Playwright, migraciones y Architecture Spike finalicen correctamente en CI, y la evidencia quede registrada en `PROJECT-STATUS.md`.
+**CUMPLIDO.** F2-40 queda cerrado porque la regla está versionada, la implementación y sus pruebas están materializadas y los gates de CI y Architecture Spike finalizaron correctamente.
