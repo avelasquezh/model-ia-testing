@@ -1,6 +1,6 @@
 # F2-24 — Delimitación de dimensiones del MVP
 
-**Estado:** CERRADO COMO DECISIÓN METODOLÓGICA — pendiente de implementación ejecutable
+**Estado:** **CERRADO / VALIDADO**
 
 ## 1. Propósito
 
@@ -156,6 +156,19 @@ La delimitación se considera estable para continuar el desarrollo cuando:
 - el motor de selección pueda diferenciar aplicable/no aplicable;
 - las futuras evaluaciones respeten la separación entre ejecución, evidencia, criterio y scoring.
 
+### Evidencia de implementación y validación
+
+F2-24 quedó materializado mediante el alcance ejecutable `MVP_CORE`, el filtrado explícito de los 18 criterios del núcleo, la conservación de aplicabilidad por contexto y la persistencia del alcance en `EvaluationPlan`.
+
+La implementación fue validada con:
+
+- CI `34093226220`, commit `1e21df7360361f9bd3956e93c6f1d4e649c6766e`: **success** en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright E2E y quality gate.
+- Architecture Spike `34093226273`, mismo commit: **success** en SPIKE-001 a SPIKE-012, incluyendo integración PostgreSQL/versioning y quality gate.
+
+La corrección `1e21df7` solo alineó una prueba existente con el nuevo campo obligatorio `scope` de `EvaluationPlan`; no modificó la decisión metodológica.
+
 ## 12. Siguiente incremento
 
-El siguiente paso es convertir esta decisión metodológica en una selección de criterios ejecutable por contexto y escenario, con trazabilidad de por qué cada criterio fue incluido o excluido en una ejecución concreta. Después se formalizará la repetición y variabilidad.
+**F2-25 — Selección contextual de criterios.** Convertir el alcance del MVP en una selección determinista por contexto y escenario, conservando trazabilidad de por qué cada criterio fue incluido, excluido o marcado `NOT_APPLICABLE` en una ejecución concreta.
+
+Después se formalizará la repetición y variabilidad antes de diseñar scoring global.
