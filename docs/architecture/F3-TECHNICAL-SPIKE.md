@@ -1,7 +1,7 @@
 # Frente 3 — Spike técnico de arquitectura
 
 **Versión:** 1.0  
-**Estado:** Pendiente de ejecución
+**Estado:** Validación incremental en ejecución
 
 ## 1. Objetivo
 
@@ -60,6 +60,8 @@ La evidencia deberá incluir como mínimo:
 - referencia a la evidencia generada;
 - incidencias o desviaciones encontradas;
 - conclusión final.
+
+Para SPIKE-008, el workflow genera `artifacts/spike-008-evidence-manifest.json` después de las pruebas y antes de publicar el artifact. El manifiesto registra `runId`, `runUrl`, `commitSha`, `ref`, workflow, timestamp de generación y SHA-256 de los archivos de evidencia descubiertos en `artifacts/`, `test-results/` y `playwright-report/`.
 
 ## 7. Regla de decisión
 
