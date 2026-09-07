@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ExecuteScenario } from './ExecuteScenario.js';
+import { ComposeEvaluationPlan, type CriterionCatalog } from '../evaluation/ComposeEvaluationPlan.js';
+import { EvaluationSelectionContext } from '../../domain/evaluation/EvaluationSelectionContext.js';
+import { Criterion } from '../../domain/evaluation/Criterion.js';
 import { EvaluationVersionContext } from '../../domain/versioning/EvaluationVersionContext.js';
 import { FakeExecutionRunner } from '../../infrastructure/execution/FakeExecutionRunner.js';
 import { InMemoryExecutionRepository } from '../../infrastructure/persistence/InMemoryExecutionRepository.js';
@@ -23,6 +26,19 @@ describe('ExecuteScenario', () => {
     decisionRulesVersion: 'f2-rules-0.1',
   });
 
+  const criterion = new Criterion({
+    id: 'D1-C01',
+    dimensionId: 'D1',
+    type: 'BOOLEAN',
+    applicableContexts: ['web-chatbot'],
+    requiredEvidence: ['TRANSCRIPT'],
+    ruleVersion: '1.0',
+  });
+
+  const criterionCatalog: CriterionCatalog = {
+    findAll: async () => [criterion],
+  };
+
   class FixedIds {
     private current = 0;
     generate(): string {
@@ -41,8 +57,9 @@ describe('ExecuteScenario', () => {
     executions: InMemoryExecutionRepository,
     runner: FakeExecutionRunner,
     availability: TargetAvailabilityPort = available,
+    composeEvaluationPlan?: ComposeEvaluationPlan,
   ) => new ExecuteScenario(
-    scenarios, targets, executions, new FixedIds(), runner, availability, versionContext,
+    scenarios, targets, executions, new FixedIds(), runner, availability, versionContext, composeEvaluationPlan,
   );
 
   it('delegates execution to the runner and persists its terminal state and observations', async () => {
@@ -74,6 +91,62 @@ describe('ExecuteScenario', () => {
     expect(runner.calls[0]?.input.execution.props.status).toBe('RUNNING');
     expect(runner.calls[0]?.options.timeoutMs).toBe(60_000);
     expect(await executions.findById(execution.props.id)).toBe(execution);
+  });
+
+  it('consumes and persists the contextual evaluation plan before invoking the runner', async () => {
+    const targets = new InMemoryTargetRepository();
+    const scenarios = new InMemoryScenarioRepository();
+    const executions = new InMemoryExecutionRepository();
+    const runner = new FakeExecutionRunner({ status: 'PASSED', observations: [] });
+    const composer = new ComposeEvaluationPlan(criterionCatalog);
+    await targets.save(new Target({ id: 'target-1', name: 'Demo', url: 'https://example.com', status: 'ACTIVE' }));
+    await scenarios.save(scenario);
+
+    const execution = await createExecuteScenario(scenarios, targets, executions, runner, available, composer).execute({
+      scenarioId: 'scenario-1',
+      evaluationSelection: new EvaluationSelectionContext({
+        scenarioId: 'scenario-1',
+        scenarioVersion: 2,
+        executionContext: 'web-chatbot',
+        scope: 'MVP_CORE',
+        selectedCriterionIds: ['D1-C01'],
+      }),
+    });
+
+    expect(execution.props.evaluationPlan?.props.executionId).toBe(execution.props.id);
+    expect(execution.props.evaluationPlan?.props.selectionContext).toEqual({
+      scenarioId: 'scenario-1',
+      scenarioVersion: 2,
+      executionContext: 'web-chatbot',
+      scope: 'MVP_CORE',
+      selectedCriterionIds: ['D1-C01'],
+    });
+    expect(execution.props.evaluationPlan?.props.items.map((item) => item.criterionId)).toEqual(['D1-C01']);
+    expect(runner.calls[0]?.input.execution.props.evaluationPlan).toBe(execution.props.evaluationPlan);
+    expect((await executions.findById(execution.props.id))?.props.evaluationPlan).toBe(execution.props.evaluationPlan);
+  });
+
+  it('rejects an evaluation selection that targets a different scenario version', async () => {
+    const targets = new InMemoryTargetRepository();
+    const scenarios = new InMemoryScenarioRepository();
+    const executions = new InMemoryExecutionRepository();
+    const runner = new FakeExecutionRunner();
+    const composer = new ComposeEvaluationPlan(criterionCatalog);
+    await targets.save(new Target({ id: 'target-1', name: 'Demo', url: 'https://example.com', status: 'ACTIVE' }));
+    await scenarios.save(scenario);
+
+    await expect(createExecuteScenario(scenarios, targets, executions, runner, available, composer).execute({
+      scenarioId: 'scenario-1',
+      evaluationSelection: new EvaluationSelectionContext({
+        scenarioId: 'scenario-1',
+        scenarioVersion: 1,
+        executionContext: 'web-chatbot',
+        scope: 'MVP_CORE',
+        selectedCriterionIds: ['D1-C01'],
+      }),
+    })).rejects.toThrow('Evaluation selection scenario version does not match scenario version');
+    expect(runner.calls).toHaveLength(0);
+    expect(await executions.findById('id-1')).toBeNull();
   });
 
   it('persists technical errors returned by the runner', async () => {
