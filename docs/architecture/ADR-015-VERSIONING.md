@@ -1,7 +1,7 @@
 # ADR-015 — Versionado
 
 **Estado:** Aprobado como baseline de diseño; implementación incremental en curso  
-**Versión:** 1.1
+**Versión:** 1.2
 
 ## Contexto
 
@@ -24,11 +24,11 @@ El producto utiliza Semantic Versioning como convención de releases. La versió
 
 Las versiones metodológicas evolucionan independientemente del producto. Un cambio metodológico no debe alterar silenciosamente la interpretación de resultados históricos.
 
-Para representar el conjunto de referencias que contextualiza una evaluación se introduce el contrato de dominio `EvaluationVersionContext`. Su implementación inicial mantiene fuera del dominio cualquier mecanismo de lectura de Git, variables de entorno o proveedores externos; recibe referencias ya resueltas por la capa de composición.
+Para representar el conjunto de referencias que contextualiza una evaluación se utiliza el contrato de dominio `EvaluationVersionContext`. El dominio no conoce Git, variables de entorno ni proveedores externos; las referencias llegan resueltas desde composición/configuración.
 
 ### Contrato mínimo
 
-Una evaluación deberá poder identificar como mínimo:
+Una ejecución deberá poder identificar como mínimo:
 
 `productVersion + evaluationMethodVersion + criterionCatalogVersion + decisionRulesVersion + executionId`
 
@@ -37,6 +37,12 @@ Cuando corresponda se añaden:
 `evaluatorVersion + commitSha`
 
 La versión del escenario continúa siendo una propiedad propia del escenario/ejecución y no se sustituye por el catálogo de criterios.
+
+## Persistencia
+
+Las referencias de versionado se almacenan como campos de primera clase en `executions`, junto con el estado y el resto del contexto histórico. La migración `003_execution_versioning.sql` hace obligatorias las cuatro referencias mínimas.
+
+Las ejecuciones existentes sin referencias metodológicas se normalizan durante la migración como `legacy-unknown`. Esto representa explícitamente que la información histórica no estaba disponible y evita inventar una versión metodológica retrospectiva.
 
 ## Principios y patrones
 
@@ -55,6 +61,7 @@ La versión del escenario continúa siendo una propiedad propia del escenario/ej
 5. El versionado no depende de información almacenada únicamente en logs.
 6. El contrato de versión rechaza referencias obligatorias vacías.
 7. El contexto de versión permanece inmutable después de su construcción.
+8. Una ejecución persistida puede recuperarse con el mismo contexto de versión que tenía al ejecutarse.
 
 ## Estado de implementación
 
@@ -62,10 +69,14 @@ La versión del escenario continúa siendo una propiedad propia del escenario/ej
 - [x] Convención SemVer para producto.
 - [x] Contrato de dominio `EvaluationVersionContext` creado.
 - [x] Pruebas unitarias del contrato creadas.
-- [ ] Integración obligatoria del contexto en `Execution`.
-- [ ] Persistencia de las referencias de versión.
-- [ ] Validación completa del comportamiento histórico mediante PostgreSQL.
+- [x] Integración obligatoria del contexto en `Execution`.
+- [x] Propagación del contexto desde `ExecuteScenario` y `ExecuteSuite`.
+- [x] Migración PostgreSQL para persistencia de referencias.
+- [x] Adaptador PostgreSQL de `ExecutionRepository`.
+- [x] Pruebas unitarias de mapeo y recuperación.
+- [x] Prueba de integración de round-trip PostgreSQL.
+- [ ] Validación completa del comportamiento histórico con escenarios/versiones metodológicas reales.
 
 ## Consecuencia
 
-La plataforma puede diferenciar evolución del software de evolución de la metodología de evaluación. La implementación se hará de forma incremental para evitar introducir un acoplamiento prematuro en `Execution` o en persistencia.
+La integración en `Execution` es intencional: la ejecución debe conservar el contexto que determina su interpretación. La persistencia se implementa de forma incremental para mantener separadas las responsabilidades de dominio, aplicación e infraestructura.

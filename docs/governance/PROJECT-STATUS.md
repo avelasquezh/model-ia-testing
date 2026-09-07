@@ -5,17 +5,25 @@
 **Rama:** `main`  
 **Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 con baseline ejecutable parcial y F3 en validación técnica.
 
-## Incremento actual — contexto de versionado en ejecución
+## Incremento actual — versionado auditable persistido
 
-**Estado:** implementado y cubierto por pruebas unitarias/aplicación.
+**Estado:** implementado y cubierto por pruebas unitarias y prueba de integración PostgreSQL.
 
-`EvaluationVersionContext` identifica versión de producto, método de evaluación, catálogo de criterios y reglas de decisión, con referencias opcionales del evaluador IA y commit de procedencia. `ExecuteScenario` recibe este contexto como dependencia y cada `Execution` lo conserva obligatoriamente durante `PENDING` → `RUNNING` → estado terminal.
+El contexto `EvaluationVersionContext` ya forma parte obligatoria de `Execution` y es propagado desde `ExecuteScenario`/`ExecuteSuite`. Además, las referencias mínimas de versionado se persisten como campos de primera clase en `executions` mediante la migración `003_execution_versioning.sql`. Se añadió un adaptador PostgreSQL para guardar y reconstruir una ejecución con su contexto de versión.
 
-La persistencia de estas referencias en PostgreSQL todavía no está integrada. Por tanto, la reconstrucción histórica está soportada en dominio/aplicación, pero todavía no debe declararse como auditabilidad persistida completa.
+La migración normaliza ejecuciones históricas que no tenían referencias metodológicas conocidas con `legacy-unknown`. Esto no inventa una versión histórica: identifica explícitamente la ausencia de información.
+
+## Verificación del incremento
+
+- Contrato de versión: probado.
+- Inmutabilidad del contexto durante el ciclo de `Execution`: probado.
+- Persistencia PostgreSQL del contexto: implementada.
+- Recuperación PostgreSQL del contexto: cubierta por prueba de integración.
+- CI del commit: ejecutándose; su conclusión debe verificarse antes de declarar el incremento como validado por CI.
 
 ## Corrección de documentación
 
-README, `PROJECT-STATUS.md`, ADR-015 y `PENDING-DECISIONS.md` fueron reconciliados para distinguir entre diseño, implementación parcial y validación. El README ya no presenta el MVP como no iniciado.
+README, `PROJECT-STATUS.md`, ADR-015 y `PENDING-DECISIONS.md` se mantienen alineados con el nivel real de implementación. Los documentos diferencian diseño, implementación y validación.
 
 ## Estado comprobado
 
@@ -37,9 +45,7 @@ Continúan pendientes la aprobación metodológica definitiva, scoring/agregaci�
 La solución ya materializa TypeScript estricto, monolito modular, arquitectura hexagonal, Playwright mediante adaptadores, GitHub Actions y PostgreSQL con migraciones reproducibles. Esto no constituye por sí solo una validación completa del spike.
 
 ### Persistencia
-**Estado:** Incremento técnico comprobado en CI.
-
-Se dispone de frontera PostgreSQL, esquema reproducible, bookkeeping de migraciones, runner determinista y validaciones de migración/transacción en CI.
+**Estado:** Schema MVP reproducible y repositorio PostgreSQL de `Execution` implementados; validación operacional completa aún pendiente.
 
 ## Versionado
 
@@ -49,7 +55,7 @@ Las versiones metodológicas son independientes del producto. Una ejecución his
 
 ## Próximo incremento
 
-Persistir las referencias del `EvaluationVersionContext` asociadas a `Execution` en PostgreSQL, con migración reproducible y pruebas de recuperación. Después se continuará con el siguiente gate del spike F3; el scoring global sigue deliberadamente fuera de alcance hasta cerrar su validación metodológica.
+Cerrar la verificación CI del incremento actual. Si el gate queda en verde, continuar con la validación histórica de cambio de versión metodológica sin mutación retroactiva de resultados. Después se retomará el siguiente gate del spike F3.
 
 ## Regla de documentación
 

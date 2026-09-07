@@ -23,7 +23,7 @@ Principio central:
 - **F1 — Núcleo funcional:** gestión de objetivos, escenarios/suites, ejecución, observaciones, evidencia, resultados, hallazgos, reportes, trazabilidad, seguridad de ejecución y quality gates implementados en distintos niveles.
 - **F2 — Evaluación:** modelos de medición, criterios, planes ejecutables, reglas deterministas, catálogo de evidencia, riesgo y validaciones metodológicas parciales.
 - **F3 — Arquitectura:** monolito modular con arquitectura hexagonal, TypeScript estricto, Playwright aislado por adaptadores, PostgreSQL y GitHub Actions; el spike aún no ha cerrado todas sus validaciones.
-- **Persistencia:** migraciones PostgreSQL reproducibles y verificaciones técnicas incorporadas al spike/CI.
+- **Persistencia:** migraciones PostgreSQL reproducibles y verificaciones técnicas incorporadas al spike/CI; `Execution` ya puede persistir y reconstruir su contexto de versionado.
 
 ## Versionado
 
@@ -39,10 +39,10 @@ La cadena objetivo es:
 
 ## Próximo trabajo
 
-1. Integrar las referencias del `EvaluationVersionContext` en persistencia PostgreSQL.
-2. Ejecutar el spike técnico restante y convertir en decisión formal las evidencias obtenidas.
-3. Continuar F2 sin introducir scoring global hasta cerrar la validación metodológica.
-4. Reconciliar permanentemente documentación, implementación y evidencia CI.
+1. Verificar el gate CI del incremento de persistencia y registrar su resultado.
+2. Probar cambio de versión metodológica sin mutación retroactiva de resultados históricos.
+3. Cerrar el siguiente gate del spike F3 y convertir sus evidencias en decisiones arquitectónicas.
+4. Continuar F2 sin introducir scoring global hasta cerrar la validación metodológica.
 
 ## Documentación clave
 

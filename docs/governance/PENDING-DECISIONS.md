@@ -1,6 +1,6 @@
 # Registro de decisiones pendientes
 
-Este registro distingue decisiones metodológicas aún no aprobadas de decisiones arquitectónicas documentadas como propuestas y pendientes de validación.
+Este registro distingue decisiones metodológicas aún no aprobadas de decisiones arquitectónicas documentadas como baseline o pendientes de validación.
 
 ## Metodología de evaluación
 
@@ -20,11 +20,11 @@ Este registro distingue decisiones metodológicas aún no aprobadas de decisione
 
 ## Arquitectura — estado actual
 
-Las decisiones arquitectónicas documentadas como ADR pueden pasar de propuesta a baseline únicamente cuando existe evidencia suficiente. A 2026-09-07, la implementación ya materializa una parte importante de las decisiones, pero el spike F3 todavía no ha cerrado todas las validaciones requeridas.
+Las decisiones arquitectónicas documentadas como ADR pueden pasar a estado validado únicamente cuando existe evidencia suficiente. A 2026-09-07, varias decisiones ya están materializadas, pero el spike F3 todavía no ha cerrado todas las validaciones.
 
 - ADR-003 — Stack tecnológico: **baseline materializada; validación integral pendiente**.
-- ADR-004 — Persistencia PostgreSQL: **baseline materializada; migraciones/repository spike comprobados en CI; validación integral pendiente**.
-- ADR-005 — Modelo de ejecución: **baseline parcialmente materializada**.
+- ADR-004 — Persistencia PostgreSQL: **baseline materializada; migraciones y repositorio de Execution implementados; validación operacional integral pendiente**.
+- ADR-005 — Modelo de ejecución: **baseline materializada**.
 - ADR-006 — Estrategia BDD/TDD: **materializada en pruebas existentes; validación integral pendiente**.
 - ADR-007 — Almacenamiento de evidencia: **materializado parcialmente**.
 - ADR-008 — Aislamiento Playwright: **materializado parcialmente**.
@@ -34,13 +34,13 @@ Las decisiones arquitectónicas documentadas como ADR pueden pasar de propuesta 
 - ADR-012 — Autenticación y autorización: **política definida; implementación pública pendiente**.
 - ADR-013 — Observabilidad: **baseline parcial**.
 - ADR-014 — Configuración y secretos: **baseline definida; validación completa pendiente**.
-- ADR-015 — Versionado: **baseline aprobada; implementación incremental en curso**.
+- ADR-015 — Versionado: **baseline aprobada; contexto integrado en Execution y persistido; validación histórica integral pendiente**.
 - ADR-016 — Estructura modular: **baseline materializada parcialmente; validación estática integral pendiente**.
 - ADR-017 — SDLC seguro y flujo Git: **política definida; controles operativos completos pendientes**.
 
 ## Validación técnica pendiente
 
-El principal gate técnico continúa siendo el spike definido en `docs/architecture/F3-TECHNICAL-SPIKE.md`. El avance reciente demuestra que PostgreSQL y sus migraciones reproducibles pueden ejecutarse dentro de CI, pero esto no equivale a declarar el spike completo como VALIDADO.
+El principal gate técnico continúa siendo el spike definido en `docs/architecture/F3-TECHNICAL-SPIKE.md`. El incremento actual ya cubre persistencia de referencias de versión y round-trip PostgreSQL, pero no equivale a declarar el spike completo como VALIDADO.
 
 ## Automatización
 
@@ -50,9 +50,12 @@ El principal gate técnico continúa siendo el spike definido en `docs/architect
 
 ## CI/CD
 
-- Implementar workflows derivados de ADR-010.
 - Definir artefactos concretos de evidencia y retención.
 - Definir política operativa de ramas/PR y protección de `main`.
 - Seleccionar herramientas concretas para SAST, secret scanning y análisis de dependencias.
+
+## Próximo punto de decisión
+
+Después de validar CI del incremento de persistencia, se debe comprobar que un cambio de versión metodológica produzca una nueva referencia y no altere resultados históricos existentes. Esa prueba debe preceder a cualquier scoring global.
 
 Ninguna decisión marcada como Pendiente deberá considerarse aprobada por defecto durante la implementación.
