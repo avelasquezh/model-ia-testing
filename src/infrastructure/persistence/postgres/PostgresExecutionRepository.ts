@@ -137,7 +137,7 @@ export class PostgresExecutionRepository implements ExecutionRepository {
       ...(row.commit_sha !== null ? { commitSha: row.commit_sha } : {}),
     });
 
-    return new Execution({
+    return new ExecutionModel({
       id: row.id,
       scenarioId: row.scenario_id,
       scenarioVersion: row.scenario_version,
