@@ -1,11 +1,11 @@
 # Frente 3 — Trazabilidad arquitectónica
 
-**Versión:** 1.0  
-**Estado:** Baseline
+**Versión:** 1.1  
+**Estado:** Baseline materializada; validación técnica incremental
 
 ## Propósito
 
-Relacionar decisiones arquitectónicas con las necesidades del producto y con los mecanismos que deberán validarlas. Esta matriz no sustituye la trazabilidad detallada de requisitos; la complementa.
+Relacionar decisiones arquitectónicas con las necesidades del producto y con los mecanismos que deben validarlas. Esta matriz no sustituye la trazabilidad detallada de requisitos; la complementa.
 
 ## Matriz
 
@@ -31,9 +31,11 @@ Relacionar decisiones arquitectónicas con las necesidades del producto y con lo
 - Una propuesta de ADR no se considera validada hasta ejecutar su criterio correspondiente.
 - Un test que comprueba un detalle de implementación no demuestra por sí solo la validez de la decisión arquitectónica.
 - Toda desviación significativa deberá generar actualización del ADR afectado o un nuevo ADR.
+- La presencia de implementación parcial no convierte automáticamente una decisión en arquitectura validada.
 
 ## Estado global
 
 **Arquitectura documental:** VALIDADA COMO BASELINE.  
-**Arquitectura técnica:** PENDIENTE DE SPIKE.  
-**Implementación productiva:** NO INICIADA.
+**Arquitectura técnica:** EN VALIDACIÓN MEDIANTE SPIKE.  
+**Implementación:** INCREMENTAL; existen componentes reales de dominio, aplicación, infraestructura, Playwright, PostgreSQL, evidencia, evaluación y CI/CD.  
+**MVP productivo:** NO DECLARADO; todavía faltan gates técnicos y metodológicos para considerarlo listo para producción.
