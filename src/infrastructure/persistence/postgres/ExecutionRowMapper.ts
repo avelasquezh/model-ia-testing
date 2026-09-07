@@ -44,17 +44,16 @@ const serializeObservation = (observation: ExecutionObservation): PersistedObser
 };
 
 const deserializeObservation = (observation: PersistedObservation): ExecutionObservation => {
-  const restored: ExecutionObservation = {
+  const base: ExecutionObservation = {
     input: observation.input,
     response: observation.response,
     startedAt: new Date(observation.startedAt),
     observedAt: new Date(observation.observedAt),
     durationMs: observation.durationMs,
   };
-  if (observation.screenshotBase64) {
-    restored.screenshot = new Uint8Array(Buffer.from(observation.screenshotBase64, 'base64'));
-  }
-  return restored;
+  return observation.screenshotBase64
+    ? { ...base, screenshot: new Uint8Array(Buffer.from(observation.screenshotBase64, 'base64')) }
+    : base;
 };
 
 const serializeError = (error: ExecutionTechnicalError): PersistedError => {
@@ -69,14 +68,13 @@ const serializeError = (error: ExecutionTechnicalError): PersistedError => {
 };
 
 const deserializeError = (error: PersistedError): ExecutionTechnicalError => {
-  const restored: ExecutionTechnicalError = {
+  const base: ExecutionTechnicalError = {
     code: error.code,
     message: error.message,
     operation: error.operation,
     occurredAt: new Date(error.occurredAt),
   };
-  if (error.turnIndex !== undefined) restored.turnIndex = error.turnIndex;
-  return restored;
+  return error.turnIndex === undefined ? base : { ...base, turnIndex: error.turnIndex };
 };
 
 export const executionToRowValues = (execution: Execution) => [
