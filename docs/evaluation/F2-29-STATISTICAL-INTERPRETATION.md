@@ -1,6 +1,6 @@
 # F2-29 — Interpretación metodológica de indicadores estadísticos
 
-**Estado:** **IMPLEMENTADO; pendiente de validación CI**
+**Estado:** **CERRADO / VALIDADO**
 
 ## 1. Propósito
 
@@ -67,10 +67,16 @@ F2-29 tampoco define:
 
 ## 6. Trazabilidad
 
-La interpretación debe conservar referencia a los indicadores que la originaron. El resultado interpretativo es derivado y no sustituye las ejecuciones individuales ni la distribución estadística.
+La interpretación conserva referencia a los indicadores que la originaron. El resultado interpretativo es derivado y no sustituye las ejecuciones individuales ni la distribución estadística.
 
-## 7. Criterio de salida
+## 7. Evidencia de cierre
 
-Queda formalizada una interpretación determinista y auditable de la variabilidad observada, limitada a describir comparabilidad, ausencia de observaciones evaluables, consistencia observada o variabilidad observada.
+CI `34113055452`: **success** en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright E2E y Quality Gate.
+
+Architecture Spike `34113055442`: **success** en SPIKE-001 a SPIKE-012, incluyendo PostgreSQL/versioning, BDD, Playwright y Quality Gate.
+
+## 8. Criterio de salida
+
+Queda formalizada y validada una interpretación determinista y auditable de la variabilidad observada, limitada a describir comparabilidad, ausencia de observaciones evaluables, consistencia observada o variabilidad observada.
 
 El siguiente paso metodológico debe definir reglas de juicio y eventual agregación únicamente después de establecer criterios explícitos y sus condiciones de aplicación.
