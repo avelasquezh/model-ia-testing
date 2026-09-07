@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Test and coverage output
+coverage/
+test-results/
+playwright-report/
+
+# Build and runtime output
+dist/
+*.log
+
+# Local databases and transient data
+*.sqlite
+*.sqlite3
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
