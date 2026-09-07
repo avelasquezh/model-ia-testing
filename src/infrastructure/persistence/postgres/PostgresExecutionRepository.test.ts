@@ -45,10 +45,11 @@ const execution = new Execution({
   status: 'PENDING',
   versionContext,
   evaluationPlan,
+  conditionFingerprint: 'cond-A',
 });
 
 describe('PostgresExecutionRepository', () => {
-  it('persists version references and the evaluation plan as first-class execution state', async () => {
+  it('persists version references, evaluation plan and condition fingerprint as first-class execution state', async () => {
     const query = vi.fn(async (_sql: string, params?: unknown[]) => ({ rows: [], rowCount: 1, params }));
     const database = { query } as unknown as PostgresDatabase;
     const repository = new PostgresExecutionRepository(database);
@@ -64,11 +65,12 @@ describe('PostgresExecutionRepository', () => {
       'f2-rules-0.1',
       'evaluator-1',
       'abcdef123456',
+      'cond-A',
     ]));
     expect(values).toContain(JSON.stringify(evaluationPlan.props));
   });
 
-  it('reconstructs an execution, its version context and its evaluation plan from PostgreSQL rows', async () => {
+  it('reconstructs an execution, version context, evaluation plan and condition fingerprint from PostgreSQL rows', async () => {
     const database = {
       query: vi.fn(async () => ({
         rows: [{
@@ -84,6 +86,7 @@ describe('PostgresExecutionRepository', () => {
           decision_rules_version: 'f2-rules-0.1',
           evaluator_version: 'evaluator-1',
           commit_sha: 'abcdef123456',
+          condition_fingerprint: 'cond-A',
           evaluation_plan: evaluationPlan.props,
           started_at: new Date('2026-09-07T01:00:00Z'),
           finished_at: new Date('2026-09-07T01:00:05Z'),
@@ -109,6 +112,7 @@ describe('PostgresExecutionRepository', () => {
     expect(restored?.props.versionContext.props.decisionRulesVersion).toBe('f2-rules-0.1');
     expect(restored?.props.versionContext.props.evaluatorVersion).toBe('evaluator-1');
     expect(restored?.props.versionContext.props.commitSha).toBe('abcdef123456');
+    expect(restored?.props.conditionFingerprint).toBe('cond-A');
     expect(restored?.props.evaluationPlan?.props.scope).toBe('MVP_CORE');
     expect(restored?.props.evaluationPlan?.props.selectionContext).toEqual(evaluationPlan.props.selectionContext);
     expect(restored?.props.evaluationPlan?.props.items.map((item) => item.criterionId)).toEqual(['D1-C01']);
