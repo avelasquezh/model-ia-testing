@@ -1,3 +1,4 @@
+import type { EffectiveTargetConfiguration } from '../../../domain/target/EffectiveTargetConfiguration.js';
 import type { ExecutionObservation } from '../../../domain/execution/ExecutionObservation.js';
 import type { ExecutionTechnicalError } from '../../../domain/execution/ExecutionTechnicalError.js';
 import { Execution, type ExecutionProps } from '../../../domain/execution/Execution.js';
@@ -19,7 +20,7 @@ export type ExecutionRow = {
   scenario_version: number;
   target_id: string;
   target_url: string;
-  target_configuration: unknown;
+  target_configuration: EffectiveTargetConfiguration | null;
   status: ExecutionProps['status'];
   started_at: Date | string | null;
   finished_at: Date | string | null;
@@ -84,7 +85,7 @@ export const executionToRowValues = (execution: Execution) => [
   execution.props.scenarioVersion,
   execution.props.targetId,
   execution.props.targetUrl,
-  null,
+  execution.props.targetConfiguration ? JSON.stringify(execution.props.targetConfiguration) : null,
   execution.props.status,
   execution.props.startedAt ?? null,
   execution.props.finishedAt ?? null,
@@ -106,6 +107,7 @@ export const executionFromRow = (row: ExecutionRow): Execution => {
     status: row.status,
     observations,
     errors,
+    ...(row.target_configuration ? { targetConfiguration: row.target_configuration } : {}),
     ...(startedAt ? { startedAt } : {}),
     ...(finishedAt ? { finishedAt } : {}),
   };
