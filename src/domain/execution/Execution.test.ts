@@ -19,6 +19,33 @@ describe('Execution', () => {
     expect(finished.props.finishedAt).toBe(finishedAt);
   });
 
+  it('preserves the effective target configuration through the lifecycle', () => {
+    const configuration = {
+      id: 'target-1',
+      name: 'Demo',
+      url: 'https://example.com',
+      status: 'ACTIVE' as const,
+    };
+    const execution = new Execution({
+      ...pending().props,
+      targetConfiguration: configuration,
+    });
+
+    expect(execution.start().props.targetConfiguration).toEqual(configuration);
+  });
+
+  it('rejects an effective target configuration that does not match the execution target', () => {
+    expect(() => new Execution({
+      ...pending().props,
+      targetConfiguration: {
+        id: 'other-target',
+        name: 'Demo',
+        url: 'https://example.com',
+        status: 'ACTIVE',
+      },
+    })).toThrow('Execution target configuration id must match target id');
+  });
+
   it('prevents invalid lifecycle transitions', () => {
     expect(() => pending().finish('PASSED')).toThrow('Only running executions can finish');
     expect(() => pending().start().start()).toThrow('Only pending executions can start');
