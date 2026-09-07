@@ -1,6 +1,7 @@
 import type { ExecutionRepository } from '../../../application/ports/ExecutionRepository.js';
 import type { Execution } from '../../../domain/execution/Execution.js';
 import { Execution as ExecutionModel } from '../../../domain/execution/Execution.js';
+import { EvaluationPlan } from '../../../domain/evaluation/EvaluationPlan.js';
 import { EvaluationVersionContext } from '../../../domain/versioning/EvaluationVersionContext.js';
 import type { ExecutionObservation } from '../../../domain/execution/ExecutionObservation.js';
 import type { ExecutionTechnicalError } from '../../../domain/execution/ExecutionTechnicalError.js';
@@ -19,6 +20,7 @@ type ExecutionRow = {
   decision_rules_version: string;
   evaluator_version: string | null;
   commit_sha: string | null;
+  evaluation_plan: unknown;
   started_at: Date | null;
   finished_at: Date | null;
   observations: unknown;
@@ -73,12 +75,12 @@ export class PostgresExecutionRepository implements ExecutionRepository {
         INSERT INTO executions (
           id, scenario_id, scenario_version, target_id, target_url, status,
           product_version, evaluation_method_version, criterion_catalog_version,
-          decision_rules_version, evaluator_version, commit_sha,
+          decision_rules_version, evaluator_version, commit_sha, evaluation_plan,
           started_at, finished_at, observations, errors
         ) VALUES (
           $1, $2, $3, $4, $5, $6,
-          $7, $8, $9, $10, $11, $12,
-          $13, $14, $15::jsonb, $16::jsonb
+          $7, $8, $9, $10, $11, $12, $13::jsonb,
+          $14, $15, $16::jsonb, $17::jsonb
         )
         ON CONFLICT (id) DO UPDATE SET
           status = EXCLUDED.status,
@@ -100,6 +102,7 @@ export class PostgresExecutionRepository implements ExecutionRepository {
         props.versionContext.props.decisionRulesVersion,
         props.versionContext.props.evaluatorVersion ?? null,
         props.versionContext.props.commitSha ?? null,
+        props.evaluationPlan ? JSON.stringify(props.evaluationPlan.props) : null,
         props.startedAt ?? null,
         props.finishedAt ?? null,
         JSON.stringify((props.observations ?? []).map(serializeObservation)),
@@ -112,7 +115,7 @@ export class PostgresExecutionRepository implements ExecutionRepository {
     const result = await this.database.query<ExecutionRow>(
       `SELECT id, scenario_id, scenario_version, target_id, target_url, status,
               product_version, evaluation_method_version, criterion_catalog_version,
-              decision_rules_version, evaluator_version, commit_sha,
+              decision_rules_version, evaluator_version, commit_sha, evaluation_plan,
               started_at, finished_at, observations, errors
          FROM executions WHERE id = $1`,
       [id],
@@ -137,6 +140,10 @@ export class PostgresExecutionRepository implements ExecutionRepository {
       ...(row.commit_sha !== null ? { commitSha: row.commit_sha } : {}),
     });
 
+    const evaluationPlan = row.evaluation_plan && typeof row.evaluation_plan === 'object'
+      ? new EvaluationPlan(row.evaluation_plan as ConstructorParameters<typeof EvaluationPlan>[0])
+      : undefined;
+
     return new ExecutionModel({
       id: row.id,
       scenarioId: row.scenario_id,
@@ -145,6 +152,7 @@ export class PostgresExecutionRepository implements ExecutionRepository {
       targetUrl: row.target_url,
       status: row.status,
       versionContext,
+      ...(evaluationPlan ? { evaluationPlan } : {}),
       ...(row.started_at !== null ? { startedAt: row.started_at } : {}),
       ...(row.finished_at !== null ? { finishedAt: row.finished_at } : {}),
       observations,
