@@ -1,140 +1,96 @@
-# F2 — Validación metodológica de repetición y reproducibilidad
+# F2-27 — Repetición controlada y variabilidad observable
+
+**Estado:** **IMPLEMENTADO; pendiente de validación CI**
 
 ## 1. Propósito
 
-Validar cómo deben tratarse las repeticiones de un mismo escenario cuando el comportamiento del chatbot puede variar entre ejecuciones.
+Formalizar cómo deben tratarse las repeticiones de un mismo escenario cuando el comportamiento del chatbot puede variar entre ejecuciones.
 
-Este incremento es un spike metodológico. No define todavía un tamaño universal de muestra ni una política estadística definitiva.
+La repetición no sustituye la ejecución individual. Cada intento conserva su identidad, versión de escenario, condiciones y resultado.
 
-## 2. Hipótesis
+## 2. Principio rector
 
-Una ejecución individual puede no representar adecuadamente un comportamiento conversacional variable. Para estudiar variabilidad, las repeticiones deben conservar identidad, versión del escenario y condiciones comparables.
-
-La repetición no debe ocultar los resultados individuales mediante un único resultado prematuro.
-
-## 3. Principio rector
-
-La cadena debe conservarse como:
+La cadena metodológica queda:
 
 `Escenario/version → Condiciones → Ejecución individual → Evidencia → Resultado individual → Conjunto de repeticiones → Análisis de variabilidad`
 
-No:
+No se permite:
 
 `Escenario → múltiples ejecuciones → único resultado sin trazabilidad`
 
-## 4. Propiedades validadas
+## 3. Contrato ejecutable
 
-### REP-V01 — Identidad independiente
+`RepetitionSet` representa un conjunto controlado de ejecuciones comparables.
 
-Cada repetición debe corresponder a una ejecución identificable de forma independiente.
+Cada ejecución debe:
 
-### REP-V02 — Versión comparable
+- tener un `executionId` único dentro del conjunto;
+- estar en estado terminal;
+- pertenecer al mismo `scenarioId`;
+- pertenecer a la misma `scenarioVersion` cuando el objetivo sea comparar el mismo comportamiento;
+- conservar un `conditionFingerprint` para permitir comprobar comparabilidad de condiciones.
 
-Cuando las repeticiones pretenden medir el mismo comportamiento, deben conservar la misma versión del escenario, salvo que el cambio de versión sea precisamente la variable estudiada.
+Las condiciones distintas no se interpretan automáticamente como variabilidad del chatbot: el modelo expone `hasComparableConditions` como dato explícito.
 
-### REP-V03 — Condiciones comparables
+## 4. Resultado individual
 
-La interpretación de variabilidad requiere que las condiciones relevantes sean comparables. Se propone conservar una referencia de condiciones o fingerprint de ejecución.
+El conjunto conserva la distribución exacta de estados terminales:
 
-### REP-V04 — Resultado individual preservado
+`PASSED`, `FAILED`, `PARTIALLY_PASSED`, `INCONCLUSIVE`, `NOT_EVALUABLE`, `ERROR`, `CANCELLED`.
 
-Los resultados de cada repetición deben conservarse. Una agregación posterior no debe destruir la secuencia individual.
+`INCONCLUSIVE` y `NOT_EVALUABLE` permanecen diferenciados de `FAILED`.
 
-### REP-V05 — Variabilidad explícita
+## 5. Análisis de variabilidad
 
-Si las repeticiones producen resultados diferentes, el sistema debe poder mostrar esa distribución sin asumir automáticamente que existe un fallo reproducible ni que existe comportamiento aceptable.
+`AnalyzeRepetitionSet` expone únicamente:
 
-### REP-V06 — Estados indeterminados preservados
+- escenario y versión comparados;
+- cantidad de repeticiones;
+- si las condiciones son comparables;
+- distribución de resultados individuales.
 
-`INCONCLUSIVE` y `NOT_EVALUABLE` deben permanecer diferenciados de `FAIL` también dentro de las repeticiones.
+No transforma esa distribución en porcentaje de aceptación, riesgo, score ni decisión global.
 
-## 5. Registro mínimo candidato
+Ejemplo:
 
-Cada repetición debe conservar, como mínimo:
+`PASSED, PASSED, FAILED`
 
-| Campo | Propósito |
-|---|---|
-| `executionId` | Identidad de ejecución individual |
-| `scenarioId` | Escenario ejecutado |
-| `scenarioVersion` | Versión bajo prueba |
-| `outcome` | Resultado individual |
-| `conditionFingerprint` | Referencia de condiciones comparables |
+se conserva como una distribución `2 / 1`. El sistema no concluye por sí solo que exista un defecto reproducible, significancia estadística o criterio de aceptación.
 
-Estos campos constituyen una estructura metodológica candidata; no crean todavía un contrato productivo de repetición.
+## 6. Persistencia de condiciones
 
-## 6. Interpretación de variabilidad
+`Execution.conditionFingerprint` es opcional para mantener compatibilidad con ejecuciones históricas existentes, pero cuando forma parte de un conjunto de repetición controlada debe estar informado.
 
-Un conjunto puede producir, por ejemplo:
+Se persiste en `executions.condition_fingerprint` mediante `004_execution_repeatability.sql`.
 
-`PASS, PASS, FAIL`
+Esto permite reconstruir posteriormente si dos ejecuciones realmente compartían las condiciones declaradas.
 
-Esto demuestra variabilidad observable dentro del conjunto probado, pero no determina por sí mismo:
+## 7. Invariantes
 
-- que el chatbot sea defectuoso;
-- que el fallo sea estadísticamente significativo;
-- que exista una tasa de aceptación o rechazo;
-- que una repetición adicional sea innecesaria.
+1. No se permiten ejecuciones repetidas con el mismo `executionId` dentro del conjunto.
+2. No se permiten ejecuciones `PENDING` o `RUNNING` dentro del conjunto analizado.
+3. No se mezclan versiones diferentes del escenario en una repetición comparable.
+4. Las diferencias de `conditionFingerprint` hacen explícita la no comparabilidad de condiciones.
+5. Los estados indeterminados no se convierten en fallos.
+6. El resultado individual nunca se elimina por construir el conjunto de repeticiones.
+7. No existe una regla de parada ni un tamaño universal de muestra en este incremento.
 
-La interpretación depende del criterio, condiciones, evidencia y método estadístico posterior.
+## 8. Fuera de alcance
 
-## 7. Comparabilidad
-
-No debe interpretarse como variabilidad del chatbot una diferencia causada por condiciones incompatibles, como:
-
-- versión diferente del escenario;
-- configuración diferente del entorno;
-- población diferente cuando sea relevante;
-- condiciones de ejecución no equivalentes;
-- cambios deliberados en el instrumento evaluador.
-
-Cuando estas diferencias sean parte del experimento, deben declararse como variables y no ocultarse.
-
-## 8. Tamaño de muestra
-
-Este incremento no establece un número universal de repeticiones.
-
-El tamaño mínimo deberá depender, como mínimo, de:
-
-- tipo de criterio;
-- variabilidad esperada;
-- costo de ejecución;
-- riesgo del comportamiento;
-- precisión estadística requerida;
-- consecuencias de un falso positivo o falso negativo.
-
-Por tanto, `N` no se fija todavía como política global del producto.
-
-## 9. Tratamiento estadístico pendiente
-
-Queda deliberadamente fuera de este spike:
+Este incremento no define:
 
 - intervalos de confianza;
 - pruebas de significancia;
-- estimadores definitivos de variabilidad;
-- distribución mínima aceptable;
 - tamaño de muestra universal;
 - reglas de parada;
-- agregación estadística por dimensión;
-- umbrales comerciales.
+- estimadores estadísticos definitivos;
+- umbrales de aceptación;
+- scoring;
+- agregación global;
+- inferencias automáticas mediante IA.
 
-Estas decisiones requieren un incremento metodológico separado.
+## 9. Criterio de salida
 
-## 10. Relación con scoring y evaluación
+F2-27 queda cerrado cuando CI confirme compilación, pruebas de invariantes del conjunto, captura/persistencia del fingerprint, análisis de distribución y ausencia de regresiones en BDD, Playwright, PostgreSQL y quality gates.
 
-La repetición proporciona información adicional para la evaluación, pero no debe transformarse automáticamente en puntos de calidad.
-
-La secuencia recomendada es:
-
-`Resultados individuales → análisis de variabilidad → indicador estadístico validado → evaluación/juicio`
-
-No:
-
-`Resultados individuales → promedio automático → score global`
-
-Esto mantiene la separación entre observación, indicador y juicio definida en F2.
-
-## 11. Criterio de salida
-
-Queda validado que las repeticiones deben conservar identidad individual, versión y condiciones comparables; que la variabilidad debe permanecer observable; y que los estados `INCONCLUSIVE`/`NOT_EVALUABLE` no deben convertirse en fallos durante el análisis.
-
-No se define todavía una política estadística, tamaño de muestra ni umbral de aceptación.
+La siguiente etapa será definir el tratamiento estadístico de la variabilidad y, solo después de validarlo, determinar cómo puede alimentar una evaluación agregada.
