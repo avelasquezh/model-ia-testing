@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Criterion } from '../../domain/evaluation/Criterion.js';
+import { EvaluationSelectionContext } from '../../domain/evaluation/EvaluationSelectionContext.js';
 import { ComposeEvaluationPlan, type CriterionCatalog } from './ComposeEvaluationPlan.js';
 
 class InMemoryCriterionCatalog implements CriterionCatalog {
@@ -70,6 +71,43 @@ describe('ComposeEvaluationPlan', () => {
     expect(plan.props.scope).toBe('MVP_CORE');
     expect(plan.props.items.map((item) => item.criterionId)).toEqual(['D1-C01', 'D6-C01']);
     expect(plan.props.items.every((item) => item.criterionId !== 'D6-C05')).toBe(true);
+  });
+
+  it('composes only criteria explicitly selected for a scenario execution', async () => {
+    const useCase = new ComposeEvaluationPlan(new InMemoryCriterionCatalog(criteria));
+    const selection = new EvaluationSelectionContext({
+      scenarioId: 'scenario-25-001',
+      scenarioVersion: 3,
+      executionContext: 'web-chatbot',
+      scope: 'MVP_CORE',
+      selectedCriterionIds: ['D1-C01'],
+    });
+
+    const plan = await useCase.compose({
+      executionId: 'execution-25-001',
+      context: 'web-chatbot',
+      selection,
+    });
+
+    expect(plan.props.scope).toBe('MVP_CORE');
+    expect(plan.props.selectionContext).toEqual(selection.props);
+    expect(plan.props.items.map((item) => item.criterionId)).toEqual(['D1-C01']);
+    expect(plan.applicableCriteria.map((item) => item.criterionId)).toEqual(['D1-C01']);
+  });
+
+  it('rejects a selected criterion outside the declared scope', async () => {
+    const useCase = new ComposeEvaluationPlan(new InMemoryCriterionCatalog(criteria));
+    const selection = new EvaluationSelectionContext({
+      scenarioId: 'scenario-25-002',
+      scenarioVersion: 1,
+      executionContext: 'web-chatbot',
+      scope: 'MVP_CORE',
+      selectedCriterionIds: ['D6-C05'],
+    });
+
+    await expect(
+      useCase.compose({ executionId: 'execution-25-002', context: 'web-chatbot', selection }),
+    ).rejects.toThrow('Selected criterion is outside evaluation scope or missing from catalog: D6-C05');
   });
 
   it('does not turn a non-applicable criterion into FAIL', async () => {
