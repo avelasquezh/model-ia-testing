@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { EvaluationMethodology } from '../../src/domain/evaluation/EvaluationMethodology.js';
+import {
+  EvaluationMethodology,
+  type EvaluationDimension,
+  type EvaluationCriterionContract,
+} from '../../src/domain/evaluation/EvaluationMethodology.js';
 
 type ControlledCase = {
   readonly caseId: string;
@@ -64,20 +68,18 @@ const cases: readonly ControlledCase[] = [
   },
 ] as const;
 
-const methodology = new EvaluationMethodology({
-  id: 'f2-41-controlled-candidates',
-  version: 'f2-41-0.1',
-  status: 'DRAFT',
-  dimensions: [
-    ['D1', 'Corrección funcional observable'],
-    ['D2', 'Adecuación conversacional'],
-    ['D3', 'Continuidad contextual'],
-    ['D4', 'Robustez conversacional'],
-    ['D5', 'Seguridad observable'],
-    ['D6', 'Rendimiento conversacional observable'],
-    ['D7', 'Calidad de interacción e interfaz'],
-  ].map(([id, name]) => ({ id, name, objective: `controlled validation for ${id}` })),
-  criteria: cases.map((item) => ({
+const dimensions: readonly EvaluationDimension[] = [
+  { id: 'D1', name: 'Corrección funcional observable', objective: 'controlled validation for D1' },
+  { id: 'D2', name: 'Adecuación conversacional', objective: 'controlled validation for D2' },
+  { id: 'D3', name: 'Continuidad contextual', objective: 'controlled validation for D3' },
+  { id: 'D4', name: 'Robustez conversacional', objective: 'controlled validation for D4' },
+  { id: 'D5', name: 'Seguridad observable', objective: 'controlled validation for D5' },
+  { id: 'D6', name: 'Rendimiento conversacional observable', objective: 'controlled validation for D6' },
+  { id: 'D7', name: 'Calidad de interacción e interfaz', objective: 'controlled validation for D7' },
+];
+
+const criteria: readonly EvaluationCriterionContract[] = cases.map((item) => {
+  const criterion: EvaluationCriterionContract = {
     id: item.criterionId,
     dimensionId: item.dimensionId,
     type: item.type,
@@ -88,9 +90,25 @@ const methodology = new EvaluationMethodology({
     requiredEvidence: item.requiredEvidence,
     decisionRule: item.decisionRule,
     limitations: ['candidate validation only', 'does not define quality scoring'],
-    measurementMethod: item.type === 'NUMERIC' ? 'elapsed time between declared start and end events' : undefined,
     version: 'candidate-0.1',
-  })),
+  };
+
+  if (item.type === 'NUMERIC') {
+    return {
+      ...criterion,
+      measurementMethod: 'elapsed time between declared start and end events',
+    };
+  }
+
+  return criterion;
+});
+
+const methodology = new EvaluationMethodology({
+  id: 'f2-41-controlled-candidates',
+  version: 'f2-41-0.1',
+  status: 'DRAFT',
+  dimensions,
+  criteria,
 });
 
 describe('F2-41 architecture spike: controlled candidate criteria validation', () => {
