@@ -20,6 +20,7 @@ type ExecutionRow = {
   decision_rules_version: string;
   evaluator_version: string | null;
   commit_sha: string | null;
+  condition_fingerprint: string | null;
   evaluation_plan: unknown;
   started_at: Date | null;
   finished_at: Date | null;
@@ -75,12 +76,12 @@ export class PostgresExecutionRepository implements ExecutionRepository {
         INSERT INTO executions (
           id, scenario_id, scenario_version, target_id, target_url, status,
           product_version, evaluation_method_version, criterion_catalog_version,
-          decision_rules_version, evaluator_version, commit_sha, evaluation_plan,
-          started_at, finished_at, observations, errors
+          decision_rules_version, evaluator_version, commit_sha, condition_fingerprint,
+          evaluation_plan, started_at, finished_at, observations, errors
         ) VALUES (
           $1, $2, $3, $4, $5, $6,
-          $7, $8, $9, $10, $11, $12, $13::jsonb,
-          $14, $15, $16::jsonb, $17::jsonb
+          $7, $8, $9, $10, $11, $12, $13,
+          $14::jsonb, $15, $16, $17::jsonb, $18::jsonb
         )
         ON CONFLICT (id) DO UPDATE SET
           status = EXCLUDED.status,
@@ -102,6 +103,7 @@ export class PostgresExecutionRepository implements ExecutionRepository {
         props.versionContext.props.decisionRulesVersion,
         props.versionContext.props.evaluatorVersion ?? null,
         props.versionContext.props.commitSha ?? null,
+        props.conditionFingerprint ?? null,
         props.evaluationPlan ? JSON.stringify(props.evaluationPlan.props) : null,
         props.startedAt ?? null,
         props.finishedAt ?? null,
@@ -115,8 +117,8 @@ export class PostgresExecutionRepository implements ExecutionRepository {
     const result = await this.database.query<ExecutionRow>(
       `SELECT id, scenario_id, scenario_version, target_id, target_url, status,
               product_version, evaluation_method_version, criterion_catalog_version,
-              decision_rules_version, evaluator_version, commit_sha, evaluation_plan,
-              started_at, finished_at, observations, errors
+              decision_rules_version, evaluator_version, commit_sha, condition_fingerprint,
+              evaluation_plan, started_at, finished_at, observations, errors
          FROM executions WHERE id = $1`,
       [id],
     );
@@ -153,6 +155,7 @@ export class PostgresExecutionRepository implements ExecutionRepository {
       status: row.status,
       versionContext,
       ...(evaluationPlan ? { evaluationPlan } : {}),
+      ...(row.condition_fingerprint !== null ? { conditionFingerprint: row.condition_fingerprint } : {}),
       ...(row.started_at !== null ? { startedAt: row.started_at } : {}),
       ...(row.finished_at !== null ? { finishedAt: row.finished_at } : {}),
       observations,
