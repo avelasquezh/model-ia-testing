@@ -39,6 +39,22 @@ El incremento no introduce scoring, pesos, estadística global ni evaluador IA p
 - Architecture Spike `34093226273`, mismo commit: **success** en SPIKE-001 a SPIKE-012, incluyendo integración PostgreSQL/versioning y quality gate.
 - La corrección `1e21df7` alineó una prueba existente con el nuevo campo obligatorio `scope` de `EvaluationPlan`; no modificó la decisión metodológica.
 
+## Incremento actual — F2-25 selección contextual de criterios
+
+**Estado:** **IMPLEMENTADO; pendiente de validación CI**.
+
+F2-25 introduce `EvaluationSelectionContext` como contrato independiente de `Scenario`. La selección queda asociada explícitamente a `scenarioId`, `scenarioVersion`, `executionContext`, `scope` y `selectedCriterionIds`.
+
+`ComposeEvaluationPlan` acepta la selección explícita, valida que el contexto coincida con la ejecución, restringe la composición al alcance solicitado y rechaza cualquier criterio inexistente o fuera del alcance.
+
+`EvaluationPlan` conserva el contexto de selección cuando participa una selección explícita y verifica la consistencia entre contexto, alcance y criterios seleccionados.
+
+Las pruebas cubren selección parcial del `MVP_CORE`, persistencia del contexto de selección y rechazo de criterios fuera de alcance como D6-C05.
+
+La especificación está documentada en `docs/evaluation/F2-25-CONTEXTUAL-CRITERION-SELECTION.md`.
+
+F2-25 no introduce scoring, pesos, agregación, repetición, variabilidad ni selección automática mediante IA.
+
 ## Evidencia de cierre F2-23
 
 - CI `34091970313`, commit `8cbd5953`: **success** en TypeScript/unit tests, migraciones PostgreSQL, BDD, Playwright E2E y quality gate.
@@ -57,9 +73,9 @@ El valor `legacy-unknown` se utiliza únicamente cuando la información históri
 Existen capacidades para gestión de objetivos, escenarios y suites, ejecución, observaciones, evidencia, resultados, hallazgos, reportes, trazabilidad, seguridad de ejecución y quality gates.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-24 cerrado/validado; selección contextual y ejecución metodológica continúan.
+**Estado:** F2-24 cerrado/validado; F2-25 implementado y en validación.
 
-La baseline contiene siete dimensiones candidatas y un catálogo de criterios. F2-24 establece cuáles pertenecen al núcleo y cuáles quedan condicionadas o pospuestas, y esa decisión cuenta con una representación ejecutable mediante `EvaluationPlanScope`.
+La baseline contiene siete dimensiones candidatas y un catálogo de criterios. F2-24 establece cuáles pertenecen al núcleo y cuáles quedan condicionadas o pospuestas. F2-25 incorpora selección contextual explícita sin introducir agregación.
 
 El contrato ejecutable impide criterios incompletos o inconsistentes, pero no define todavía scoring/agregación, pesos, tratamiento estadístico de repetición, criterios críticos, fórmula de riesgo definitiva ni método productivo de evaluación semántica con IA.
 
@@ -79,9 +95,7 @@ Las versiones metodológicas son independientes del producto. Una ejecución his
 
 ## Próximo incremento
 
-**F2-25 — Selección contextual de criterios.** Conectar el alcance `MVP_CORE` con el contexto de escenario/ejecución mediante una selección determinista y auditable. Cada ejecución deberá poder conservar por criterio su inclusión, exclusión o `NOT_APPLICABLE`, junto con la razón y las referencias metodológicas pertinentes.
-
-El siguiente límite sigue siendo deliberado: no introducir scoring global hasta formalizar primero la selección contextual y, posteriormente, la repetición y variabilidad.
+Validar F2-25 en CI y, con la baseline verde, conectar la selección contextual con el flujo de ejecución real para que el plan seleccionado sea el artefacto metodológico consumido por la ejecución. Después formalizar repetición y variabilidad antes de diseñar scoring global.
 
 ## Regla de documentación
 
