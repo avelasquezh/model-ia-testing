@@ -1,6 +1,6 @@
 # F2-25 — Selección contextual de criterios
 
-**Estado:** **IMPLEMENTADO; pendiente de validación CI**
+**Estado:** **CERRADO / VALIDADO EN BASELINE EJECUTABLE**
 
 ## 1. Propósito
 
@@ -57,7 +57,23 @@ El `EvaluationPlan` conserva el contexto de selección para que una ejecución p
 
 Las referencias de versionado metodológico continúan separadas y persisten como contexto histórico de la ejecución.
 
-## 6. Fuera de alcance
+## 6. Integración cerrada en F2-26
+
+La selección contextual quedó conectada al flujo real de `ExecuteScenario` sin trasladar reglas metodológicas al runner.
+
+Cuando existe `evaluationSelection`, `ExecuteScenario`:
+
+1. verifica que ID y versión de selección coincidan con el `Scenario` cargado;
+2. compone el `EvaluationPlan` antes de iniciar el runner;
+3. asocia el plan al `Execution` mediante un snapshot inmutable;
+4. entrega ese mismo `Execution` al runner;
+5. conserva el snapshot durante el ciclo de vida de la ejecución.
+
+El snapshot se persiste como `evaluation_plan` en PostgreSQL. Las actualizaciones terminales de la ejecución no reemplazan el plan histórico.
+
+Las ejecuciones técnicas que aún no usan evaluación contextual pueden continuar sin plan; una selección explícita no puede ejecutarse sin un compositor de plan.
+
+## 7. Fuera de alcance
 
 Este incremento no define:
 
@@ -67,18 +83,19 @@ Este incremento no define:
 - repetición de ejecuciones;
 - análisis estadístico;
 - inferencias sobre criterios no seleccionados;
-- persistencia adicional fuera del modelo `EvaluationPlan` existente.
+- fórmula de agregación global.
 
-## 7. Criterio de salida
+## 8. Evidencia
 
-F2-25 queda cerrado cuando CI confirme que:
+La baseline contiene pruebas de dominio, aplicación y persistencia para:
 
-- el contrato de selección compila;
-- la composición conserva la selección explícita;
-- se rechazan criterios fuera del alcance;
-- se mantienen las invariantes de `NOT_APPLICABLE`;
-- no existen regresiones en BDD, Playwright, persistencia ni quality gates.
+- invariantes del contexto de selección;
+- asociación del plan con `Execution`;
+- rechazo de selección contra otra versión del escenario;
+- propagación del plan al runner;
+- persistencia y reconstrucción del snapshot en PostgreSQL;
+- compatibilidad con ejecuciones sin selección contextual.
 
-## 8. Siguiente incremento
+## 9. Siguiente incremento
 
-Formalizar cómo el resultado de la selección contextual se consume durante una ejecución real y, después, definir repetición y variabilidad antes de introducir scoring global.
+Formalizar repetición controlada y variabilidad observable sobre ejecuciones que comparten `Scenario` + versión + `EvaluationPlan`, antes de introducir scoring o agregación global.
