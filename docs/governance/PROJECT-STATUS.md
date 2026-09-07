@@ -3,25 +3,21 @@
 **Fecha:** 2026-09-07  
 **Versión de producto declarada:** `0.1.0`  
 **Rama:** `main`  
-**Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 con baseline ejecutable parcial y F3 **VALIDADO**.
+**Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 en consolidación metodológica ejecutable y F3 **VALIDADO**.
 
-## Incremento actual — cierre del spike técnico F3
+## Incremento actual — consolidación del contrato metodológico F2
 
-**Estado:** F3 VALIDADO; siguiente trabajo centrado en completar las decisiones pendientes del producto y preparar el siguiente frente de desarrollo.
+**Estado:** Incremento implementado; pendiente de validación CI y casos controlados posteriores.
 
-La validación anterior quedó cerrada con CI y Architecture Spike en verde sobre `6392c352`. Posteriormente se implementó y verificó SPIKE-008, y el run `34089149510` completó todos los gates del spike con resultado **success**.
+Se incorporó `src/domain/evaluation/EvaluationMethodology.ts` como contrato ejecutable para representar una metodología observable sin introducir todavía scoring global. El contrato exige dimensiones y criterios identificables, relaciones consistentes, evidencia requerida, reglas explícitas, limitaciones y método de medición para criterios numéricos.
 
-El artifact `architecture-spike-evidence` fue publicado y su manifiesto `artifacts/spike-008-evidence-manifest.json` registra el `runId`, `runUrl`, `commitSha`, `ref`, timestamp y hashes SHA-256 de la evidencia publicada. El digest del artifact es `sha256:50fdcb7f797593a84b770a7b5a6f82bfe3603726b4fc8eb56dfd50a48844e169`.
+Se agregaron pruebas unitarias que cubren aceptación del contrato, dimensiones inexistentes, identificadores duplicados, método de medición numérico y declaración de evidencia. La especificación del incremento quedó documentada en `docs/evaluation/F2-22-METHODOLOGICAL-CONTRACT.md`.
 
 ## Verificación observada
 
 - CI `34088800826`, commit `6392c352`: **success** en TypeScript, migraciones PostgreSQL, pruebas, BDD, Playwright y quality gate.
-- Architecture Spike `34088800815`, commit `6392c352`: **success**, incluida la validación de aislamiento histórico entre ejecuciones independientes.
 - Architecture Spike `34089149510`, commit `3fb8db18`: **success** en SPIKE-001 a SPIKE-012.
 - SPIKE-008: manifiesto generado y publicado correctamente en el artifact.
-- SPIKE-010: regla de dependencias arquitectónicas pasa.
-- SPIKE-011: configuración válida e inválida pasa según contrato.
-- SPIKE-012: logging estructurado correlacionado por `runId` pasa.
 - F3-TECHNICAL-SPIKE.md: cerrado como **VALIDADO** en `bf0f98b1`.
 
 ## Persistencia y versionado
@@ -36,11 +32,11 @@ El valor `legacy-unknown` se utiliza únicamente cuando la información históri
 Existen capacidades para gestión de objetivos, escenarios y suites, ejecución, observaciones, evidencia, resultados, hallazgos, reportes, trazabilidad, seguridad de ejecución y quality gates.
 
 ## Frente 2 — Evaluación observable
-**Estado:** Baseline ejecutable parcial.
+**Estado:** Consolidación metodológica en curso.
 
-Existen modelos de medición, criterios y planes ejecutables, validaciones de riesgo, repetición, trazabilidad de evaluación asistida por IA, catálogo de evidencia y una regla determinista conectada a una ejecución tangible.
+La baseline ya contiene siete dimensiones candidatas, catálogo de criterios, evidencia, estados, reglas deterministas, repetición, trazabilidad de evaluación asistida por IA y una regla observable conectada a ejecución tangible.
 
-Continúan pendientes la aprobación metodológica definitiva, scoring/agregación, pesos, tratamiento final de estados y validación de criterios semánticos con casos controlados.
+El nuevo contrato ejecutable impide criterios incompletos o inconsistentes, pero no declara todavía definitiva la taxonomía ni resuelve scoring/agregación, pesos, tratamiento final de estados, criterios críticos, modelo estadístico ni validación semántica con IA.
 
 ## Frente 3 — Arquitectura
 **Estado:** **VALIDADO**.
@@ -58,7 +54,7 @@ Las versiones metodológicas son independientes del producto. Una ejecución his
 
 ## Próximo incremento
 
-Con F3 cerrado, el siguiente foco es el Frente 2: consolidar el contrato metodológico de evaluación observable antes de introducir scoring global. La prioridad inmediata es convertir las decisiones pendientes de dimensiones, criterios, estados, pesos y criterios críticos en contratos deterministas y pruebas de casos controlados.
+Validar el contrato en CI y después someter las dimensiones y criterios candidatos a casos controlados. La siguiente decisión metodológica será delimitar qué dimensiones/criterios entran realmente al MVP y, posteriormente, formalizar tratamiento de repetición y variabilidad antes de diseñar scoring global.
 
 ## Regla de documentación
 
