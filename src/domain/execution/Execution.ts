@@ -26,6 +26,7 @@ export type ExecutionProps = {
   readonly status: ExecutionStatus;
   readonly versionContext?: EvaluationVersionContext;
   readonly evaluationPlan?: EvaluationPlan;
+  readonly conditionFingerprint?: string;
   readonly startedAt?: Date;
   readonly finishedAt?: Date;
   readonly observations?: readonly ExecutionObservation[];
@@ -49,6 +50,9 @@ export class Execution {
     if (!props.targetUrl.trim()) throw new Error('Execution target URL is required');
     if (!Number.isInteger(props.scenarioVersion) || props.scenarioVersion < 1) {
       throw new Error('Execution scenario version must be a positive integer');
+    }
+    if (props.conditionFingerprint !== undefined && !props.conditionFingerprint.trim()) {
+      throw new Error('Execution condition fingerprint must not be empty');
     }
 
     if (props.evaluationPlan) {
