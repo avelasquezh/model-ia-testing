@@ -49,11 +49,16 @@ jobs:
       - name: TypeScript
         run: npm run build
 
+      - name: PostgreSQL migrations
+        env:
+          DATABASE_URL: postgresql://spike:spike@127.0.0.1:5432/spike
+        run: npm run db:migrate
+
       - name: Unit and application tests
         env:
           NODE_ENV: test
           TARGET_TIMEOUT_MS: 5000
-          DATABASE_URL: postgresql://spike:spike@localhost:5432/spike
+          DATABASE_URL: postgresql://spike:spike@127.0.0.1:5432/spike
         run: npm test
 
       - name: Publish quality evidence
