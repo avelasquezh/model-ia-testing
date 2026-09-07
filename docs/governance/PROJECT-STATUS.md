@@ -15,7 +15,7 @@ La especificación quedó documentada en `docs/evaluation/F2-23-VERSION-CONTEXT-
 
 ## Incremento actual — F2-24 delimitación de dimensiones del MVP
 
-**Estado:** **DECISIÓN METODOLÓGICA CERRADA; pendiente de implementación ejecutable y validación CI**.
+**Estado:** **IMPLEMENTADO; pendiente de validación CI**.
 
 Se delimitó el perímetro del MVP mediante observabilidad, reproducibilidad, dependencia de canal y complejidad metodológica.
 
@@ -23,9 +23,13 @@ El núcleo obligatorio queda compuesto por D1 Corrección funcional observable, 
 
 D5 Seguridad y comportamiento responsable observable queda como extensión condicionada a escenarios y políticas explícitas. D7 Calidad de interacción e interfaz queda como extensión dependiente del canal y no como requisito del núcleo conversacional.
 
-La especificación quedó documentada en `docs/evaluation/F2-24-MVP-DIMENSION-DELIMITATION.md`.
+La decisión metodológica quedó documentada en `docs/evaluation/F2-24-MVP-DIMENSION-DELIMITATION.md`.
 
-Se posponen explícitamente criterios que requieren repetición/variabilidad formal o infraestructura especializada: D1-C05, D3-C05, D4-C05, D6-C02 y D6-C05. D4-C02 queda condicionado a una tolerancia definida por escenario.
+La delimitación ya tiene soporte ejecutable mediante el perfil `MVP_CORE`: una composición de plan puede filtrar explícitamente el catálogo a los 18 criterios definidos como núcleo, conservar su aplicabilidad por contexto y persistir el alcance del plan.
+
+Se añadieron pruebas para proteger el conjunto de IDs del núcleo y verificar que criterios pospuestos, como D6-C05, no entren accidentalmente en `MVP_CORE`.
+
+Se mantienen fuera del núcleo inicial D1-C05, D3-C05, D4-C05, D6-C02 y D6-C05; D4-C02 permanece condicionado a una tolerancia definida por escenario.
 
 El incremento no introduce scoring, pesos, estadística global ni evaluador IA productivo.
 
@@ -47,9 +51,9 @@ El valor `legacy-unknown` se utiliza únicamente cuando la información históri
 Existen capacidades para gestión de objetivos, escenarios y suites, ejecución, observaciones, evidencia, resultados, hallazgos, reportes, trazabilidad, seguridad de ejecución y quality gates.
 
 ## Frente 2 — Evaluación observable
-**Estado:** Delimitación del núcleo MVP establecida; implementación metodológica ejecutable continúa.
+**Estado:** Delimitación del núcleo MVP implementada; validación metodológica y ejecución real continúan.
 
-La baseline contiene siete dimensiones candidatas y un catálogo de criterios. F2-24 establece ahora cuáles pertenecen al núcleo y cuáles quedan condicionadas o pospuestas.
+La baseline contiene siete dimensiones candidatas y un catálogo de criterios. F2-24 establece cuáles pertenecen al núcleo y cuáles quedan condicionadas o pospuestas, y ahora esa decisión cuenta con una representación ejecutable mediante `EvaluationPlanScope`.
 
 El contrato ejecutable impide criterios incompletos o inconsistentes, pero no define todavía scoring/agregación, pesos, tratamiento estadístico de repetición, criterios críticos, fórmula de riesgo definitiva ni método productivo de evaluación semántica con IA.
 
@@ -69,7 +73,7 @@ Las versiones metodológicas son independientes del producto. Una ejecución his
 
 ## Próximo incremento
 
-Convertir F2-24 en selección de criterios ejecutable por contexto y escenario, conservando trazabilidad de criterios aplicables y no aplicables. Después formalizar repetición y variabilidad antes de diseñar scoring global.
+Validar el nuevo alcance `MVP_CORE` en CI y después conectar la selección explícita con el contexto de escenario/ejecución, manteniendo la distinción entre criterios incluidos en el alcance y criterios no aplicables por contexto. Luego formalizar repetición y variabilidad antes de diseñar scoring global.
 
 ## Regla de documentación
 
