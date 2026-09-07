@@ -5,13 +5,15 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   spike:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:17
@@ -30,18 +32,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: 22
-
+          cache: npm
       - name: Install dependencies
         run: npm install
-
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
-
       - name: Wait for PostgreSQL
         env:
           PGPASSWORD: spike
@@ -54,45 +53,36 @@ jobs:
           done
           echo "PostgreSQL did not become ready on 127.0.0.1:5432"
           exit 1
-
       - name: SPIKE-001 TypeScript
         run: npm run build
-
       - name: SPIKE-002/003/006/010/011/012 Unit and architecture tests
         env:
           NODE_ENV: test
           TARGET_TIMEOUT_MS: 5000
         run: npm test -- --exclude 'spike/persistence/Postgres*.test.ts'
-
       - name: SPIKE-004 BDD Cucumber
         run: npm run test:bdd
-
       - name: SPIKE-005 Playwright
         run: npm run test:browser
-
       - name: SPIKE-007 PostgreSQL migrations
         env:
           DATABASE_URL: postgresql://spike:spike@127.0.0.1:5432/spike
         run: npm run db:migrate
-
       - name: SPIKE-007 PostgreSQL repository boundary and versioning integration
         env:
           DATABASE_URL: postgresql://spike:spike@127.0.0.1:5432/spike
         run: npm test -- spike/persistence/PostgresMigration.test.ts spike/persistence/PostgresExecutionVersioning.integration.test.ts
-
       - name: SPIKE-008 Evidence manifest
         run: npx tsx scripts/create-evidence-manifest.ts
-
       - name: Publish test artifacts
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: architecture-spike-evidence
+          name: architecture-spike-evidence-${{ github.sha }}
           path: |
             artifacts/
             test-results/
             playwright-report/
           if-no-files-found: ignore
-
       - name: Quality gate
         run: echo "Architecture spike quality gate passed"
