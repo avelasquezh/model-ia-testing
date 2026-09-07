@@ -9,10 +9,10 @@ const versionContext = new EvaluationVersionContext({
   decisionRulesVersion: 'f2-rules-0.1',
 });
 
-const pending = () => new Execution({
+const pending = (withVersionContext = true) => new Execution({
   id: 'execution-1', scenarioId: 'scenario-1', scenarioVersion: 1,
   targetId: 'target-1', targetUrl: 'https://example.com', status: 'PENDING',
-  versionContext,
+  ...(withVersionContext ? { versionContext } : {}),
 });
 
 describe('Execution', () => {
@@ -36,16 +36,17 @@ describe('Execution', () => {
     expect(finished.props.finishedAt).toBe(finishedAt);
   });
 
+  it('normalizes legacy executions without version context', () => {
+    const execution = pending(false);
+
+    expect(execution.props.versionContext.props.productVersion).toBe('legacy-unknown');
+    expect(execution.props.versionContext.props.evaluationMethodVersion).toBe('legacy-unknown');
+    expect(execution.props.versionContext.props.criterionCatalogVersion).toBe('legacy-unknown');
+    expect(execution.props.versionContext.props.decisionRulesVersion).toBe('legacy-unknown');
+  });
+
   it('prevents invalid lifecycle transitions', () => {
     expect(() => pending().finish('PASSED')).toThrow('Only running executions can finish');
     expect(() => pending().start().start()).toThrow('Only pending executions can start');
-  });
-
-  it('rejects executions without version context', () => {
-    expect(() => new Execution({
-      id: 'execution-1', scenarioId: 'scenario-1', scenarioVersion: 1,
-      targetId: 'target-1', targetUrl: 'https://example.com', status: 'PENDING',
-      versionContext: undefined as never,
-    })).toThrow('Execution version context is required');
   });
 });
