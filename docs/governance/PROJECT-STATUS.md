@@ -20,6 +20,7 @@ La corrección normaliza explícitamente una ausencia de contexto en construccio
 - Corrección del constructor BDD: implementada.
 - Compatibilidad legacy explícita: implementada y cubierta por prueba.
 - Preservación de `startedAt`: corregida.
+- Corrección de trazabilidad arquitectónica: implementada; `F3-ARCHITECTURE-TRACEABILITY.md` ya no declara que la implementación productiva esté “no iniciada”.
 - Nuevo CI de la corrección: pendiente de conclusión observable.
 
 ## Persistencia y versionado
@@ -30,7 +31,7 @@ El valor `legacy-unknown` se utiliza únicamente cuando la información históri
 
 ## Corrección de documentación
 
-README, `PROJECT-STATUS.md`, ADR-015 y `PENDING-DECISIONS.md` deben distinguir permanentemente entre diseño, implementación, regresiones detectadas y validación CI. La documentación no marcará un cambio como verde hasta observar la conclusión del workflow correspondiente.
+README, `PROJECT-STATUS.md`, ADR-015, `PENDING-DECISIONS.md` y la trazabilidad arquitectónica deben distinguir permanentemente entre diseño, implementación, regresiones detectadas y validación CI. La documentación no marcará un cambio como verde hasta observar la conclusión del workflow correspondiente.
 
 ## Estado comprobado
 
