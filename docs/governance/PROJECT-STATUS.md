@@ -3,7 +3,7 @@
 **Fecha:** 2026-09-07  
 **Versión de producto declarada:** `0.1.0`  
 **Rama:** `main`  
-**Avance estimado del MVP:** **80%**  
+**Avance estimado del MVP:** **82%**  
 **Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 en consolidación metodológica ejecutable y F3 **VALIDADO**.
 
 ## Incrementos cerrados — F2-23 a F2-37
@@ -50,31 +50,26 @@ La regla versionada `f2-interpretation-0.1` mapea determinísticamente cada delt
 
 La implementación conserva las identidades de las ejecuciones, las versiones de producto, la versión de la regla y una base explicativa. No transforma la dirección numérica en mejora, regresión, calidad, aceptación, rechazo o causalidad.
 
-La implementación y las pruebas están materializadas en:
-
-- `EvaluationCoverageDifferenceInterpretation`;
-- `InterpretEvaluationCoverageDifference`;
-- pruebas de dominio y aplicación;
-- Architecture Spike específico `difference-interpretation-validation.test.ts`.
-
 La validación final quedó registrada sobre el commit `6a55bf1d168e37049e385ef5824766bbb0bd0395`, con CI `34167130840` (`#286`) y Architecture Spike `34167130834`, ambos completamente exitosos.
 
-CI completó correctamente TypeScript, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate. El Architecture Spike completó correctamente TypeScript, pruebas unitarias/arquitectura, BDD, Playwright, migraciones PostgreSQL, integración de repositorio/versionado, manifiesto de evidencia, artefactos y Quality Gate.
+## Incremento cerrado — F2-41 validación controlada de dimensiones y criterios candidatos
 
-## Incremento activo — F2-41 validación controlada de dimensiones y criterios candidatos
+**Estado:** **CERRADO / VALIDADO**.
 
-**Estado:** **EN VALIDACIÓN**.
+F2-41 convierte en protocolo ejecutable la decisión pendiente del Frente 2 sobre la observabilidad y reproducibilidad de criterios candidatos. Se cubrió un caso representativo de cada dimensión D1–D7, con entrada, precondiciones, expectativa, evidencia, mecanismo de observación, regla y limitaciones explícitas.
 
-F2-41 convierte en protocolo ejecutable la decisión pendiente del Frente 2 sobre la observabilidad y reproducibilidad de los criterios candidatos. Se cubre un caso representativo de cada dimensión D1–D7.
+La metodología candidata permanece deliberadamente en estado `DRAFT`. F2-41 valida la aptitud estructural del protocolo, pero no congela todavía la taxonomía como definitiva ni convierte la validación en una medida de calidad del producto.
 
-La validación comprueba explícitamente entrada reproducible, precondiciones, comportamiento esperado, evidencia requerida, mecanismo de observación, regla de decisión y limitaciones. Para criterios asistidos por IA se conserva evidencia primaria y se identifica la asistencia de IA; esto no convierte a la IA en fuente única de evidencia.
+Para el criterio asistido por IA se exige conservar evidencia primaria y declarar la asistencia de IA. El criterio numérico exige método de medición explícito.
 
-El estado de la metodología candidata permanece `DRAFT`. F2-41 no congela la taxonomía, no crea un score de calidad y no introduce interpretación de mejora/regresión.
+La corrección final de tipado quedó registrada en el commit `020e9b8a638fd02fd4a881ea183a151d2cc936ec`.
 
-Artefactos materializados:
+Validación final:
 
-- `docs/evaluation/F2-41-CONTROLLED-CRITERIA-VALIDATION.md`;
-- `spike/evaluation/candidate-criteria-validation.test.ts`.
+- CI `34171221703` (`#293`) — **SUCCESS** en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
+- Architecture Spike `34171221652` (`#461`) — **SUCCESS** en TypeScript, pruebas unitarias/arquitectura, BDD, Playwright, migraciones PostgreSQL, integración de repositorio/versionado, manifiesto de evidencia, artefactos y Quality Gate.
+
+El primer intento de validación falló por dos incompatibilidades de TypeScript causadas por `exactOptionalPropertyTypes`; fueron corregidas sin modificar el contrato metodológico y validadas en la segunda ejecución.
 
 ## Persistencia y versionado
 
@@ -86,7 +81,7 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-41 **EN VALIDACIÓN**.
+**Estado:** F2-41 **CERRADO / VALIDADO**.
 
 La secuencia materializada llega hasta: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio → interpretación de cobertura por ejecución → métricas descriptivas de cobertura por ejecución → comparabilidad metodológica entre ejecuciones → comparación descriptiva de métricas de cobertura → interpretación descriptiva de diferencias entre ejecuciones → validación controlada de dimensiones y criterios candidatos.
 
@@ -103,9 +98,13 @@ La versión de producto permanece en `0.1.0`. No se incrementará por cada commi
 
 Las versiones metodológicas son independientes del producto y deben mantenerse reconstruibles junto con la identidad de ejecución y procedencia técnica.
 
-## Próximo paso
+## Próximo incremento — F2-42 validación empírica controlada
 
-Completar la ejecución de F2-41 en CI. Solo los criterios candidatos que demuestren observabilidad, reproducibilidad, evidencia suficiente e interpretación explícita podrán avanzar a una versión consolidada del catálogo. El scoring global y cualquier juicio normativo sobre diferencias entre ejecuciones continúan bloqueados.
+F2-42 deberá ejecutar casos controlados sobre un sistema conversacional real o un doble de prueba representativo, capturando evidencia real y repeticiones bajo condiciones constantes.
+
+La finalidad será determinar, para criterios candidatos seleccionados, si las propiedades observadas son realmente reproducibles y suficientemente evidenciadas para entrar al catálogo ejecutable. El resultado seguirá siendo metodológico: `SUPPORTED`, `REQUIRES_REFINEMENT`, `NOT_OBSERVABLE` o `INSUFFICIENT_EVIDENCE`.
+
+F2-42 no deberá introducir scoring global, ponderaciones, criterios críticos, umbrales globales, causalidad ni evaluación semántica autónoma basada exclusivamente en IA.
 
 ## Regla de documentación
 
