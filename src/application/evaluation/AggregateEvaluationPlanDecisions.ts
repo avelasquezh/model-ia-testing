@@ -23,18 +23,26 @@ export class AggregateEvaluationPlanDecisions {
 
     const decisionIds = input.decisions.map((item) => item.criterionId);
 
-    if (input.decisions.length !== selectedIds.size) {
-      throw new Error('Evaluation plan decisions must contain exactly the selected criteria');
-    }
-
     for (const criterionId of decisionIds) {
       if (!selectedIds.has(criterionId)) {
         throw new Error(`Decision provided for criterion outside evaluation plan selection: ${criterionId}`);
       }
     }
 
+    const decisionIdSet = new Set(decisionIds);
+    if (decisionIdSet.size !== decisionIds.length) {
+      const duplicateCriterionId = decisionIds.find(
+        (criterionId, index) => decisionIds.indexOf(criterionId) !== index,
+      );
+      throw new Error(`Duplicate criterion decision: ${duplicateCriterionId}`);
+    }
+
+    if (input.decisions.length !== selectedIds.size) {
+      throw new Error('Evaluation plan decisions must contain exactly the selected criteria');
+    }
+
     for (const criterionId of selectedIds) {
-      if (!decisionIds.includes(criterionId)) {
+      if (!decisionIdSet.has(criterionId)) {
         throw new Error(`Missing decision for selected evaluation plan criterion: ${criterionId}`);
       }
     }
