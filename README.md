@@ -39,7 +39,7 @@ La cadena objetivo es:
 
 ## Próximo trabajo
 
-1. Completar el contrato de contexto de versionado y conectarlo al ciclo de vida de `Execution`.
+1. Integrar las referencias del `EvaluationVersionContext` en persistencia PostgreSQL.
 2. Ejecutar el spike técnico restante y convertir en decisión formal las evidencias obtenidas.
 3. Continuar F2 sin introducir scoring global hasta cerrar la validación metodológica.
 4. Reconciliar permanentemente documentación, implementación y evidencia CI.
