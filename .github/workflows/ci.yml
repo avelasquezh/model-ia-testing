@@ -14,6 +14,20 @@ jobs:
     name: TypeScript and unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: spike
+          POSTGRES_PASSWORD: spike
+          POSTGRES_DB: spike
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U spike -d spike"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -36,6 +50,10 @@ jobs:
         run: npm run build
 
       - name: Unit and application tests
+        env:
+          NODE_ENV: test
+          TARGET_TIMEOUT_MS: 5000
+          DATABASE_URL: postgresql://spike:spike@localhost:5432/spike
         run: npm test
 
       - name: Publish quality evidence
