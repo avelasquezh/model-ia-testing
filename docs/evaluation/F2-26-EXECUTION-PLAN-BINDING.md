@@ -1,10 +1,10 @@
 # F2-26 — Vinculación del plan de evaluación con la ejecución
 
-**Estado:** **IMPLEMENTADO; pendiente de validación CI**
+**Estado:** **CERRADO / VALIDADO**
 
 ## 1. Propósito
 
-Cerrar la brecha entre la selección contextual de criterios y la ejecución real, de modo que una selección explícita no sea solamente un artefacto de composición sino parte del estado histórico de la ejecución.
+Cerrar la brecha entre la selección contextual de criterios y la ejecución real, de modo que una selección explícita forme parte del estado histórico de la ejecución.
 
 La unidad observable queda establecida como:
 
@@ -14,15 +14,7 @@ La unidad observable queda establecida como:
 
 `Execution` conserva un snapshot opcional de `EvaluationPlan`.
 
-El plan no sustituye al escenario ni al resultado de ejecución. Representa las condiciones metodológicas con las que se ejecutó una evaluación concreta.
-
-Cuando una ejecución recibe `evaluationSelection`:
-
-1. se valida el `scenarioId` contra el escenario cargado;
-2. se valida `scenarioVersion` contra la versión realmente cargada;
-3. se compone el plan con el contexto y alcance declarados;
-4. el plan se asocia al mismo `executionId`;
-5. el runner recibe el `Execution` que ya contiene el snapshot.
+Cuando una ejecución recibe `evaluationSelection` se valida el escenario y su versión, se compone el plan con el contexto y alcance declarados, el plan se asocia al mismo `executionId` y el runner recibe la ejecución que ya contiene el snapshot.
 
 ## 3. Invariantes
 
@@ -43,39 +35,18 @@ La columna es nullable para conservar compatibilidad con ejecuciones históricas
 
 El repositorio PostgreSQL reconstruye `EvaluationPlan` al recuperar una ejecución y mantiene separadas las referencias de versionado metodológico de la estructura del plan.
 
-La operación de actualización de una ejecución no reemplaza `evaluation_plan`, preservando el snapshot histórico.
-
 ## 5. Trazabilidad resultante
 
 Una ejecución evaluada puede reconstruirse mediante:
 
 `executionId → scenarioId/version → evaluationPlan.selectionContext → scope → selectedCriterionIds → plan.items → versionContext`
 
-Esto permite distinguir los criterios efectivamente seleccionados de los que pertenecían al catálogo pero no participaron de esa ejecución.
-
 ## 6. Fuera de alcance
 
-Este incremento no introduce:
+Este incremento no introduce scoring, pesos, agregación global, repetición automática, análisis estadístico ni selección automática mediante IA.
 
-- scoring;
-- pesos;
-- agregación global;
-- repetición automática;
-- análisis estadístico;
-- selección automática mediante IA;
-- modificación de las reglas del runner para evaluar criterios.
+## 7. Evidencia de cierre
 
-## 7. Evidencia esperada
+CI `34105904356`: **success** en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright E2E y Quality Gate.
 
-La salida del incremento requiere comprobar en CI:
-
-- compilación TypeScript;
-- pruebas de dominio para invariantes del plan dentro de `Execution`;
-- pruebas de aplicación que demuestren composición y propagación antes del runner;
-- pruebas de persistencia y reconstrucción PostgreSQL;
-- migraciones reproducibles;
-- BDD, Playwright y quality gate sin regresiones.
-
-## 8. Siguiente incremento
-
-Con F2-26 validado, formalizar repetición controlada y variabilidad observable sobre ejecuciones comparables, manteniendo resultados individuales e identidad de las condiciones antes de definir cualquier estadística o scoring.
+Architecture Spike `34105904449`: **success** en SPIKE-001 a SPIKE-012, incluyendo PostgreSQL/versioning, BDD, Playwright y Quality Gate.
