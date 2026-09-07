@@ -12,7 +12,7 @@ permissions:
 jobs:
   quality:
     name: TypeScript and unit tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
       postgres:
@@ -64,7 +64,7 @@ jobs:
   bdd:
     name: BDD acceptance tests
     needs: quality
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -81,7 +81,7 @@ jobs:
   browser:
     name: Playwright E2E
     needs: bdd
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout
@@ -111,7 +111,7 @@ jobs:
     name: Quality gate
     needs: [quality, bdd, browser]
     if: ${{ always() && needs.quality.result == 'success' && needs.bdd.result == 'success' && needs.browser.result == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Quality gate passed
