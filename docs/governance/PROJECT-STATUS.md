@@ -67,9 +67,9 @@ La especificación está documentada en `docs/evaluation/F2-29-STATISTICAL-INTER
 
 La evidencia CI `34113055452` y Architecture Spike `34113055442` resultó exitosa en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
 
-## Incremento actual — F2-30 contrato de juicio metodológico
+## Incremento cerrado — F2-30 contrato de juicio metodológico
 
-**Estado:** **IMPLEMENTADO; pendiente de validación CI**.
+**Estado:** **CERRADO / VALIDADO**.
 
 F2-30 establece la frontera entre interpretación estadística y juicio metodológico. El contrato permite `OBSERVED_CONSISTENT`, `OBSERVED_VARIABLE` y `NO_JUDGMENT`, derivados de manera determinista de F2-29.
 
@@ -81,6 +81,22 @@ F2-30 no introduce aceptación/rechazo, umbrales, scoring, ponderaciones, reglas
 
 La especificación está documentada en `docs/evaluation/F2-30-METHODOLOGICAL-JUDGMENT.md`.
 
+La evidencia CI `34113505026` y Architecture Spike `34113504953` resultó exitosa en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
+
+## Incremento actual — F2-31 contrato explícito de decisión de evaluación
+
+**Estado:** **IMPLEMENTADO; pendiente de validación CI**.
+
+F2-31 introduce `EvaluationDecisionResult` con los estados `ACCEPTED`, `REJECTED` y `UNDECIDED`.
+
+`BuildEvaluationDecision` recibe el estado de una evaluación de criterio y una regla metodológica explícita y versionada. La decisión se deriva exclusivamente de esa regla; el componente no contiene una regla universal de aceptación ni rechazo.
+
+Cada decisión conserva `ruleVersion` y `basis`, permitiendo reconstruir qué regla produjo el resultado y por qué fue obtenido.
+
+F2-31 no introduce `PASS = ACCEPTED`, `FAIL = REJECTED`, agregación de múltiples criterios, ponderaciones, scoring, umbrales estadísticos, reglas de parada, significancia, defectos críticos ni aceptación global del producto.
+
+La especificación está documentada en `docs/evaluation/F2-31-EXPLICIT-EVALUATION-DECISION.md`.
+
 ## Persistencia y versionado
 
 Las referencias de versionado continúan persistidas como campos de primera clase. El plan metodológico se conserva en `evaluation_plan` y las condiciones comparables mediante `condition_fingerprint`. La reconstrucción de `Execution` mantiene ambos metadatos.
@@ -91,9 +107,9 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-29 cerrado/validado; F2-30 implementado y en validación.
+**Estado:** F2-30 cerrado/validado; F2-31 implementado y en validación.
 
-La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico limitado. Todavía quedan fuera scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación global y método productivo de evaluación semántica con IA.
+La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada. Todavía quedan fuera scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación global y método productivo de evaluación semántica con IA.
 
 ## Frente 3 — Arquitectura
 **Estado:** **VALIDADO**.
@@ -108,7 +124,7 @@ Las versiones metodológicas son independientes del producto y deben mantenerse 
 
 ## Próximo incremento
 
-Validar F2-30 en CI. Con la baseline verde, el siguiente paso será definir un contrato explícito para decisiones de aceptación/rechazo y agregación, únicamente a partir de criterios y reglas metodológicas formalmente aprobados.
+Validar F2-31 en CI. Con la baseline verde, el siguiente paso será establecer, por separado, una política explícita de agregación de múltiples criterios y precedencia de estados indeterminados, sin convertirla en scoring global por defecto.
 
 ## Regla de documentación
 
