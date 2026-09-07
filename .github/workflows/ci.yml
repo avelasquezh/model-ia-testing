@@ -31,36 +31,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: 22
-
       - name: Install dependencies
         run: npm install
-
       - name: Install Playwright browsers for adapter tests
         run: npx playwright install --with-deps chromium
-
       - name: Record evaluated commit
         run: echo "$GITHUB_SHA" > ci-commit.txt
-
       - name: TypeScript
         run: npm run build
-
       - name: PostgreSQL migrations
         env:
           DATABASE_URL: postgresql://spike:spike@127.0.0.1:5432/spike
         run: npm run db:migrate
-
       - name: Unit and application tests
         env:
           NODE_ENV: test
           TARGET_TIMEOUT_MS: 5000
           DATABASE_URL: postgresql://spike:spike@127.0.0.1:5432/spike
         run: npm test
-
       - name: Publish quality evidence
         if: always()
         uses: actions/upload-artifact@v5
@@ -77,15 +69,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: 22
-
       - name: Install dependencies
         run: npm install
-
       - name: BDD
         run: npm run test:bdd
 
@@ -97,21 +86,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: 22
-
       - name: Install dependencies
         run: npm install
-
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
-
       - name: Playwright
         run: npm run test:browser
-
       - name: Publish browser evidence
         if: always()
         uses: actions/upload-artifact@v5
@@ -126,6 +110,7 @@ jobs:
   quality-gate:
     name: Quality gate
     needs: [quality, bdd, browser]
+    if: ${{ always() && needs.quality.result == 'success' && needs.bdd.result == 'success' && needs.browser.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
