@@ -1,3 +1,4 @@
+import type { EffectiveTargetConfiguration } from '../../../domain/target/EffectiveTargetConfiguration.js';
 import type { ExecutionObservation } from '../../../domain/execution/ExecutionObservation.js';
 import type { ExecutionTechnicalError } from '../../../domain/execution/ExecutionTechnicalError.js';
 import { ExecutionEvidence, type ExecutionEvidenceProps } from '../../../domain/evidence/ExecutionEvidence.js';
@@ -17,6 +18,7 @@ export type ExecutionEvidenceRow = {
   execution_id: string;
   target_id: string;
   target_url: string;
+  target_configuration: EffectiveTargetConfiguration | null;
   scenario_version: number;
   test_system_version: string;
   transcript: unknown;
@@ -67,6 +69,7 @@ export const evidenceToRowValues = (evidence: ExecutionEvidence) => [
   evidence.props.executionId,
   evidence.props.targetId,
   evidence.props.targetUrl,
+  evidence.props.targetConfiguration ? JSON.stringify(evidence.props.targetConfiguration) : null,
   evidence.props.scenarioVersion,
   evidence.props.testSystemVersion,
   JSON.stringify(evidence.props.transcript.map(serializeObservation)),
@@ -85,6 +88,7 @@ export const evidenceFromRow = (row: ExecutionEvidenceRow): ExecutionEvidence =>
     transcript: (row.transcript as PersistedObservation[]).map(deserializeObservation),
     errors: (row.errors as PersistedError[]).map(deserializeError),
     capturedAt: row.captured_at instanceof Date ? row.captured_at : new Date(row.captured_at),
+    ...(row.target_configuration ? { targetConfiguration: row.target_configuration } : {}),
   };
   return new ExecutionEvidence(props);
 };
