@@ -3,106 +3,16 @@
 **Fecha:** 2026-09-07  
 **Versión de producto declarada:** `0.1.0`  
 **Rama:** `main`  
-**Avance estimado del MVP:** **73%**  
+**Avance estimado del MVP:** **75%**  
 **Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 en consolidación metodológica ejecutable y F3 **VALIDADO**.
 
 ## Incrementos cerrados — F2-23 a F2-37
 
 F2-23 a F2-37 permanecen **CERRADOS / VALIDADOS** según la evidencia CI y Architecture Spike registrada en este documento.
 
-## Incremento cerrado — F2-32 contrato de agregación de decisiones
+## Incremento cerrado — F2-38 comparabilidad metodológica entre ejecuciones
 
 **Estado:** **CERRADO / VALIDADO**.
-
-F2-32 define la combinación de decisiones individuales de múltiples criterios sin introducir scoring, ponderaciones ni porcentajes.
-
-`EvaluationDecisionAggregationResult` conserva el resultado agregado, el número de criterios, la distribución de `ACCEPTED`, `REJECTED` y `UNDECIDED`, los identificadores de criterios incluidos, la precedencia aplicada y una `basis` explicativa.
-
-La precedencia metodológica es explícita y conservadora: `REJECTED > UNDECIDED > ACCEPTED`. La agregación rechaza listas vacías y criterios duplicados.
-
-La especificación está documentada en `docs/evaluation/F2-32-DECISION-AGGREGATION.md`.
-
-La evidencia CI `34116193123` y Architecture Spike `34116193050` resultó exitosa en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
-
-## Incremento cerrado — F2-33 vinculación de agregación con EvaluationPlan
-
-**Estado:** **CERRADO / VALIDADO**.
-
-F2-33 garantiza que la agregación de decisiones solo pueda consumir exactamente los criterios autorizados por `EvaluationPlan`.
-
-Cuando existe `selectionContext`, el conjunto autorizado es `selectedCriterionIds`. Sin `selectionContext`, el conjunto autorizado corresponde a `EvaluationPlan.items`. La operación exige correspondencia exacta: no puede faltar una decisión seleccionada ni puede incorporarse una decisión de un criterio externo.
-
-La agregación subyacente conserva la precedencia definida en F2-32 y sus invariantes de unicidad y trazabilidad.
-
-La especificación está documentada en `docs/evaluation/F2-33-EVALUATION-PLAN-AGGREGATION-BINDING.md`.
-
-La validación final de F2-33 quedó cerrada con CI `34120248920` y Architecture Spike `34120248891`, ambos exitosos en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
-
-F2-33 no introduce scoring, ponderaciones, porcentajes globales, agregación entre ejecuciones/escenarios, reglas de parada, significancia estadística ni aceptación global del producto.
-
-## Incremento cerrado — F2-34 aplicabilidad y agregación de decisiones
-
-**Estado:** **CERRADO / VALIDADO**.
-
-F2-34 formaliza la relación entre `EvaluationPlan.applicability` y la agregación de decisiones. Los criterios `APPLICABLE` reciben decisiones y participan en la agregación; los criterios `NOT_APPLICABLE` permanecen trazables en el plan pero quedan fuera de la agregación.
-
-`NOT_APPLICABLE` no se transforma en `REJECTED`, `UNDECIDED` ni `ACCEPTED`. Cuando todos los criterios seleccionados son `NOT_APPLICABLE`, el resultado agregado es `null`, preservando la diferencia entre no aplicabilidad y aceptación.
-
-La implementación está en `AggregateApplicableEvaluationPlanDecisions` y la especificación en `docs/evaluation/F2-34-APPLICABILITY-AGGREGATION.md`.
-
-La validación final de F2-34 quedó cerrada con CI `34121440528` y Architecture Spike `34121440585`, ambos exitosos en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
-
-F2-34 no introduce scoring, ponderaciones, porcentajes, compensación entre criterios, criterios críticos, reglas de parada, agregación entre ejecuciones/escenarios ni inferencia automática de aplicabilidad.
-
-## Incremento cerrado — F2-35 cobertura metodológica
-
-**Estado:** **CERRADO / VALIDADO**.
-
-F2-35 formaliza la cobertura descriptiva de los criterios seleccionados para una ejecución. La cobertura distingue `APPLICABLE_EVALUATED`, `APPLICABLE_NOT_EVALUATED`, `NOT_APPLICABLE`, `INSUFFICIENT_EVIDENCE` e `INCONCLUSIVE`.
-
-`NOT_APPLICABLE` permanece fuera de la evaluación; `APPLICABLE_NOT_EVALUATED` representa una omisión de evaluación; `INSUFFICIENT_EVIDENCE` representa `NOT_EVALUABLE`; e `INCONCLUSIVE` conserva la semántica inconclusa de la evaluación. La cobertura no inventa decisiones ni porcentajes.
-
-La implementación está en `EvaluationCoverage` y `BuildEvaluationCoverage`, con pruebas unitarias y Architecture Spike específicas.
-
-La validación final de F2-35 quedó cerrada con CI `34122575495` y Architecture Spike `34122575489`, ambos exitosos en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
-
-F2-35 no introduce porcentajes de cobertura, score, ponderaciones, aceptación/rechazo global, compensación entre criterios, criterios críticos, reglas de parada, agregación entre ejecuciones/escenarios ni inferencia automática de aplicabilidad.
-
-## Incremento cerrado — F2-36 interpretación de cobertura por ejecución
-
-**Estado:** **CERRADO / VALIDADO**.
-
-F2-36 formaliza la interpretación metodológica del conjunto de estados de cobertura de una ejecución. El resultado distingue `COVERAGE_COMPLETE`, `COVERAGE_PARTIAL`, `COVERAGE_UNRESOLVED` y `NO_APPLICABLE_COVERAGE`.
-
-`COVERAGE_COMPLETE` significa que todos los criterios aplicables tienen evaluación concluyente (`PASS` o `FAIL`), sin implicar aceptación. `COVERAGE_PARTIAL` identifica cobertura con al menos una evaluación concluyente y además criterios aplicables pendientes o no resueltos. `COVERAGE_UNRESOLVED` identifica ausencia de evaluaciones concluyentes con evidencia insuficiente o resultados inconclusos. `NO_APPLICABLE_COVERAGE` representa una selección sin criterios aplicables.
-
-La implementación está en `EvaluationCoverageInterpretation` e `InterpretEvaluationCoverage`, con pruebas unitarias y Architecture Spike específicas.
-
-La validación final quedó cerrada con CI `34142357978` y Architecture Spike `34142357977`, ambos completamente exitosos.
-
-F2-36 conserva trazabilidad por `executionId` y por grupos de criterios, rechaza clasificaciones inconsistentes y mantiene la interpretación separada de decisiones y scoring.
-
-F2-36 no introduce porcentajes de cobertura, score, ponderaciones, aceptación/rechazo global, compensación entre criterios, criterios críticos, thresholds, reglas de parada, agregación entre ejecuciones/escenarios ni inferencia automática de aplicabilidad.
-
-## Incremento cerrado — F2-37 métricas descriptivas de cobertura por ejecución
-
-**Estado:** **CERRADO / VALIDADO**.
-
-F2-37 cuantifica descriptivamente la cobertura de una ejecución a partir de `EvaluationCoverageInterpretation`.
-
-El resultado conserva `applicableCount`, `evaluatedCount`, `notEvaluatedCount`, `insufficientEvidenceCount`, `inconclusiveCount` y `notApplicableCount`.
-
-Los ratios descriptivos usan exclusivamente `applicableCount` como denominador: `evaluatedCoverageRatio`, `incompleteCoverageRatio` y `unresolvedCoverageRatio`. Cuando no existen criterios aplicables, los ratios son `null`.
-
-La implementación está en `EvaluationCoverageMetrics` y `MeasureEvaluationCoverage`, con pruebas unitarias y Architecture Spike específicas. Las invariantes garantizan que los conteos representen exactamente todos los criterios aplicables y que los ratios coincidan con ellos.
-
-La validación final quedó cerrada con CI `34143059354` y Architecture Spike `34143059356`, ambos completamente exitosos en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
-
-F2-37 es puramente descriptivo y no introduce score, ponderaciones, thresholds, criterios críticos, reglas de parada, aceptación/rechazo global, agregación entre ejecuciones/escenarios, significancia estadística ni evaluación semántica con IA.
-
-## Incremento en validación — F2-38 comparabilidad metodológica entre ejecuciones
-
-**Estado:** **EN VALIDACIÓN**.
 
 F2-38 formaliza la comparabilidad como precondición antes de comparar métricas de cobertura entre ejecuciones.
 
@@ -112,9 +22,23 @@ La identidad de producto bajo prueba (`productVersion`) permanece como dimensió
 
 El resultado distingue `COMPARABLE`, `NON_COMPARABLE` e `INSUFFICIENT_EVIDENCE`, y conserva razones auditables. Una incompatibilidad demostrable prevalece sobre la falta de evidencia; la falta de evidencia por sí sola no se interpreta como variabilidad del sistema.
 
-La implementación y pruebas están en `src/domain/evaluation/EvaluationComparability.ts`, `src/application/evaluation/AssessEvaluationComparability.ts` y `spike/evaluation/comparability-validation.test.ts`.
+La validación final quedó registrada en el commit `308b08ca053ed1d2eb645566e83d77319f61257d`, con CI `34147632091` y Architecture Spike `34147632105`, ambos completamente exitosos.
 
-La comparación efectiva de métricas queda reservada para F2-39.
+## Incremento cerrado — F2-39 comparación descriptiva de métricas de cobertura
+
+**Estado:** **CERRADO / VALIDADO**.
+
+F2-39 compara descriptivamente las métricas de cobertura de dos ejecuciones únicamente después de que F2-38 establezca `COMPARABLE`.
+
+La diferencia es determinista y se expresa como `delta = right - left`. Se comparan conteos de criterios y ratios descriptivos de cobertura. Los ratios `null` conservan `null` en su delta.
+
+`productVersion` se conserva explícitamente para ambas ejecuciones, de modo que una diferencia de producto sea observable sin convertirla en una conclusión de mejora o regresión.
+
+La implementación está en `EvaluationCoverageComparison` y `CompareEvaluationCoverage`, con pruebas unitarias/aplicación y Architecture Spike específica.
+
+La validación final quedó registrada con CI `34147632091` y Architecture Spike `34147632105`, ambos completamente exitosos en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
+
+F2-39 permanece puramente descriptivo: no introduce scoring, ponderaciones, thresholds, criterios críticos, reglas de parada, inferencia estadística, aceptación/rechazo global, compensación entre criterios, agregación entre escenarios ni evaluación semántica con IA.
 
 ## Persistencia y versionado
 
@@ -126,11 +50,11 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-38 en validación.
+**Estado:** F2-39 **CERRADO / VALIDADO**.
 
-La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio → interpretación de cobertura por ejecución → métricas descriptivas de cobertura por ejecución → comparabilidad metodológica entre ejecuciones.
+La secuencia materializada llega hasta: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio → interpretación de cobertura por ejecución → métricas descriptivas de cobertura por ejecución → comparabilidad metodológica entre ejecuciones → comparación descriptiva de métricas de cobertura.
 
-Todavía quedan fuera la comparación descriptiva entre ejecuciones, scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación entre escenarios y método productivo de evaluación semántica con IA.
+Todavía quedan fuera la interpretación normativa de diferencias entre ejecuciones, scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación entre escenarios y método productivo de evaluación semántica con IA.
 
 ## Frente 3 — Arquitectura
 **Estado:** **VALIDADO**.
@@ -143,12 +67,10 @@ La versión de producto permanece en `0.1.0`. No se incrementará por cada commi
 
 Las versiones metodológicas son independientes del producto y deben mantenerse reconstruibles junto con la identidad de ejecución y procedencia técnica.
 
-## Próximo incremento — F2-39
+## Próximo incremento — F2-40
 
-Comparar descriptivamente métricas de cobertura únicamente entre ejecuciones que satisfagan la precondición de comparabilidad de F2-38. La comparación deberá conservar explícitamente las dimensiones que difieren, especialmente la versión del producto bajo prueba, sin convertir diferencias de condiciones en variabilidad.
+Interpretación descriptiva de diferencias entre ejecuciones. Este incremento deberá recibir exclusivamente resultados ya comparables y medidos por F2-39, y establecer una capa separada de interpretación metodológica sin convertir automáticamente una diferencia en mejora, regresión, calidad, aceptación o rechazo. La regla de interpretación deberá quedar versionada y auditable antes de introducir cualquier juicio normativo posterior.
 
 ## Regla de documentación
 
 Cada incremento o corrección debe actualizar este documento con el estado verificable resultante. Los cambios de comportamiento deben incluir la actualización de estado en el mismo commit siempre que sea técnicamente viable.
-
-<!-- f2-38-status-refresh -->
