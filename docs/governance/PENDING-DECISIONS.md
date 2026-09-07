@@ -4,7 +4,7 @@ Este registro distingue decisiones metodológicas aún no aprobadas de decisione
 
 ## Metodología de evaluación
 
-- Validar dimensiones y criterios definitivos del Frente 2 mediante casos reales/controlados. **Pendiente; el contrato ejecutable ya establece las invariantes estructurales.**
+- Validar dimensiones y criterios definitivos del Frente 2 mediante casos reales/controlados. **F2-41 activo: protocolo controlado definido y pendiente de evidencia CI; la taxonomía continúa en DRAFT.**
 - Definir tratamiento estadístico de repetición y variabilidad cuando exista evidencia suficiente.
 - Definir límites de confianza/incertidumbre si las métricas lo requieren.
 - Validar el rol de IA en criterios semánticos.
@@ -56,6 +56,6 @@ F3 ya está validado mediante el Architecture Spike `34089149510`. El trabajo me
 
 ## Próximo punto de decisión
 
-Validar en CI el contrato metodológico introducido en F2-22 y después comprobar, mediante casos controlados, qué dimensiones y criterios candidatos son realmente reproducibles y observables. El scoring global continúa explícitamente bloqueado hasta cerrar esas decisiones.
+Completar la validación de F2-41 mediante CI y casos controlados, y con su evidencia determinar qué dimensiones y criterios candidatos permanecen en el catálogo ejecutable. El scoring global continúa explícitamente bloqueado hasta cerrar estas decisiones.
 
 Ninguna decisión marcada como Pendiente deberá considerarse aprobada por defecto durante la implementación.
