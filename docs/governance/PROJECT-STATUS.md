@@ -1,44 +1,56 @@
 # Estado actual del proyecto — model-ia-testing
 
-**Fecha:** 2026-09-07
-**Versión de producto declarada:** 0.1.0
-**Rama:** main
-**Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 con baseline ejecutable y F3 en validación técnica.
+**Fecha:** 2026-09-07  
+**Versión de producto declarada:** `0.1.0`  
+**Rama:** `main`  
+**Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 con baseline ejecutable parcial y F3 en validación técnica.
+
+## Incremento actual — contexto de versionado en ejecución
+
+**Estado:** implementado y cubierto por pruebas unitarias/aplicación.
+
+`EvaluationVersionContext` identifica versión de producto, método de evaluación, catálogo de criterios y reglas de decisión, con referencias opcionales del evaluador IA y commit de procedencia. `ExecuteScenario` recibe este contexto como dependencia y cada `Execution` lo conserva obligatoriamente durante `PENDING` → `RUNNING` → estado terminal.
+
+La persistencia de estas referencias en PostgreSQL todavía no está integrada. Por tanto, la reconstrucción histórica está soportada en dominio/aplicación, pero todavía no debe declararse como auditabilidad persistida completa.
+
+## Corrección de documentación
+
+README, `PROJECT-STATUS.md`, ADR-015 y `PENDING-DECISIONS.md` fueron reconciliados para distinguir entre diseño, implementación parcial y validación. El README ya no presenta el MVP como no iniciado.
 
 ## Estado comprobado
 
 ### Frente 1 — Núcleo funcional
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
-Ya existen en el repositorio capacidades para gestión de objetivos, escenarios y suites, ejecución, observaciones, evidencia, resultados, hallazgos, reportes, trazabilidad, seguridad de ejecución y quality gates. El desarrollo no debe describirse ya como “pendiente de implementación”.
+Existen capacidades para gestión de objetivos, escenarios y suites, ejecución, observaciones, evidencia, resultados, hallazgos, reportes, trazabilidad, seguridad de ejecución y quality gates.
 
 ### Frente 2 — Evaluación observable
 **Estado:** Baseline ejecutable parcial.
 
-Están implementados y probados contratos/modelos de medición, criterios y planes ejecutables, validaciones de riesgo, tratamiento de repetición, trazabilidad de evaluación asistida por IA, catálogo de evidencia y la primera regla determinista conectada a una ejecución tangible (`rule-exact-response-v1`).
+Existen modelos de medición, criterios y planes ejecutables, validaciones de riesgo, repetición, trazabilidad de evaluación asistida por IA, catálogo de evidencia y una regla determinista conectada a una ejecución tangible.
 
-Permanece pendiente la aprobación metodológica definitiva del catálogo, el modelo de agregación/scoring, pesos, tratamiento final de estados y la validación de criterios semánticos con casos controlados.
+Continúan pendientes la aprobación metodológica definitiva, scoring/agregación, pesos, tratamiento final de estados y validación de criterios semánticos con casos controlados.
 
 ### Frente 3 — Arquitectura
-**Estado:** Baseline arquitectónica implementada parcialmente; spike técnico en ejecución.
+**Estado:** Baseline materializada parcialmente; spike técnico aún abierto.
 
-La solución utiliza TypeScript estricto, monolito modular, arquitectura hexagonal, Playwright aislado mediante puertos/adaptadores, GitHub Actions y PostgreSQL con migraciones reproducibles. Esto demuestra materialización de decisiones, pero no equivale todavía a una aprobación completa del spike.
+La solución ya materializa TypeScript estricto, monolito modular, arquitectura hexagonal, Playwright mediante adaptadores, GitHub Actions y PostgreSQL con migraciones reproducibles. Esto no constituye por sí solo una validación completa del spike.
 
 ### Persistencia
-**Estado:** Incremento técnico completado en CI.
+**Estado:** Incremento técnico comprobado en CI.
 
-El repositorio ya dispone de frontera PostgreSQL, esquema MVP reproducible, bookkeeping de migraciones, runner determinista y validaciones de migración/transacción en CI.
+Se dispone de frontera PostgreSQL, esquema reproducible, bookkeeping de migraciones, runner determinista y validaciones de migración/transacción en CI.
 
 ## Versionado
 
-La versión de producto se mantiene en `0.1.0` hasta que exista un release que justifique un cambio SemVer.
+La versión de producto permanece en `0.1.0`. No se incrementará por cada commit.
 
-Las versiones metodológicas no se derivan automáticamente de la versión del producto. Una ejecución histórica deberá poder asociarse a las versiones de producto, criterios, reglas y evaluador IA que determinaron su interpretación, además de su identificador de ejecución y procedencia técnica.
+Las versiones metodológicas son independientes del producto. Una ejecución histórica deberá poder reconstruir qué método, criterios, reglas y evaluador determinaron su interpretación, junto con la identidad de ejecución y procedencia técnica.
 
 ## Próximo incremento
 
-Formalizar el contexto de versionado de ejecución como contrato de dominio y conectarlo progresivamente al agregado `Execution`, sin introducir todavía scoring global ni una plataforma distribuida.
+Persistir las referencias del `EvaluationVersionContext` asociadas a `Execution` en PostgreSQL, con migración reproducible y pruebas de recuperación. Después se continuará con el siguiente gate del spike F3; el scoring global sigue deliberadamente fuera de alcance hasta cerrar su validación metodológica.
 
 ## Regla de documentación
 
-Cada incremento o corrección debe actualizar este documento con el estado verificable resultante. Nunca se marcará como “implementado”, “validado” o “completo” un componente cuya evidencia disponible solo demuestre que fue diseñado.
+Cada incremento o corrección debe actualizar este documento con el estado verificable resultante. Los cambios de comportamiento deberán incluir la actualización de estado en el mismo commit siempre que sea técnicamente viable.
