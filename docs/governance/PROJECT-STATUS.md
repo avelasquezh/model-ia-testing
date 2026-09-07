@@ -13,9 +13,9 @@ Se formalizaron las invariantes que deben cumplirse para que una ejecución nuev
 
 La especificación quedó documentada en `docs/evaluation/F2-23-VERSION-CONTEXT-INVARIANTS.md`.
 
-## Incremento actual — F2-24 delimitación de dimensiones del MVP
+## Incremento cerrado — F2-24 delimitación de dimensiones del MVP
 
-**Estado:** **IMPLEMENTADO; pendiente de validación CI**.
+**Estado:** **CERRADO / VALIDADO**.
 
 Se delimitó el perímetro del MVP mediante observabilidad, reproducibilidad, dependencia de canal y complejidad metodológica.
 
@@ -25,13 +25,19 @@ D5 Seguridad y comportamiento responsable observable queda como extensión condi
 
 La decisión metodológica quedó documentada en `docs/evaluation/F2-24-MVP-DIMENSION-DELIMITATION.md`.
 
-La delimitación ya tiene soporte ejecutable mediante el perfil `MVP_CORE`: una composición de plan puede filtrar explícitamente el catálogo a los 18 criterios definidos como núcleo, conservar su aplicabilidad por contexto y persistir el alcance del plan.
+La delimitación tiene soporte ejecutable mediante el perfil `MVP_CORE`: una composición de plan puede filtrar explícitamente el catálogo a los 18 criterios definidos como núcleo, conservar su aplicabilidad por contexto y persistir el alcance del plan.
 
 Se añadieron pruebas para proteger el conjunto de IDs del núcleo y verificar que criterios pospuestos, como D6-C05, no entren accidentalmente en `MVP_CORE`.
 
 Se mantienen fuera del núcleo inicial D1-C05, D3-C05, D4-C05, D6-C02 y D6-C05; D4-C02 permanece condicionado a una tolerancia definida por escenario.
 
 El incremento no introduce scoring, pesos, estadística global ni evaluador IA productivo.
+
+### Evidencia de cierre F2-24
+
+- CI `34093226220`, commit `1e21df7360361f9bd3956e93c6f1d4e649c6766e`: **success** en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright E2E y quality gate.
+- Architecture Spike `34093226273`, mismo commit: **success** en SPIKE-001 a SPIKE-012, incluyendo integración PostgreSQL/versioning y quality gate.
+- La corrección `1e21df7` alineó una prueba existente con el nuevo campo obligatorio `scope` de `EvaluationPlan`; no modificó la decisión metodológica.
 
 ## Evidencia de cierre F2-23
 
@@ -51,9 +57,9 @@ El valor `legacy-unknown` se utiliza únicamente cuando la información históri
 Existen capacidades para gestión de objetivos, escenarios y suites, ejecución, observaciones, evidencia, resultados, hallazgos, reportes, trazabilidad, seguridad de ejecución y quality gates.
 
 ## Frente 2 — Evaluación observable
-**Estado:** Delimitación del núcleo MVP implementada; validación metodológica y ejecución real continúan.
+**Estado:** F2-24 cerrado/validado; selección contextual y ejecución metodológica continúan.
 
-La baseline contiene siete dimensiones candidatas y un catálogo de criterios. F2-24 establece cuáles pertenecen al núcleo y cuáles quedan condicionadas o pospuestas, y ahora esa decisión cuenta con una representación ejecutable mediante `EvaluationPlanScope`.
+La baseline contiene siete dimensiones candidatas y un catálogo de criterios. F2-24 establece cuáles pertenecen al núcleo y cuáles quedan condicionadas o pospuestas, y esa decisión cuenta con una representación ejecutable mediante `EvaluationPlanScope`.
 
 El contrato ejecutable impide criterios incompletos o inconsistentes, pero no define todavía scoring/agregación, pesos, tratamiento estadístico de repetición, criterios críticos, fórmula de riesgo definitiva ni método productivo de evaluación semántica con IA.
 
@@ -73,7 +79,9 @@ Las versiones metodológicas son independientes del producto. Una ejecución his
 
 ## Próximo incremento
 
-Validar el nuevo alcance `MVP_CORE` en CI y después conectar la selección explícita con el contexto de escenario/ejecución, manteniendo la distinción entre criterios incluidos en el alcance y criterios no aplicables por contexto. Luego formalizar repetición y variabilidad antes de diseñar scoring global.
+**F2-25 — Selección contextual de criterios.** Conectar el alcance `MVP_CORE` con el contexto de escenario/ejecución mediante una selección determinista y auditable. Cada ejecución deberá poder conservar por criterio su inclusión, exclusión o `NOT_APPLICABLE`, junto con la razón y las referencias metodológicas pertinentes.
+
+El siguiente límite sigue siendo deliberado: no introducir scoring global hasta formalizar primero la selección contextual y, posteriormente, la repetición y variabilidad.
 
 ## Regla de documentación
 
