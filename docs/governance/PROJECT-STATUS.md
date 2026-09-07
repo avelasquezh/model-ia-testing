@@ -5,23 +5,22 @@
 **Rama:** `main`  
 **Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 con baseline ejecutable parcial y F3 en validación técnica.
 
-## Incremento actual — recuperación del gate TypeScript
+## Incremento actual — recuperación del gate PostgreSQL
 
-**Estado:** correcciones implementadas; nuevo CI pendiente de conclusión.
+**Estado:** corrección de infraestructura de pruebas implementada; nuevo CI pendiente de conclusión.
 
-El CI correspondiente al commit `906f6887` volvió a fallar en compilación TypeScript. La regresión quedó reducida a tres defectos concretos: un `commitSha` opcional enviado como `undefined` bajo `exactOptionalPropertyTypes`, un mock de PostgreSQL cuya firma no permitía inspeccionar el segundo argumento y una restauración del agregado que utilizaba el identificador importado solo como tipo en vez del alias de valor.
+Después de corregir TypeScript, el CI `34087212985` confirmó que el build ya pasaba y que 207 pruebas unitarias estaban verdes, pero tres pruebas PostgreSQL fallaban por `ECONNREFUSED` contra `localhost:5432`. El problema se produjo antes de llegar a migraciones y no fue un fallo del repositorio de ejecución.
 
-Las correcciones mantienen intacto el contrato de versionado: el BDD solo añade `commitSha` cuando existe, el mock declara explícitamente sus parámetros y `PostgresExecutionRepository` instancia `ExecutionModel` al reconstruir una ejecución.
-
-Durante la corrección se produjo además una sustitución incompleta temporal del archivo `spike/bdd/architecture.steps.ts`; fue restaurado inmediatamente desde el estado versionado anterior y la corrección quedó aplicada sobre el archivo completo. No se considera una pérdida funcional persistente del repositorio.
+La causa se aisló en el orden y preparación del spike: el conjunto general `npm test` incluía pruebas que requieren PostgreSQL antes del paso formal de migración y no existía un chequeo explícito de disponibilidad del servicio. Se ajustó el workflow para esperar PostgreSQL explícitamente, excluir las pruebas PostgreSQL del bloque general y ejecutarlas después de `db:migrate` con una URL explícita sobre `127.0.0.1`.
 
 ## Verificación observada
 
-- CI `34087002631`, commit `906f6887`: **fallido en TypeScript**.
-- Error BDD `TS2379`: corregido.
-- Error de tipado del mock `TS2352/TS2493`: corregido.
-- Error de instancia `TS1361` en `PostgresExecutionRepository`: corregido.
-- Nuevo CI tras estas correcciones: pendiente de conclusión observable.
+- CI `34087212985`, commit `d2408019`: **falló en pruebas**, no en TypeScript.
+- TypeScript: **success**.
+- Pruebas no PostgreSQL: **207 success**.
+- Fallos PostgreSQL observados: **3**, todos `ECONNREFUSED` sobre `::1`/`127.0.0.1:5432`.
+- Corrección del workflow: implementada en `b8c97ad6`.
+- Nuevo CI provocado por la corrección: pendiente de conclusión observable.
 - No se declara verde ningún gate hasta disponer de conclusión `success` observable.
 
 ## Persistencia y versionado
@@ -48,7 +47,7 @@ Continúan pendientes la aprobación metodológica definitiva, scoring/agregaci�
 La solución ya materializa TypeScript estricto, monolito modular, arquitectura hexagonal, Playwright mediante adaptadores, GitHub Actions y PostgreSQL con migraciones reproducibles. Esto no constituye por sí solo una validación completa del spike.
 
 ## Persistencia
-**Estado:** Schema MVP reproducible y repositorio PostgreSQL de `Execution` implementados; el gate de CI de la corrección actual está pendiente.
+**Estado:** Schema MVP reproducible, repositorio PostgreSQL de `Execution` y pruebas de versionado implementados; validación CI de integración PostgreSQL pendiente.
 
 ## Versionado
 
@@ -58,7 +57,7 @@ Las versiones metodológicas son independientes del producto. Una ejecución his
 
 ## Próximo incremento
 
-Observar el nuevo CI y corregir cualquier regresión adicional. Con CI en verde, cerrar este incremento y validar dos ejecuciones independientes con contextos metodológicos distintos, verificando separación e inmutabilidad histórica. Después se retomará el siguiente gate del spike F3.
+Verificar el nuevo CI del spike y corregir cualquier problema de servicio o migración que aparezca. Con el gate PostgreSQL en verde, cerrar la recuperación y ejecutar la validación histórica de dos ejecuciones independientes con contextos metodológicos distintos, verificando separación e inmutabilidad histórica. Después se retomará el siguiente gate del spike F3.
 
 ## Regla de documentación
 
