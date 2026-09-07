@@ -32,10 +32,11 @@ const evaluationPlan = (executionId = 'execution-1', scenarioId = 'scenario-1', 
   }],
 });
 
-const pending = (withVersionContext = true) => new Execution({
+const pending = (withVersionContext = true, conditionFingerprint?: string) => new Execution({
   id: 'execution-1', scenarioId: 'scenario-1', scenarioVersion: 1,
   targetId: 'target-1', targetUrl: 'https://example.com', status: 'PENDING',
   ...(withVersionContext ? { versionContext } : {}),
+  ...(conditionFingerprint !== undefined ? { conditionFingerprint } : {}),
 });
 
 describe('Execution', () => {
@@ -57,6 +58,18 @@ describe('Execution', () => {
 
     expect(running.props.evaluationPlan).toBe(plan);
     expect(finished.props.evaluationPlan).toBe(plan);
+  });
+
+  it('retains the condition fingerprint across its lifecycle', () => {
+    const running = pending(true, 'cond-A').start();
+    const finished = running.finish('PASSED');
+
+    expect(running.props.conditionFingerprint).toBe('cond-A');
+    expect(finished.props.conditionFingerprint).toBe('cond-A');
+  });
+
+  it('rejects an explicitly empty condition fingerprint', () => {
+    expect(() => pending(true, '   ')).toThrow('Execution condition fingerprint must not be empty');
   });
 
   it('rejects an evaluation plan bound to a different execution', () => {
