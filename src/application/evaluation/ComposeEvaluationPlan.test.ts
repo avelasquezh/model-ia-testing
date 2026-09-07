@@ -110,6 +110,26 @@ describe('ComposeEvaluationPlan', () => {
     ).rejects.toThrow('Selected criterion is outside evaluation scope or missing from catalog: D6-C05');
   });
 
+  it('rejects a selection scope that conflicts with requested scope', async () => {
+    const useCase = new ComposeEvaluationPlan(new InMemoryCriterionCatalog(criteria));
+    const selection = new EvaluationSelectionContext({
+      scenarioId: 'scenario-25-003',
+      scenarioVersion: 1,
+      executionContext: 'web-chatbot',
+      scope: 'MVP_CORE',
+      selectedCriterionIds: ['D1-C01'],
+    });
+
+    await expect(
+      useCase.compose({
+        executionId: 'execution-25-003',
+        context: 'web-chatbot',
+        scope: 'CATALOG',
+        selection,
+      }),
+    ).rejects.toThrow('Evaluation selection scope does not match requested evaluation scope');
+  });
+
   it('does not turn a non-applicable criterion into FAIL', async () => {
     const useCase = new ComposeEvaluationPlan(new InMemoryCriterionCatalog(criteria));
     const plan = await useCase.compose({ executionId: 'execution-18-002', context: 'api-chatbot' });
