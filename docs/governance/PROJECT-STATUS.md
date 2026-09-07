@@ -13,6 +13,22 @@ Se formalizaron las invariantes que deben cumplirse para que una ejecución nuev
 
 La especificación quedó documentada en `docs/evaluation/F2-23-VERSION-CONTEXT-INVARIANTS.md`.
 
+## Incremento actual — F2-24 delimitación de dimensiones del MVP
+
+**Estado:** **DECISIÓN METODOLÓGICA CERRADA; pendiente de implementación ejecutable y validación CI**.
+
+Se delimitó el perímetro del MVP mediante observabilidad, reproducibilidad, dependencia de canal y complejidad metodológica.
+
+El núcleo obligatorio queda compuesto por D1 Corrección funcional observable, D2 Adecuación conversacional, D3 Continuidad contextual, D4 Robustez conversacional y D6 Rendimiento conversacional observable.
+
+D5 Seguridad y comportamiento responsable observable queda como extensión condicionada a escenarios y políticas explícitas. D7 Calidad de interacción e interfaz queda como extensión dependiente del canal y no como requisito del núcleo conversacional.
+
+La especificación quedó documentada en `docs/evaluation/F2-24-MVP-DIMENSION-DELIMITATION.md`.
+
+Se posponen explícitamente criterios que requieren repetición/variabilidad formal o infraestructura especializada: D1-C05, D3-C05, D4-C05, D6-C02 y D6-C05. D4-C02 queda condicionado a una tolerancia definida por escenario.
+
+El incremento no introduce scoring, pesos, estadística global ni evaluador IA productivo.
+
 ## Evidencia de cierre F2-23
 
 - CI `34091970313`, commit `8cbd5953`: **success** en TypeScript/unit tests, migraciones PostgreSQL, BDD, Playwright E2E y quality gate.
@@ -31,11 +47,11 @@ El valor `legacy-unknown` se utiliza únicamente cuando la información históri
 Existen capacidades para gestión de objetivos, escenarios y suites, ejecución, observaciones, evidencia, resultados, hallazgos, reportes, trazabilidad, seguridad de ejecución y quality gates.
 
 ## Frente 2 — Evaluación observable
-**Estado:** Consolidación metodológica en curso.
+**Estado:** Delimitación del núcleo MVP establecida; implementación metodológica ejecutable continúa.
 
-La baseline ya contiene siete dimensiones candidatas, catálogo de criterios, evidencia, estados, reglas deterministas, repetición, trazabilidad de evaluación asistida por IA y una regla observable conectada a ejecución tangible.
+La baseline contiene siete dimensiones candidatas y un catálogo de criterios. F2-24 establece ahora cuáles pertenecen al núcleo y cuáles quedan condicionadas o pospuestas.
 
-El contrato ejecutable impide criterios incompletos o inconsistentes, pero no declara todavía definitiva la taxonomía ni resuelve scoring/agregación, pesos, tratamiento final de estados, criterios críticos, modelo estadístico ni validación semántica con IA.
+El contrato ejecutable impide criterios incompletos o inconsistentes, pero no define todavía scoring/agregación, pesos, tratamiento estadístico de repetición, criterios críticos, fórmula de riesgo definitiva ni método productivo de evaluación semántica con IA.
 
 ## Frente 3 — Arquitectura
 **Estado:** **VALIDADO**.
@@ -53,7 +69,7 @@ Las versiones metodológicas son independientes del producto. Una ejecución his
 
 ## Próximo incremento
 
-Con F2-23 cerrado, el siguiente frente será delimitar mediante casos controlados qué dimensiones y criterios candidatos entran realmente al MVP. Después se formalizará el tratamiento de repetición y variabilidad antes de diseñar scoring global.
+Convertir F2-24 en selección de criterios ejecutable por contexto y escenario, conservando trazabilidad de criterios aplicables y no aplicables. Después formalizar repetición y variabilidad antes de diseñar scoring global.
 
 ## Regla de documentación
 
