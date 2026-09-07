@@ -53,24 +53,21 @@ La especificación quedó documentada en `docs/evaluation/F2-STATISTICAL-VARIABI
 
 La evidencia CI `34109718014` y Architecture Spike `34109718012` resultó exitosa en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
 
-## Incremento actual — F2-29 interpretación metodológica de indicadores
+## Incremento cerrado — F2-29 interpretación metodológica de indicadores
 
-**Estado:** **IMPLEMENTADO; pendiente de validación CI**.
+**Estado:** **CERRADO / VALIDADO**.
 
-F2-29 incorpora una interpretación determinista sobre las estadísticas de repetición, separando la descripción estadística del juicio de calidad.
+F2-29 establece una interpretación determinista sobre las estadísticas de repetición, separando la descripción estadística del juicio de calidad.
 
-Los estados interpretativos son:
+Los estados interpretativos son `NON_COMPARABLE`, `NO_EVALUABLE_OBSERVATION`, `CONSISTENT_OBSERVED` y `VARIABLE_OBSERVED`. La precedencia es determinista: no comparabilidad → ausencia de resultados evaluables → consistencia observada → variabilidad observada.
 
-- `NON_COMPARABLE`: las condiciones de ejecución no permiten interpretar la distribución como variabilidad homogénea;
-- `NO_EVALUABLE_OBSERVATION`: no existen resultados `PASS`, `PARTIAL` o `FAIL` evaluables;
-- `CONSISTENT_OBSERVED`: todas las ejecuciones evaluables observadas comparten el mismo resultado;
-- `VARIABLE_OBSERVED`: existen al menos dos resultados evaluables distintos dentro de condiciones comparables.
-
-La precedencia es determinista: no comparabilidad → ausencia de resultados evaluables → consistencia observada → variabilidad observada.
+La interpretación es derivada y auditable; no sustituye las ejecuciones individuales, la distribución ni los indicadores que la originaron.
 
 Ningún estado interpretativo determina aceptación, rechazo, defecto reproducible, significancia estadística, score, regla de parada ni calidad global del producto.
 
-La especificación queda documentada en `docs/evaluation/F2-29-STATISTICAL-INTERPRETATION.md`.
+La especificación está documentada en `docs/evaluation/F2-29-STATISTICAL-INTERPRETATION.md`.
+
+La evidencia CI `34113055452` y Architecture Spike `34113055442` resultó exitosa en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
 
 ## Persistencia y versionado
 
@@ -82,7 +79,7 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-28 cerrado/validado; F2-29 implementado y en validación.
+**Estado:** F2-29 cerrado/validado.
 
 La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación metodológica. Todavía quedan fuera scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación global y método productivo de evaluación semántica con IA.
 
@@ -99,7 +96,7 @@ Las versiones metodológicas son independientes del producto y deben mantenerse 
 
 ## Próximo incremento
 
-Validar F2-29 en CI. Con la baseline verde, definir el contrato de juicio metodológico y sus condiciones explícitas de aplicación antes de introducir scoring o agregación global.
+Definir el contrato de juicio metodológico y sus condiciones explícitas de aplicación, manteniendo separación entre evidencia, indicador, interpretación y juicio. El score y la agregación global solo deben aparecer después de validar ese contrato.
 
 ## Regla de documentación
 
