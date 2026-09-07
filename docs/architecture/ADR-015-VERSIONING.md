@@ -1,7 +1,7 @@
 # ADR-015 — Versionado
 
 **Estado:** Aprobado como baseline de diseño; implementación incremental en curso  
-**Versión:** 1.2
+**Versión:** 1.3
 
 ## Contexto
 
@@ -44,13 +44,16 @@ Las referencias de versionado se almacenan como campos de primera clase en `exec
 
 Las ejecuciones existentes sin referencias metodológicas se normalizan durante la migración como `legacy-unknown`. Esto representa explícitamente que la información histórica no estaba disponible y evita inventar una versión metodológica retrospectiva.
 
+En la construcción del agregado `Execution`, la ausencia de contexto puede aparecer únicamente como compatibilidad de fixtures/artefactos legacy. Se normaliza inmediatamente al mismo contexto `legacy-unknown`; una ejecución nueva producida por `ExecuteScenario` debe recibir siempre un contexto explícito.
+
 ## Principios y patrones
 
 - Semantic Versioning para releases del producto.
 - Immutable Run Reference para identificar una ejecución histórica.
 - Configuration/Method Versioning para metodología y reglas.
 - Traceability by Identifier para reconstrucción histórica.
-- Fail-fast ante referencias obligatorias ausentes o vacías.
+- Fail-fast ante referencias obligatorias ausentes o vacías cuando se construye el contexto explícito.
+- Normalización explícita de datos legacy sin inventar versiones.
 
 ## Criterios de validación
 
@@ -62,6 +65,7 @@ Las ejecuciones existentes sin referencias metodológicas se normalizan durante 
 6. El contrato de versión rechaza referencias obligatorias vacías.
 7. El contexto de versión permanece inmutable después de su construcción.
 8. Una ejecución persistida puede recuperarse con el mismo contexto de versión que tenía al ejecutarse.
+9. Un registro legacy sin contexto explícito queda identificado como `legacy-unknown` en lugar de recibir una versión inventada.
 
 ## Estado de implementación
 
@@ -69,14 +73,16 @@ Las ejecuciones existentes sin referencias metodológicas se normalizan durante 
 - [x] Convención SemVer para producto.
 - [x] Contrato de dominio `EvaluationVersionContext` creado.
 - [x] Pruebas unitarias del contrato creadas.
-- [x] Integración obligatoria del contexto en `Execution`.
+- [x] Integración del contexto en `Execution` y preservación durante el ciclo de vida.
 - [x] Propagación del contexto desde `ExecuteScenario` y `ExecuteSuite`.
+- [x] Normalización explícita de fixtures/ejecuciones legacy sin contexto.
 - [x] Migración PostgreSQL para persistencia de referencias.
 - [x] Adaptador PostgreSQL de `ExecutionRepository`.
 - [x] Pruebas unitarias de mapeo y recuperación.
 - [x] Prueba de integración de round-trip PostgreSQL.
+- [ ] CI verde del incremento más reciente.
 - [ ] Validación completa del comportamiento histórico con escenarios/versiones metodológicas reales.
 
 ## Consecuencia
 
-La integración en `Execution` es intencional: la ejecución debe conservar el contexto que determina su interpretación. La persistencia se implementa de forma incremental para mantener separadas las responsabilidades de dominio, aplicación e infraestructura.
+La ejecución nueva conserva un contexto metodológico explícito, mientras que los artefactos legacy quedan identificados de forma honesta. La compatibilidad se limita a la construcción del agregado y no elimina el requisito de persistir referencias reales para ejecuciones nuevas.
