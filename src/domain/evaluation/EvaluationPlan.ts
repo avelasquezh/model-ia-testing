@@ -3,6 +3,9 @@ import type { CriterionEvidenceType, CriterionType } from './Criterion.js';
 export const CRITERION_APPLICABILITY = ['APPLICABLE', 'NOT_APPLICABLE'] as const;
 export type CriterionApplicability = (typeof CRITERION_APPLICABILITY)[number];
 
+export const EVALUATION_PLAN_SCOPES = ['CATALOG', 'MVP_CORE'] as const;
+export type EvaluationPlanScope = (typeof EVALUATION_PLAN_SCOPES)[number];
+
 export type EvaluationPlanItemProps = {
   readonly criterionId: string;
   readonly dimensionId: string;
@@ -16,6 +19,7 @@ export type EvaluationPlanItemProps = {
 export type EvaluationPlanProps = {
   readonly executionId: string;
   readonly context: string;
+  readonly scope: EvaluationPlanScope;
   readonly items: readonly EvaluationPlanItemProps[];
 };
 
