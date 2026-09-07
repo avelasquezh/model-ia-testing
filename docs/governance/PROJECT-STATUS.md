@@ -5,9 +5,9 @@
 **Rama:** `main`  
 **Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 en consolidación metodológica ejecutable y F3 **VALIDADO**.
 
-## Incrementos cerrados — F2-23 a F2-31
+## Incrementos cerrados — F2-23 a F2-34
 
-F2-23 a F2-31 permanecen **CERRADOS / VALIDADOS** según la evidencia CI y Architecture Spike registrada en este documento.
+F2-23 a F2-34 permanecen **CERRADOS / VALIDADOS** según la evidencia CI y Architecture Spike registrada en este documento.
 
 ## Incremento cerrado — F2-32 contrato de agregación de decisiones
 
@@ -39,9 +39,9 @@ La validación final de F2-33 quedó cerrada con CI `34120248920` y Architecture
 
 F2-33 no introduce scoring, ponderaciones, porcentajes globales, agregación entre ejecuciones/escenarios, reglas de parada, significancia estadística ni aceptación global del producto.
 
-## Incremento actual — F2-34 aplicabilidad y agregación de decisiones
+## Incremento cerrado — F2-34 aplicabilidad y agregación de decisiones
 
-**Estado:** **IMPLEMENTADO; pendiente de validación CI**.
+**Estado:** **CERRADO / VALIDADO**.
 
 F2-34 formaliza la relación entre `EvaluationPlan.applicability` y la agregación de decisiones. Los criterios `APPLICABLE` reciben decisiones y participan en la agregación; los criterios `NOT_APPLICABLE` permanecen trazables en el plan pero quedan fuera de la agregación.
 
@@ -49,7 +49,21 @@ F2-34 formaliza la relación entre `EvaluationPlan.applicability` y la agregaci�
 
 La implementación está en `AggregateApplicableEvaluationPlanDecisions` y la especificación en `docs/evaluation/F2-34-APPLICABILITY-AGGREGATION.md`.
 
+La validación final de F2-34 quedó cerrada con CI `34121440528` y Architecture Spike `34121440585`, ambos exitosos en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
+
 F2-34 no introduce scoring, ponderaciones, porcentajes, compensación entre criterios, criterios críticos, reglas de parada, agregación entre ejecuciones/escenarios ni inferencia automática de aplicabilidad.
+
+## Incremento actual — F2-35 cobertura metodológica
+
+**Estado:** **IMPLEMENTADO; pendiente de validación CI**.
+
+F2-35 formaliza la cobertura descriptiva de los criterios seleccionados para una ejecución. La cobertura distingue `APPLICABLE_EVALUATED`, `APPLICABLE_NOT_EVALUATED`, `NOT_APPLICABLE`, `INSUFFICIENT_EVIDENCE` e `INCONCLUSIVE`.
+
+`NOT_APPLICABLE` permanece fuera de la evaluación; `APPLICABLE_NOT_EVALUATED` representa una omisión de evaluación; `INSUFFICIENT_EVIDENCE` representa `NOT_EVALUABLE`; e `INCONCLUSIVE` conserva la semántica inconclusa de la evaluación. La cobertura no inventa decisiones ni porcentajes.
+
+La implementación está en `EvaluationCoverage` y `BuildEvaluationCoverage`, con pruebas unitarias y Architecture Spike específicas.
+
+F2-35 no introduce porcentajes de cobertura, score, ponderaciones, aceptación/rechazo global, compensación entre criterios, criterios críticos, reglas de parada, agregación entre ejecuciones/escenarios ni inferencia automática de aplicabilidad.
 
 ## Persistencia y versionado
 
@@ -61,9 +75,9 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-33 cerrado/validado; F2-34 implementado y en validación.
+**Estado:** F2-34 cerrado/validado; F2-35 implementado y en validación.
 
-La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación.
+La secuencia actual es: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio.
 
 Todavía quedan fuera scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación entre ejecuciones/escenarios y método productivo de evaluación semántica con IA.
 
@@ -80,7 +94,7 @@ Las versiones metodológicas son independientes del producto y deben mantenerse 
 
 ## Próximo incremento
 
-Validar F2-34 en CI. Con la baseline verde, el siguiente paso será formalizar la cobertura metodológica de criterios aplicables, no aplicables, no evaluados e inconclusos, manteniéndola separada del scoring global.
+Validar F2-35 en CI. Con la baseline verde, el siguiente paso será formalizar la interpretación de cobertura por ejecución, manteniendo separadas la cobertura descriptiva, la decisión explícita y el scoring global.
 
 ## Regla de documentación
 
