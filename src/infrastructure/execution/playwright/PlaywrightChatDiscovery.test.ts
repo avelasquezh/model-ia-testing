@@ -23,9 +23,9 @@ describe('PlaywrightChatDiscovery', () => {
 
     const discovered = await new PlaywrightChatDiscovery(page).discover();
 
-    await expect(discovered.composer).toHaveAttribute('placeholder', 'Escribe un mensaje');
-    await expect(discovered.sendButton!).toHaveAttribute('aria-label', 'Enviar mensaje');
-    await expect(discovered.response).toHaveAttribute('role', 'log');
+    expect(await discovered.composer.value.getAttribute('placeholder')).toBe('Escribe un mensaje');
+    expect(await discovered.sendButton?.value.getAttribute('aria-label')).toBe('Enviar mensaje');
+    expect(await discovered.response.value.getAttribute('role')).toBe('log');
 
     await context.close();
   });
