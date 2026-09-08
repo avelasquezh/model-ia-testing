@@ -47,10 +47,17 @@ const validateProvenance = (value: unknown): EvaluationRun['evaluator'] => {
   const promptVersion = evaluator.promptVersion;
   const methodVersion = evaluator.methodVersion;
 
-  for (const [field, fieldValue] of Object.entries({ modelId, modelVersion, promptVersion, methodVersion })) {
-    if (!isNonEmptyString(fieldValue)) {
-      throw new Error(`Evaluation result evaluator requires non-empty field: ${field}`);
-    }
+  if (!isNonEmptyString(modelId)) {
+    throw new Error('Evaluation result evaluator requires non-empty field: modelId');
+  }
+  if (!isNonEmptyString(modelVersion)) {
+    throw new Error('Evaluation result evaluator requires non-empty field: modelVersion');
+  }
+  if (!isNonEmptyString(promptVersion)) {
+    throw new Error('Evaluation result evaluator requires non-empty field: promptVersion');
+  }
+  if (!isNonEmptyString(methodVersion)) {
+    throw new Error('Evaluation result evaluator requires non-empty field: methodVersion');
   }
 
   return { modelId, modelVersion, promptVersion, methodVersion };
@@ -69,22 +76,21 @@ const validateCaseResult = (value: unknown, index: number): EvaluationCaseResult
   const outcome = result.outcome;
   const evidenceInsufficient = result.evidenceInsufficient;
 
-  for (const [field, fieldValue] of Object.entries({ caseId, conversationId })) {
-    if (!isNonEmptyString(fieldValue)) {
-      throw new Error(`Evaluation case ${index} requires non-empty field: ${field}`);
-    }
+  if (!isNonEmptyString(caseId)) {
+    throw new Error(`Evaluation case ${index} requires non-empty field: caseId`);
   }
-
-  for (const [field, fieldValue] of Object.entries({ repetition, turn })) {
-    if (!isPositiveInteger(fieldValue)) {
-      throw new Error(`Evaluation case ${index} requires a positive integer ${field}`);
-    }
+  if (!isNonEmptyString(conversationId)) {
+    throw new Error(`Evaluation case ${index} requires non-empty field: conversationId`);
   }
-
+  if (!isPositiveInteger(repetition)) {
+    throw new Error(`Evaluation case ${index} requires a positive integer repetition`);
+  }
+  if (!isPositiveInteger(turn)) {
+    throw new Error(`Evaluation case ${index} requires a positive integer turn`);
+  }
   if (typeof outcome !== 'string' || !OUTCOMES.has(outcome as EvaluationOutcome)) {
     throw new Error(`Evaluation case ${index} has unsupported outcome`);
   }
-
   if (typeof evidenceInsufficient !== 'boolean') {
     throw new Error(`Evaluation case ${index} requires boolean evidenceInsufficient`);
   }
@@ -104,11 +110,11 @@ const validateCaseResult = (value: unknown, index: number): EvaluationCaseResult
     conversationId,
     outcome: outcome as EvaluationOutcome,
     evidenceInsufficient,
-    ...(result.channel !== undefined ? { channel: result.channel as string } : {}),
-    ...(result.transport !== undefined ? { transport: result.transport as string } : {}),
-    ...(result.botId !== undefined ? { botId: result.botId as string } : {}),
-    ...(result.botVersion !== undefined ? { botVersion: result.botVersion as string } : {}),
-    ...(result.executionId !== undefined ? { executionId: result.executionId as string } : {}),
+    ...(isNonEmptyString(result.channel) ? { channel: result.channel } : {}),
+    ...(isNonEmptyString(result.transport) ? { transport: result.transport } : {}),
+    ...(isNonEmptyString(result.botId) ? { botId: result.botId } : {}),
+    ...(isNonEmptyString(result.botVersion) ? { botVersion: result.botVersion } : {}),
+    ...(isNonEmptyString(result.executionId) ? { executionId: result.executionId } : {}),
   };
 };
 
