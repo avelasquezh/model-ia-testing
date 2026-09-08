@@ -1,6 +1,6 @@
 # F2-45 — Integración controlada de evaluador semántico IA real
 
-**Estado:** **EN EJECUCIÓN — FRONTERA HTTP MATERIALIZADA**
+**Estado:** **EN EJECUCIÓN — FRONTERA HTTP + ARNÉS LIVE MATERIALIZADOS**
 
 ## Propósito
 
@@ -35,10 +35,14 @@ Se materializó:
 - `src/infrastructure/evaluation/HttpSemanticEvaluatorAdapter.ts` como frontera HTTP de infraestructura;
 - `spike/evaluation/f2-45-semantic-evaluator-port.test.ts` con validación del límite provider-neutral;
 - `spike/evaluation/f2-45-http-semantic-evaluator-adapter.test.ts` con transporte simulado, normalización y errores HTTP;
-- separación explícita entre evidencia primaria y salida del evaluador;
-- conservación de procedencia de modelo, prompt, método, criterio y evidencia.
+- `scripts/run-live-semantic-evaluator.ts` como arnés opt-in para una ejecución contra un endpoint externo;
+- comando `npm run evaluation:semantic:live` para ejecutar el arnés sin incorporar credenciales al repositorio;
+- validación de esquema de la respuesta normalizada y conservación de procedencia de modelo, prompt, método, criterio y evidencia;
+- separación explícita entre evidencia primaria y salida del evaluador.
 
-El adaptador HTTP no contiene conocimiento de un proveedor concreto. El mapeo de una respuesta externa se inyecta mediante `SemanticEvaluatorResponseMapper`, y las credenciales se suministran externamente mediante headers. Esta materialización todavía no constituye evidencia de comportamiento de un modelo IA real.
+El adaptador HTTP no contiene conocimiento de un proveedor concreto. El mapeo de una respuesta externa se inyecta mediante `SemanticEvaluatorResponseMapper`, y las credenciales se suministran externamente mediante headers.
+
+El arnés live exige `SEMANTIC_EVALUATOR_ENDPOINT` y admite variables de entorno para autorización, identidad/versionado del modelo y versionado metodológico. No se ejecuta automáticamente en CI y no incluye ningún proveedor, token o secreto en el repositorio. Su existencia tampoco constituye evidencia de comportamiento IA real.
 
 ## Próxima prueba controlada
 
@@ -57,6 +61,6 @@ No se deberá introducir scoring global ni convertir la salida del modelo en un 
 
 ## Criterio de salida de F2-45
 
-F2-45 podrá considerarse validado cuando un proveedor real pueda conectarse mediante el puerto sin contaminar el dominio y las repeticiones controladas permitan clasificar su comportamiento como `SUPPORTED`, `REQUIRES_REFINEMENT`, `NOT_OBSERVABLE` o `INSUFFICIENT_EVIDENCE` conforme a F2-44.
+F2-45 podrá considerarse validado cuando un proveedor real pueda conectarse mediante el puerto sin contaminar el dominio y las repeticiones controladas permitan clasificar su comportamiento conforme al protocolo metodológico vigente.
 
 Hasta entonces, el incremento permanece abierto.
