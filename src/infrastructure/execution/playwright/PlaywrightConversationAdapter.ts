@@ -10,6 +10,7 @@ import type {
   ConversationUiLocator,
 } from '../../../application/ports/ConversationUiConfigRepository.js';
 import type { BrowserAutomationPort } from '../../../application/ports/BrowserAutomationPort.js';
+import { PlaywrightChatDiscovery } from './PlaywrightChatDiscovery.js';
 import { PlaywrightConversationUi, type PlaywrightConversationUiConfig } from './PlaywrightConversationUi.js';
 import { type PlaywrightBrowserSession } from './PlaywrightBrowserAdapter.js';
 
@@ -24,10 +25,11 @@ export class PlaywrightConversationAdapter implements ConversationPort {
     await browserSession.navigate(targetUrl, timeoutMs);
 
     const config = await this.uiConfigs.findByTargetUrl(targetUrl);
-    const ui = config
-      ? new PlaywrightConversationUi(browserSession.page, this.toPlaywrightConfig(config))
-      : undefined;
+    const uiConfig = config
+      ? this.toPlaywrightConfig(config)
+      : await new PlaywrightChatDiscovery(browserSession.page).discover();
 
+    const ui = new PlaywrightConversationUi(browserSession.page, uiConfig);
     return new PlaywrightConversationSession(browserSession, ui, timeoutMs);
   }
 
@@ -50,19 +52,11 @@ export class PlaywrightConversationAdapter implements ConversationPort {
   private toPlaywrightLocator(locator: ConversationUiLocator): PlaywrightConversationUiConfig['composer'] {
     switch (locator.kind) {
       case 'role':
-        return {
-          kind: 'role',
-          role: locator.role as Parameters<Page['getByRole']>[0],
-          ...(locator.name !== undefined ? { name: locator.name } : {}),
-        };
-      case 'label':
-        return { kind: 'label', value: locator.value };
-      case 'placeholder':
-        return { kind: 'placeholder', value: locator.value };
-      case 'testId':
-        return { kind: 'testId', value: locator.value };
-      case 'css':
-        return { kind: 'css', value: locator.value };
+        return { kind: 'role', role: locator.role as Parameters<Page['getByRole']>[0], ...(locator.name !== undefined ? { name: locator.name } : {}) };
+      case 'label': return { kind: 'label', value: locator.value };
+      case 'placeholder': return { kind: 'placeholder', value: locator.value };
+      case 'testId': return { kind: 'testId', value: locator.value };
+      case 'css': return { kind: 'css', value: locator.value };
     }
   }
 }
@@ -70,25 +64,15 @@ export class PlaywrightConversationAdapter implements ConversationPort {
 class PlaywrightConversationSession implements ConversationSession {
   public constructor(
     private readonly browserSession: PlaywrightBrowserSession,
-    private readonly ui: PlaywrightConversationUi | undefined,
+    private readonly ui: PlaywrightConversationUi,
     private readonly timeoutMs: number,
   ) {}
 
-  public async send(
-    input: { readonly value: string },
-    timeoutMs: number,
-  ): Promise<ConversationResponse> {
-    if (!this.ui) {
-      void timeoutMs;
-      throw new Error(
-        `Conversation UI interaction is not configured yet for input: ${input.value.slice(0, 80)} (timeout ${this.timeoutMs}ms)`,
-      );
-    }
-
+  public async send(input: { readonly value: string }, timeoutMs: number): Promise<ConversationResponse> {
+    void this.timeoutMs;
     const value = await this.ui.sendMessage(input.value, timeoutMs);
     const observedAt = new Date();
     const screenshot = new Uint8Array(await this.browserSession.page.screenshot({ type: 'png' }));
-
     return { value, observedAt, screenshot };
   }
 
