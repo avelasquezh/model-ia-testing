@@ -13,12 +13,15 @@
     "inputs": [
       { "value": "Quiero una camisa azul talla M" }
     ],
-    "expectedBehavior": "El sistema debe identificar la intención de compra de una camisa y conservar los atributos explícitos.",
+    "expectedBehavior": "A bot response is visible in the conversation.",
     "finishConditions": [
       { "description": "A bot response is visible in the conversation." }
     ],
     "version": 1
   },
+  "expectedIntent": "El sistema debe identificar la intención de compra de una camisa y conservar los atributos explícitos.",
+  "expectedIntentVersion": "intent-0.1",
+  "repetition": 1,
   "ui": {
     "composer": { "kind": "role", "role": "textbox", "name": "Message" },
     "sendButton": { "kind": "role", "role": "button", "name": "Send" },
