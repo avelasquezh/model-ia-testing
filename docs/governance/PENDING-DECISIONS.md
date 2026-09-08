@@ -8,7 +8,8 @@ Este registro distingue decisiones metodológicas aún no aprobadas de decisione
 - Definir tratamiento estadístico de repetición y variabilidad cuando exista evidencia suficiente.
 - Definir límites de confianza/incertidumbre si las métricas lo requieren.
 - **F2-44 cerrado a nivel de contrato y protocolo:** la validación usó un doble metodológico controlado; la validación de un proveedor/modelo de IA real continúa pendiente.
-- **F2-45 en ejecución:** frontera `SemanticEvaluatorPort` materializada; falta ejecutar y caracterizar un proveedor/modelo real.
+- **F2-45 cerrado a nivel de frontera arquitectónica:** `SemanticEvaluatorPort` y el desacoplamiento provider-neutral quedaron materializados y validados por CI/Architecture Spike.
+- **F2-46 en ejecución:** adaptador real de Ollama materializado; falta ejecutar con un modelo local real y caracterizar reproducibilidad, variabilidad e insuficiencia de evidencia.
 - D4 y D5 requieren protocolos empíricos específicos antes de considerarse validados.
 
 ## Calificación
@@ -30,7 +31,7 @@ Las decisiones arquitectónicas documentadas como ADR pueden pasar a estado vali
 - ADR-006 — Estrategia BDD/TDD: **materializada en pruebas existentes; validación integral pendiente**.
 - ADR-007 — Almacenamiento de evidencia: **materializado parcialmente**.
 - ADR-008 — Aislamiento Playwright: **materializado parcialmente**.
-- ADR-009 — Evaluador IA: **contrato y trazabilidad base validados en F2-44; frontera provider-neutral materializada en F2-45; integración y validación con proveedor/modelo real pendientes**.
+- ADR-009 — Evaluador IA: **contrato y trazabilidad base validados en F2-44; frontera provider-neutral validada en F2-45; adaptación Ollama materializada en F2-46; validación live con modelo real pendiente**.
 - ADR-010 — CI/CD y Quality Gates: **materializado en workflows**.
 - ADR-011 — API y contratos: **pendiente de validación de la interfaz externa**.
 - ADR-012 — Autenticación y autorización: **política definida; implementación pública pendiente**.
@@ -58,8 +59,8 @@ F3 ya está validado mediante el Architecture Spike `34089149510`. El trabajo me
 
 ## Próximo punto de decisión
 
-Conectar un proveedor o modelo de IA real mediante `SemanticEvaluatorPort` y ejecutar el protocolo controlado de F2-44 para D2-C01. La validación deberá caracterizar reproducibilidad, sensibilidad a configuración, suficiencia de evidencia y estabilidad del resultado, conservando intención esperada predefinida, evidencia primaria, identidad/versionado del modelo, prompt versionado, parámetros relevantes, salida estructurada y reglas explícitas.
+Ejecutar F2-46 con un modelo real de Ollama mediante `OllamaSemanticEvaluator`. La validación debe demostrar conexión, normalización, trazabilidad y estabilidad bajo repetición, manteniendo la intención esperada predefinida y la evidencia primaria. La selección de Ollama como primer proveedor de prueba no congela el proveedor futuro.
 
-La selección de proveedor es una decisión técnica posterior al contrato y no debe convertirse en un supuesto metodológico. El scoring global continúa explícitamente bloqueado.
+El scoring global continúa explícitamente bloqueado.
 
 Ninguna decisión marcada como Pendiente deberá considerarse aprobada por defecto durante la implementación.
