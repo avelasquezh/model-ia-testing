@@ -1,6 +1,6 @@
 # F2-45 — Integración controlada de evaluador semántico IA real
 
-**Estado:** **EN EJECUCIÓN — CONTRATO MATERIALIZADO**
+**Estado:** **EN EJECUCIÓN — FRONTERA HTTP MATERIALIZADA**
 
 ## Propósito
 
@@ -32,11 +32,13 @@ La dependencia admitida será únicamente el contrato `SemanticEvaluatorPort`. U
 Se materializó:
 
 - `src/domain/evaluation/SemanticEvaluator.ts` con entrada y salida normalizadas y `SemanticEvaluatorPort`;
+- `src/infrastructure/evaluation/HttpSemanticEvaluatorAdapter.ts` como frontera HTTP de infraestructura;
 - `spike/evaluation/f2-45-semantic-evaluator-port.test.ts` con validación del límite provider-neutral;
+- `spike/evaluation/f2-45-http-semantic-evaluator-adapter.test.ts` con transporte simulado, normalización y errores HTTP;
 - separación explícita entre evidencia primaria y salida del evaluador;
 - conservación de procedencia de modelo, prompt, método, criterio y evidencia.
 
-Esta materialización es contractual y no constituye todavía evidencia de comportamiento de un modelo IA real.
+El adaptador HTTP no contiene conocimiento de un proveedor concreto. El mapeo de una respuesta externa se inyecta mediante `SemanticEvaluatorResponseMapper`, y las credenciales se suministran externamente mediante headers. Esta materialización todavía no constituye evidencia de comportamiento de un modelo IA real.
 
 ## Próxima prueba controlada
 
