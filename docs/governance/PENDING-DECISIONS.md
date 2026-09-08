@@ -4,10 +4,10 @@ Este registro distingue decisiones metodológicas aún no aprobadas de decisione
 
 ## Metodología de evaluación
 
-- Validar dimensiones y criterios definitivos del Frente 2 mediante casos reales/controlados. **F2-41 cerrado: aptitud estructural demostrada; F2-42 cerrado: repetibilidad empírica demostrada sobre un doble conversacional controlado para D1, D6 y D7; F2-43 cerrado: retención de contexto conversacional demostrada metodológicamente sobre un doble controlado para D3-C01.**
+- Validar dimensiones y criterios definitivos del Frente 2 mediante casos reales/controlados. **F2-41 cerrado: aptitud estructural demostrada; F2-42 cerrado: repetibilidad empírica demostrada sobre un doble conversacional controlado para D1, D6 y D7; F2-43 cerrado: retención de contexto conversacional demostrada metodológicamente sobre un doble controlado para D3-C01; F2-44 cerrado: contrato y protocolo controlado de evaluación semántica asistida por IA demostrado para D2-C01.**
 - Definir tratamiento estadístico de repetición y variabilidad cuando exista evidencia suficiente.
 - Definir límites de confianza/incertidumbre si las métricas lo requieren.
-- **F2-44 en ejecución:** validar el rol de IA en criterios semánticos mediante evidencia controlada y método reproducible.
+- **F2-44 cerrado a nivel de contrato y protocolo:** la validación usó un doble metodológico controlado; la validación de un proveedor/modelo de IA real continúa pendiente.
 - D4 y D5 requieren protocolos empíricos específicos antes de considerarse validados.
 
 ## Calificación
@@ -29,7 +29,7 @@ Las decisiones arquitectónicas documentadas como ADR pueden pasar a estado vali
 - ADR-006 — Estrategia BDD/TDD: **materializada en pruebas existentes; validación integral pendiente**.
 - ADR-007 — Almacenamiento de evidencia: **materializado parcialmente**.
 - ADR-008 — Aislamiento Playwright: **materializado parcialmente**.
-- ADR-009 — Evaluador IA: **contratos y trazabilidad parcialmente materializados; integración real pendiente**.
+- ADR-009 — Evaluador IA: **contrato y trazabilidad base validados en F2-44; integración y validación con proveedor/modelo real pendientes**.
 - ADR-010 — CI/CD y Quality Gates: **materializado en workflows**.
 - ADR-011 — API y contratos: **pendiente de validación de la interfaz externa**.
 - ADR-012 — Autenticación y autorización: **política definida; implementación pública pendiente**.
@@ -57,6 +57,8 @@ F3 ya está validado mediante el Architecture Spike `34089149510`. El trabajo me
 
 ## Próximo punto de decisión
 
-Ejecutar F2-44 como protocolo controlado de evaluación semántica reproducible asistida por IA para D2-C01. Antes de integrar un proveedor o un evaluador autónomo, se deberá validar el contrato de evaluación, la normalización de entradas y salidas, las variables de configuración que deben versionarse, la evidencia primaria requerida, el criterio de reproducibilidad y las reglas metodológicas de interpretación. El scoring global continúa explícitamente bloqueado.
+Evaluar el contrato cerrado en F2-44 con un proveedor o modelo de IA real bajo condiciones controladas para D2-C01. La próxima validación deberá caracterizar reproducibilidad, sensibilidad a configuración, suficiencia de evidencia y estabilidad del resultado, conservando intención esperada predefinida, evidencia primaria, identidad/versionado del modelo, prompt versionado, parámetros relevantes, salida estructurada y reglas explícitas.
+
+La selección de proveedor es una decisión técnica posterior al contrato y no debe convertirse en un supuesto metodológico. El scoring global continúa explícitamente bloqueado.
 
 Ninguna decisión marcada como Pendiente deberá considerarse aprobada por defecto durante la implementación.
