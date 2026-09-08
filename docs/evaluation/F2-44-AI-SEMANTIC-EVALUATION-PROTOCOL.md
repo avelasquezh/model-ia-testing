@@ -1,12 +1,14 @@
 # F2-44 — Protocolo de evaluación semántica reproducible asistida por IA
 
-**Estado:** **DEFINIDO — PENDIENTE DE EJECUCIÓN**
+**Estado:** **CERRADO — VALIDADO (CONTRATO Y PROTOCOLO)**
 
 ## Propósito
 
-F2-44 define el protocolo necesario para validar empíricamente D2-C01, cuya propiedad objetivo es la correspondencia de una respuesta con la intención esperada de la entrada.
+F2-44 define y valida el protocolo necesario para evaluar empíricamente D2-C01, cuya propiedad objetivo es la correspondencia de una respuesta con la intención esperada de la entrada.
 
 El objetivo es determinar si la asistencia de IA puede utilizarse como instrumento reproducible para interpretar evidencia conversacional previamente delimitada, sin sustituir la evidencia primaria ni introducir un veredicto global de calidad.
+
+La validación de F2-44 demuestra la aptitud del contrato y del protocolo mediante un evaluador controlado. No constituye todavía una validación de un proveedor/modelo de IA real ni autoriza una integración productiva.
 
 ## Candidato
 
@@ -28,7 +30,7 @@ La IA no podrá inferir por sí sola cuál era la intención correcta a partir d
 
 ## Diseño controlado
 
-El protocolo deberá controlar, como mínimo:
+El protocolo controla, como mínimo:
 
 - caso de evaluación y versión;
 - entrada exacta;
@@ -76,7 +78,7 @@ La estructura exacta de persistencia queda abierta para la implementación, pero
 
 ## Regla metodológica del resultado
 
-La evaluación semántica no convertirá directamente el resultado ordinal en calidad del producto. El resultado metodológico de F2-44 se obtendrá posteriormente aplicando una regla explícita sobre los resultados observados y su estabilidad.
+La evaluación semántica no convertirá directamente el resultado ordinal en calidad del producto. El resultado metodológico de F2-44 se obtiene aplicando una regla explícita sobre los resultados observados y su estabilidad.
 
 Como baseline del spike:
 
@@ -87,11 +89,11 @@ Como baseline del spike:
 
 ## Reproducibilidad
 
-La validación deberá comprobar que una misma evidencia, intención, configuración metodológica y modelo producen resultados suficientemente consistentes para el propósito declarado.
+La validación comprueba que una misma evidencia, intención, configuración metodológica y evaluador controlado producen resultados consistentemente repetibles para el propósito declarado.
 
-La repetición no implica por sí misma significancia estadística. Se utilizará para detectar variabilidad observable, dependencia de configuración y casos ambiguos.
+La repetición no implica por sí misma significancia estadística. Se utiliza para detectar variabilidad observable, dependencia de configuración y casos ambiguos.
 
-Cuando el evaluador produzca resultados variables, el protocolo deberá conservar todas las observaciones relevantes y clasificar el caso como insuficiente o sujeto a refinamiento según reglas predefinidas, en lugar de ocultar la variabilidad mediante promedios no justificados.
+Cuando un futuro evaluador real produzca resultados variables, el protocolo exige conservar todas las observaciones relevantes y clasificar el caso como insuficiente o sujeto a refinamiento según reglas predefinidas, en lugar de ocultar la variabilidad mediante promedios no justificados.
 
 ## Evidencia primaria y trazabilidad
 
@@ -111,7 +113,7 @@ Debe ser posible reconstruir qué evidencia recibió la IA y bajo qué configura
 
 ## Control experimental
 
-El protocolo deberá incluir, como mínimo:
+El protocolo incluye y valida, como mínimo:
 
 1. un caso alineado, donde la respuesta satisface la intención esperada;
 2. un caso no alineado, donde la respuesta contradice o no satisface la intención;
@@ -119,16 +121,37 @@ El protocolo deberá incluir, como mínimo:
 
 Los tres casos permiten comprobar que el evaluador distingue adecuadamente correspondencia, ausencia de correspondencia e insuficiencia de evidencia.
 
+## Implementación de validación
+
+La validación se materializó en `spike/evaluation/f2-44-semantic-evaluation-protocol.test.ts` mediante un evaluador semántico controlado (`controlled-semantic-evaluator`, versión `double-0.1`).
+
+El spike verifica:
+
+- contrato de entrada completo;
+- intención esperada explícita y previamente definida;
+- preservación de las referencias de evidencia primaria;
+- separación entre evidencia primaria y salida del evaluador;
+- diferenciación determinista de casos alineado, no alineado y ambiguo;
+- justificación no vacía y trazable al caso;
+- repetición bajo condiciones idénticas sin variación del resultado controlado.
+
+La implementación es un doble metodológico. No invoca un proveedor externo ni pretende medir todavía la variabilidad de un modelo generativo real.
+
 ## Resultado metodológico
 
-El resultado permitido para D2-C01 será uno de los siguientes:
+**Resultado:** `SUPPORTED` para el contrato y protocolo controlado de D2-C01.
 
-- `SUPPORTED`: el método asistido demuestra comportamiento reproducible y discrimina los casos controlados conforme a la regla establecida;
-- `REQUIRES_REFINEMENT`: existen resultados útiles, pero hay variabilidad o explicaciones alternativas que impiden considerar cerrado el método;
-- `NOT_OBSERVABLE`: la evidencia disponible no permite evaluar la correspondencia de forma fiable;
-- `INSUFFICIENT_EVIDENCE`: el protocolo o las repeticiones no permiten una conclusión metodológica suficiente.
+La evidencia demuestra que el método contractual puede representar y discriminar los casos controlados definidos, mantener trazabilidad hacia la evidencia primaria y repetir la evaluación bajo condiciones idénticas.
 
-Estas etiquetas no representan PASS/FAIL del producto.
+Este resultado no equivale a `PASS` del producto y no valida por sí solo un modelo o proveedor real.
+
+## Validación CI / Architecture
+
+- Commit validado: `a13453d9100815fe6cdc4a0bc711020711a08b1a`.
+- CI `34173406820` (`#317`) — **SUCCESS** en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
+- Architecture Spike `34173406825` (`#485`) — **SUCCESS** en TypeScript, pruebas unitarias/arquitectura, BDD, Playwright, migraciones PostgreSQL, integración de repositorio/versionado, manifiesto de evidencia, artefactos y Quality Gate.
+
+El primer intento del spike falló por errores de TypeScript bajo configuración estricta: faltaba `observedResponse` en el caso base y el acceso indexado a casos generaba posibles `undefined`. Se corrigió tipando explícitamente el contrato base y usando una tupla de casos controlados, sin relajar el compilador ni modificar el objetivo metodológico.
 
 ## Límites
 
@@ -143,19 +166,21 @@ F2-44 no introduce:
 - sustitución de evidencia primaria por texto generado por IA;
 - inferencia automática de la intención esperada sin especificación previa.
 
-Tampoco fija todavía un proveedor concreto. La selección de proveedor será una decisión posterior a la validación del contrato y del método.
+Tampoco fija todavía un proveedor concreto ni considera validada la variabilidad de un modelo generativo real. La selección y validación de proveedor será una decisión posterior.
 
 ## Criterio de salida
 
-F2-44 podrá validarse cuando:
+F2-44 queda validado porque:
 
-1. exista un contrato de entrada y salida reproducible para evaluación semántica;
-2. la intención esperada esté definida antes de la evaluación;
-3. la evidencia primaria quede vinculada al análisis;
-4. el modelo/proveedor y configuración metodológica sean trazables;
-5. los casos alineado, no alineado y ambiguo sean diferenciables mediante una regla explícita;
-6. las repeticiones permitan caracterizar la estabilidad del método;
-7. no se requiera scoring global para concluir sobre la aptitud metodológica del criterio.
+1. existe un contrato de entrada y salida reproducible para evaluación semántica;
+2. la intención esperada está definida antes de la evaluación;
+3. la evidencia primaria queda vinculada al análisis;
+4. el modelo/evaluador y configuración metodológica son trazables;
+5. los casos alineado, no alineado y ambiguo son diferenciables mediante una regla explícita;
+6. las repeticiones del evaluador controlado permiten comprobar estabilidad bajo condiciones idénticas;
+7. no se requiere scoring global para concluir sobre la aptitud metodológica del contrato.
+
+La validación de un proveedor o modelo de IA real queda como incremento posterior y deberá reutilizar este contrato sin eliminar las restricciones metodológicas establecidas aquí.
 
 ## Trazabilidad
 
