@@ -88,4 +88,4 @@ F2-43 podrá validarse cuando:
 
 ## Trazabilidad
 
-`D3-C01 → Escenario multitur​​no → Ejecución independiente → Secuencia completa → Evidencia primaria → Control de coincidencia → Clasificación metodológica`
+`D3-C01 → Escenario multturno → Ejecución independiente → Secuencia completa → Evidencia primaria → Control de coincidencia → Clasificación metodológica`
