@@ -42,18 +42,18 @@ const validateProvenance = (value: unknown): EvaluationRun['evaluator'] => {
   }
 
   const evaluator = value as Record<string, unknown>;
-  for (const field of ['modelId', 'modelVersion', 'promptVersion', 'methodVersion']) {
-    if (!isNonEmptyString(evaluator[field])) {
+  const modelId = evaluator.modelId;
+  const modelVersion = evaluator.modelVersion;
+  const promptVersion = evaluator.promptVersion;
+  const methodVersion = evaluator.methodVersion;
+
+  for (const [field, fieldValue] of Object.entries({ modelId, modelVersion, promptVersion, methodVersion })) {
+    if (!isNonEmptyString(fieldValue)) {
       throw new Error(`Evaluation result evaluator requires non-empty field: ${field}`);
     }
   }
 
-  return {
-    modelId: evaluator.modelId,
-    modelVersion: evaluator.modelVersion,
-    promptVersion: evaluator.promptVersion,
-    methodVersion: evaluator.methodVersion,
-  };
+  return { modelId, modelVersion, promptVersion, methodVersion };
 };
 
 const validateCaseResult = (value: unknown, index: number): EvaluationCaseResult => {
@@ -62,44 +62,53 @@ const validateCaseResult = (value: unknown, index: number): EvaluationCaseResult
   }
 
   const result = value as Record<string, unknown>;
-  for (const field of ['caseId', 'conversationId']) {
-    if (!isNonEmptyString(result[field])) {
+  const caseId = result.caseId;
+  const conversationId = result.conversationId;
+  const repetition = result.repetition;
+  const turn = result.turn;
+  const outcome = result.outcome;
+  const evidenceInsufficient = result.evidenceInsufficient;
+
+  for (const [field, fieldValue] of Object.entries({ caseId, conversationId })) {
+    if (!isNonEmptyString(fieldValue)) {
       throw new Error(`Evaluation case ${index} requires non-empty field: ${field}`);
     }
   }
 
-  for (const field of ['repetition', 'turn']) {
-    if (!isPositiveInteger(result[field])) {
+  for (const [field, fieldValue] of Object.entries({ repetition, turn })) {
+    if (!isPositiveInteger(fieldValue)) {
       throw new Error(`Evaluation case ${index} requires a positive integer ${field}`);
     }
   }
 
-  if (typeof result.outcome !== 'string' || !OUTCOMES.has(result.outcome as EvaluationOutcome)) {
+  if (typeof outcome !== 'string' || !OUTCOMES.has(outcome as EvaluationOutcome)) {
     throw new Error(`Evaluation case ${index} has unsupported outcome`);
   }
 
-  if (typeof result.evidenceInsufficient !== 'boolean') {
+  if (typeof evidenceInsufficient !== 'boolean') {
     throw new Error(`Evaluation case ${index} requires boolean evidenceInsufficient`);
   }
 
-  for (const field of ['channel', 'transport', 'botId', 'botVersion', 'executionId']) {
-    if (result[field] !== undefined && !isNonEmptyString(result[field])) {
+  const optionalFields = ['channel', 'transport', 'botId', 'botVersion', 'executionId'] as const;
+  for (const field of optionalFields) {
+    const fieldValue = result[field];
+    if (fieldValue !== undefined && !isNonEmptyString(fieldValue)) {
       throw new Error(`Evaluation case ${index} requires non-empty optional field: ${field}`);
     }
   }
 
   return {
-    caseId: result.caseId,
-    repetition: result.repetition,
-    turn: result.turn,
-    conversationId: result.conversationId,
-    outcome: result.outcome as EvaluationOutcome,
-    evidenceInsufficient: result.evidenceInsufficient,
-    ...(result.channel !== undefined ? { channel: result.channel } : {}),
-    ...(result.transport !== undefined ? { transport: result.transport } : {}),
-    ...(result.botId !== undefined ? { botId: result.botId } : {}),
-    ...(result.botVersion !== undefined ? { botVersion: result.botVersion } : {}),
-    ...(result.executionId !== undefined ? { executionId: result.executionId } : {}),
+    caseId,
+    repetition,
+    turn,
+    conversationId,
+    outcome: outcome as EvaluationOutcome,
+    evidenceInsufficient,
+    ...(result.channel !== undefined ? { channel: result.channel as string } : {}),
+    ...(result.transport !== undefined ? { transport: result.transport as string } : {}),
+    ...(result.botId !== undefined ? { botId: result.botId as string } : {}),
+    ...(result.botVersion !== undefined ? { botVersion: result.botVersion as string } : {}),
+    ...(result.executionId !== undefined ? { executionId: result.executionId as string } : {}),
   };
 };
 
@@ -109,15 +118,20 @@ export const parseEvaluationRun = (raw: unknown): EvaluationRun => {
   }
 
   const run = raw as Record<string, unknown>;
-  if (run.status !== 'VALIDATED_REPEATABILITY' && run.status !== 'NON_REPEATABLE_OBSERVATION') {
+  const status = run.status;
+  const observationSchemaVersion = run.observationSchemaVersion;
+  const observationsFile = run.observationsFile;
+
+  if (status !== 'VALIDATED_REPEATABILITY' && status !== 'NON_REPEATABLE_OBSERVATION') {
     throw new Error('Evaluation result has unsupported status');
   }
-  if (run.observationSchemaVersion !== SCHEMA_VERSION) {
+  if (observationSchemaVersion !== SCHEMA_VERSION) {
     throw new Error('Unsupported observation schema version');
   }
-  if (!isNonEmptyString(run.observationsFile)) {
+  if (!isNonEmptyString(observationsFile)) {
     throw new Error('Evaluation result requires observationsFile');
   }
+
   const evaluator = validateProvenance(run.evaluator);
 
   if (!Array.isArray(run.cases) || run.cases.length === 0) {
@@ -126,9 +140,9 @@ export const parseEvaluationRun = (raw: unknown): EvaluationRun => {
   const cases = run.cases.map(validateCaseResult);
 
   return {
-    status: run.status,
-    observationSchemaVersion: run.observationSchemaVersion,
-    observationsFile: run.observationsFile,
+    status,
+    observationSchemaVersion,
+    observationsFile,
     evaluator,
     cases,
   };
