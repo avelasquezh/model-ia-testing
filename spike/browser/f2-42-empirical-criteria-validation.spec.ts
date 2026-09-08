@@ -119,25 +119,25 @@ test('F2-42: empirically validates repeatable observable evidence for selected c
         { timeoutMs: 15_000 },
       );
 
+      const primaryObservation = result.observations?.[0];
       expect(result.status).toBe('INCONCLUSIVE');
       expect(result.errors ?? []).toHaveLength(0);
       expect(result.observations).toHaveLength(1);
-      expect(result.observations?.[0]?.input).toBe('Quiero una camisa azul talla M');
-      expect(result.observations?.[0]?.response).toBe('Bot response: Quiero una camisa azul talla M');
-      expect(result.observations?.[0]?.durationMs).toBeGreaterThanOrEqual(0);
-      expect(result.observations?.[0]?.screenshot).toBeInstanceOf(Uint8Array);
+      expect(primaryObservation?.input).toBe('Quiero una camisa azul talla M');
+      expect(primaryObservation?.response).toBe('Bot response: Quiero una camisa azul talla M');
+      expect(primaryObservation?.durationMs).toBeGreaterThanOrEqual(0);
+      expect(primaryObservation?.screenshot).toBeInstanceOf(Uint8Array);
       expect(evidence.events).toHaveLength(1);
       expect(evidence.events[0]?.type).toBe('OBSERVATION');
       expect(evidence.events[0]?.executionId).toBe(execution.props.id);
 
-      const observation = result.observations[0];
-      if (!observation || !observation.screenshot) {
+      if (!primaryObservation || !primaryObservation.screenshot) {
         throw new Error(`Missing primary evidence for repetition ${index}`);
       }
       observations.push({
-        response: observation.response,
-        durationMs: observation.durationMs,
-        screenshotBytes: observation.screenshot.length,
+        response: primaryObservation.response,
+        durationMs: primaryObservation.durationMs,
+        screenshotBytes: primaryObservation.screenshot.length,
       });
     }
 
