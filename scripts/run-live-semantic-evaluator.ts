@@ -1,46 +1,73 @@
+import { readFile } from 'node:fs/promises';
 import { HttpSemanticEvaluatorAdapter } from '../src/infrastructure/evaluation/HttpSemanticEvaluatorAdapter.js';
 import type {
   SemanticEvaluationInput,
   SemanticEvaluationOutput,
 } from '../src/domain/evaluation/SemanticEvaluator.js';
 import { EvaluationMethodology } from '../src/domain/evaluation/EvaluationMethodology.js';
+import type { BotObservationSet } from '../src/domain/evaluation/BotObservation.js';
 
 const endpoint = process.env.SEMANTIC_EVALUATOR_ENDPOINT?.trim();
 const authorization = process.env.SEMANTIC_EVALUATOR_AUTHORIZATION?.trim();
-const repetitions = Number(process.env.SEMANTIC_EVALUATOR_REPETITIONS ?? '3');
+const observationsFile = process.env.BOT_OBSERVATIONS_FILE?.trim();
 
 if (!endpoint) throw new Error('SEMANTIC_EVALUATOR_ENDPOINT is required');
-if (!Number.isInteger(repetitions) || repetitions < 1) {
-  throw new Error('SEMANTIC_EVALUATOR_REPETITIONS must be a positive integer');
-}
+if (!observationsFile) throw new Error('BOT_OBSERVATIONS_FILE is required');
 
-const modelId = process.env.SEMANTIC_EVALUATOR_MODEL_ID?.trim() || 'external-provider-under-test';
+const modelId = process.env.SEMANTIC_EVALUATOR_MODEL_ID?.trim() || 'external-evaluator-under-test';
 const modelVersion = process.env.SEMANTIC_EVALUATOR_MODEL_VERSION?.trim() || 'version-under-test';
 const promptVersion = process.env.SEMANTIC_EVALUATOR_PROMPT_VERSION?.trim() || 'semantic-prompt-0.1';
 const methodVersion = process.env.SEMANTIC_EVALUATOR_METHOD_VERSION?.trim() || 'AI-METHOD-0.1';
-const criterionId = process.env.SEMANTIC_EVALUATOR_CRITERION_ID?.trim() || 'D2-C01';
-const criterionVersion = process.env.SEMANTIC_EVALUATOR_CRITERION_VERSION?.trim() || 'candidate-0.1';
+const criterionIdOverride = process.env.SEMANTIC_EVALUATOR_CRITERION_ID?.trim();
+const criterionVersionOverride = process.env.SEMANTIC_EVALUATOR_CRITERION_VERSION?.trim();
 
-const cases: Array<Pick<SemanticEvaluationInput, 'userInput' | 'observedResponse' | 'expectedIntent'>> = [
-  {
-    userInput: 'Quiero comprar una camisa azul talla M.',
-    observedResponse: 'La intención de compra fue identificada y los atributos fueron conservados.',
-    expectedIntent:
-      'El sistema debe identificar la intención de compra de una camisa y conservar los atributos explícitos.',
-  },
-  {
-    userInput: 'Solo quiero saber qué colores tienen disponibles.',
-    observedResponse: 'Tenemos azul, blanco y negro.',
-    expectedIntent:
-      'El sistema debe identificar la intención de compra de una camisa y conservar los atributos explícitos.',
-  },
-  {
-    userInput: '¿Puedes ayudarme con esto?',
-    observedResponse: 'Necesito más información para determinar la intención.',
-    expectedIntent:
-      'El sistema debe identificar la intención de compra de una camisa y conservar los atributos explícitos.',
-  },
-];
+const parseObservationSet = (raw: string): BotObservationSet => {
+  const parsed: unknown = JSON.parse(raw);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Bot observation file must contain a JSON object');
+  }
+
+  const candidate = parsed as Record<string, unknown>;
+  if (candidate.schemaVersion !== 'bot-observation-0.1') {
+    throw new Error('Unsupported bot observation schemaVersion');
+  }
+  if (!Array.isArray(candidate.observations) || candidate.observations.length === 0) {
+    throw new Error('Bot observation file must contain at least one observation');
+  }
+
+  for (const [index, observation] of candidate.observations.entries()) {
+    if (!observation || typeof observation !== 'object' || Array.isArray(observation)) {
+      throw new Error(`Invalid bot observation at index ${index}`);
+    }
+    const item = observation as Record<string, unknown>;
+    for (const field of [
+      'caseId',
+      'conversationId',
+      'userInput',
+      'observedResponse',
+      'expectedIntent',
+      'expectedIntentVersion',
+    ]) {
+      if (typeof item[field] !== 'string' || !item[field].trim()) {
+        throw new Error(`Bot observation field is required: ${field}`);
+      }
+    }
+    if (!Number.isInteger(item.repetition) || Number(item.repetition) < 1) {
+      throw new Error('Bot observation repetition must be a positive integer');
+    }
+    if (!Number.isInteger(item.turn) || Number(item.turn) < 1) {
+      throw new Error('Bot observation turn must be a positive integer');
+    }
+    if (!Array.isArray(item.evidenceIds) || !item.evidenceIds.every((id) => typeof id === 'string' && id.trim())) {
+      throw new Error('Bot observation evidenceIds must be a non-empty string array');
+    }
+  }
+
+  return parsed as BotObservationSet;
+};
+
+const observationSet = parseObservationSet(await readFile(observationsFile, 'utf8'));
+const observations = observationSet.observations;
 
 const mapResponse = (request: SemanticEvaluationInput, payload: unknown): SemanticEvaluationOutput => {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
@@ -76,12 +103,15 @@ const mapResponse = (request: SemanticEvaluationInput, payload: unknown): Semant
     throw new Error('Semantic evaluator response does not preserve criterion provenance');
   }
   if (candidate.modelId !== request.modelId || candidate.modelVersion !== request.modelVersion) {
-    throw new Error('Semantic evaluator response does not preserve model provenance');
+    throw new Error('Semantic evaluator response does not preserve evaluator provenance');
   }
   if (candidate.promptVersion !== request.promptVersion || candidate.methodVersion !== request.methodVersion) {
     throw new Error('Semantic evaluator response does not preserve method provenance');
   }
-  if (candidate.evidenceIds.length !== 1 || candidate.evidenceIds[0] !== request.evidenceIds[0]) {
+
+  const requestEvidence = JSON.stringify(request.evidenceIds);
+  const responseEvidence = JSON.stringify(candidate.evidenceIds);
+  if (requestEvidence !== responseEvidence) {
     throw new Error('Semantic evaluator response does not preserve evidence identity');
   }
 
@@ -108,47 +138,69 @@ const evaluator = new HttpSemanticEvaluatorAdapter({
 const results: Array<{
   caseId: string;
   repetition: number;
+  turn: number;
+  conversationId: string;
   outcome: SemanticEvaluationOutput['outcome'];
   evidenceInsufficient: boolean;
+  channel?: string;
+  transport?: string;
+  botId?: string;
+  botVersion?: string;
+  executionId?: string;
 }> = [];
 
-for (let repetition = 1; repetition <= repetitions; repetition += 1) {
-  for (const [index, testCase] of cases.entries()) {
-    const input: SemanticEvaluationInput = {
-      ...testCase,
-      criterionId,
-      criterionVersion,
-      evidenceIds: [`live-evidence-${index + 1}`],
-      expectedIntentVersion: 'intent-0.1',
-      allowedContext: [],
-      modelId,
-      modelVersion,
-      promptVersion,
-      methodVersion,
-    };
+for (const observation of observations) {
+  const criterionId = criterionIdOverride || observation.caseId;
+  const criterionVersion = criterionVersionOverride || observation.expectedIntentVersion;
 
-    const result = await evaluator.evaluate(input);
-    results.push({
-      caseId: `D2-C01-${index + 1}`,
-      repetition,
-      outcome: result.outcome,
-      evidenceInsufficient: result.evidenceInsufficient,
-    });
-  }
+  const input: SemanticEvaluationInput = {
+    userInput: observation.userInput,
+    observedResponse: observation.observedResponse,
+    expectedIntent: observation.expectedIntent,
+    expectedIntentVersion: observation.expectedIntentVersion,
+    allowedContext: [],
+    evidenceIds: observation.evidenceIds,
+    criterionId,
+    criterionVersion,
+    modelId,
+    modelVersion,
+    promptVersion,
+    methodVersion,
+  };
+
+  const result = await evaluator.evaluate(input);
+  results.push({
+    caseId: observation.caseId,
+    repetition: observation.repetition,
+    turn: observation.turn,
+    conversationId: observation.conversationId,
+    outcome: result.outcome,
+    evidenceInsufficient: result.evidenceInsufficient,
+    ...(observation.channel ? { channel: observation.channel } : {}),
+    ...(observation.transport ? { transport: observation.transport } : {}),
+    ...(observation.botId ? { botId: observation.botId } : {}),
+    ...(observation.botVersion ? { botVersion: observation.botVersion } : {}),
+    ...(observation.executionId ? { executionId: observation.executionId } : {}),
+  });
 }
 
-const byCase = cases.map((_, index) => results.filter((result) => result.caseId === `D2-C01-${index + 1}`));
-const repeatable = byCase.every((caseResults) => new Set(caseResults.map((result) => result.outcome)).size === 1);
+const caseIds = [...new Set(observations.map((observation) => observation.caseId))];
+const byCase = caseIds.map((caseId) => results.filter((result) => result.caseId === caseId));
+const repeatable = byCase.every((caseResults) => {
+  const ordered = [...caseResults].sort((a, b) => a.repetition - b.repetition || a.turn - b.turn);
+  return new Set(ordered.map((result) => result.outcome)).size === 1;
+});
 
 console.log(JSON.stringify({
   status: repeatable ? 'VALIDATED_REPEATABILITY' : 'NON_REPEATABLE_OBSERVATION',
-  criterionId,
-  criterionVersion,
-  modelId,
-  modelVersion,
-  promptVersion,
-  methodVersion,
-  repetitions,
+  observationSchemaVersion: observationSet.schemaVersion,
+  observationsFile,
+  evaluator: {
+    modelId,
+    modelVersion,
+    promptVersion,
+    methodVersion,
+  },
   cases: results,
 }, null, 2));
 

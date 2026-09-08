@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "bot-observation-0.1",
+  "observations": [
+    {
+      "caseId": "CASE-01",
+      "conversationId": "conversation-under-test",
+      "repetition": 1,
+      "turn": 1,
+      "userInput": "Mensaje de prueba controlado",
+      "observedResponse": "Respuesta observable del bot",
+      "expectedIntent": "Intención esperada definida por el caso de prueba",
+      "expectedIntentVersion": "intent-0.1",
+      "evidenceIds": ["evidence-01"],
+      "channel": "channel-under-test",
+      "transport": "transport-under-test",
+      "botId": "bot-under-test",
+      "botVersion": "version-under-test",
+      "executionId": "execution-under-test",
+      "observedAt": "2026-09-08T00:00:00Z"
+    },
+    {
+      "caseId": "CASE-01",
+      "conversationId": "conversation-under-test-2",
+      "repetition": 2,
+      "turn": 1,
+      "userInput": "Mensaje de prueba controlado",
+      "observedResponse": "Respuesta observable del bot",
+      "expectedIntent": "Intención esperada definida por el caso de prueba",
+      "expectedIntentVersion": "intent-0.1",
+      "evidenceIds": ["evidence-02"],
+      "channel": "channel-under-test",
+      "transport": "transport-under-test",
+      "botId": "bot-under-test",
+      "botVersion": "version-under-test",
+      "executionId": "execution-under-test-2",
+      "observedAt": "2026-09-08T00:01:00Z"
+    }
+  ]
+}
