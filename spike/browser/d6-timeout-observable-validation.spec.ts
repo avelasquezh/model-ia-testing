@@ -126,9 +126,10 @@ test('D6-C03: captures an observable timeout when the response exceeds the confi
 
     expect(result.status).toBe('ERROR');
     expect(result.observations ?? []).toHaveLength(0);
-    expect(result.errors).toHaveLength(1);
-    expect(result.errors[0]?.operation).toBe('SEND');
-    expect(result.errors[0]?.message).toBe('Conversation response was not observed before timeout');
+    const errors = result.errors ?? [];
+    expect(errors).toHaveLength(1);
+    expect(errors[0]?.operation).toBe('SEND');
+    expect(errors[0]?.message).toBe('Conversation response was not observed before timeout');
     expect(evidence.events).toHaveLength(1);
     expect(evidence.events[0]?.type).toBe('ERROR');
     expect(evidence.events[0]?.executionId).toBe(execution.props.id);
