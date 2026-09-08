@@ -25,16 +25,16 @@ No se utilizarán identificadores `F2-36`, `F2-37` ni superiores para ampliar re
 | F2-42 | `F2-VAL-02` | VALIDADO | Validación empírica controlada de criterios seleccionados |
 | F2-43 | `F2-VAL-03` | VALIDADO | Validación empírica de retención de contexto |
 | F2-44 | `F2-VAL-04` | VALIDADO | Contrato y protocolo controlado de evaluación semántica asistida por IA |
-| F2-45 | `F2-EXT-06` | VALIDADO | Frontera provider-neutral para evaluador semántico IA |
-| F2-46 | `F2-EXT-07` | RETIRADO / NO ADOPTADO | Adaptación Ollama y validación live descartadas del alcance |
+| F2-45 | `F2-EXT-06` | VALIDADO | Frontera provider-neutral y arnés operativo de evaluación semántica |
+| — | `F2-VAL-05` | ABIERTO | Validación controlada de comportamiento semántico con un evaluador externo real |
 
 Esta tabla es administrativa y no cambia la identidad histórica de los archivos. La secuencia oficial continúa siendo F2-01…F2-35.
 
 ## Evidencia de F2-35
 
-F2-35 formalizó la cobertura metodológica por criterio dentro de una ejecución. La cobertura distingue `APPLICABLE_EVALUATED`, `APPLICABLE_NOT_EVALUATED`, `NOT_APPLICABLE`, `INSUFFICIENT_EVIDENCE` e `INCONCLUSIVE`, sin introducir score ni decisión global. fileciteturn355file0L2-L2
+F2-35 formalizó la cobertura metodológica por criterio dentro de una ejecución. La cobertura distingue `APPLICABLE_EVALUATED`, `APPLICABLE_NOT_EVALUATED`, `NOT_APPLICABLE`, `INSUFFICIENT_EVIDENCE` e `INCONCLUSIVE`, sin introducir score ni decisión global.
 
-## Trabajo posterior reconciliado — F2-38 a F2-40
+## Trabajo posterior reconciliado — F2-EXT-03 a F2-EXT-05
 
 ### `F2-EXT-03` — Comparabilidad metodológica entre ejecuciones
 
@@ -42,7 +42,7 @@ F2-35 formalizó la cobertura metodológica por criterio dentro de una ejecució
 
 La comparabilidad se estableció como precondición para comparar métricas entre ejecuciones. Exige coincidencia de escenario, versión de escenario, método, catálogo, reglas, condiciones, contexto, alcance, selección y aplicabilidad. `productVersion` permanece observable sin bloquear por sí sola la comparación.
 
-Validación final: CI `34147632091` y Architecture Spike `34147632105`, ambos exitosos. fileciteturn384file0L2-L2
+Validación final: CI `34147632091` y Architecture Spike `34147632105`, ambos exitosos.
 
 ### `F2-EXT-04` — Comparación descriptiva de métricas de cobertura
 
@@ -50,7 +50,7 @@ Validación final: CI `34147632091` y Architecture Spike `34147632105`, ambos ex
 
 La comparación se ejecuta únicamente cuando F2-EXT-03 determina `COMPARABLE` y expresa los deltas descriptivos como `right - left`. No interpreta las diferencias como mejora, regresión ni causalidad.
 
-Validación final: CI `34147632091` y Architecture Spike `34147632105`, ambos exitosos. fileciteturn385file0L2-L2
+Validación final: CI `34147632091` y Architecture Spike `34147632105`, ambos exitosos.
 
 ### `F2-EXT-05` — Interpretación descriptiva de diferencias
 
@@ -58,7 +58,7 @@ Validación final: CI `34147632091` y Architecture Spike `34147632105`, ambos ex
 
 La regla `f2-interpretation-0.1` clasifica cada delta como `INCREASED`, `DECREASED`, `UNCHANGED` o `NOT_INTERPRETABLE`, manteniendo explícitamente separadas dirección numérica y juicio de calidad.
 
-Validación final: CI `34167130840` y Architecture Spike `34167130834`, ambos exitosos. fileciteturn386file0L2-L2
+Validación final: CI `34167130840` y Architecture Spike `34167130834`, ambos exitosos.
 
 ## Validación posterior de criterios — F2-VAL-01 a F2-VAL-04
 
@@ -68,7 +68,7 @@ Validación final: CI `34167130840` y Architecture Spike `34167130834`, ambos ex
 
 Se cubrió un caso representativo de D1–D7 con entrada, precondiciones, expectativa, evidencia, observación, regla y limitaciones. El protocolo valida aptitud estructural y mantiene la metodología candidata en `DRAFT`.
 
-Validación final: CI `34171221703` y Architecture Spike `34171221652`, ambos exitosos. fileciteturn387file0L2-L2
+Validación final: CI `34171221703` y Architecture Spike `34171221652`, ambos exitosos.
 
 ### `F2-VAL-02` — Validación empírica controlada
 
@@ -84,31 +84,37 @@ Validación final registrada en CI `34171940346` y Architecture Spike `341719403
 
 Se validó D3-C01 mediante tres sesiones independientes con un turno de establecimiento y un turno de verificación. La segunda respuesta recuperó de forma reproducible el contexto establecido y se conservaron dos observaciones por ejecución.
 
-Validación final registrada en CI `34172666958` y Architecture Spike `34172666905`, ambos exitosos. fileciteturn393file0L2-L2
+Validación final registrada en CI `34172666958` y Architecture Spike `34172666905`, ambos exitosos.
 
 ### `F2-VAL-04` — Protocolo de evaluación semántica asistida por IA
 
 **Estado:** **CERRADO / VALIDADO — CONTRATO Y PROTOCOLO**.
 
-Se formalizó D2-C01 con evidencia primaria, intención esperada versionada, respuesta observable, contexto permitido, identidad/versionado del evaluador, prompt y método. La validación utilizó un doble metodológico controlado; no equivale a validación de un proveedor IA real.
+Se formalizó D2-C01 con evidencia primaria, intención esperada versionada, respuesta observable, contexto permitido, identidad/versionado del evaluador, prompt y método. La validación utilizó un doble metodológico controlado.
 
 Validación final registrada en CI `34173406820` y Architecture Spike `34173406825`, ambos exitosos.
 
-## Extensiones de evaluador IA
+## Extensiones del evaluador semántico
 
-### `F2-EXT-06` — Frontera provider-neutral
+### `F2-EXT-06` — Frontera provider-neutral y arnés operativo
 
 **Estado:** **CERRADO / VALIDADO**.
 
 Se materializó `SemanticEvaluatorPort` con entrada y salida normalizadas, preservando evidencia primaria, intención esperada, respuesta observable y procedencia de modelo, prompt, método, criterio y evidencia.
 
-El dominio no conoce SDKs, proveedores ni credenciales. CI y Architecture Spike verificaron el límite provider-neutral.
+La infraestructura incorpora una frontera HTTP y un arnés live opt-in. El dominio permanece independiente del transporte, SDK, proveedor y credenciales. El arnés valida la forma y procedencia de una respuesta normalizada, pero su existencia no constituye evidencia de comportamiento de un evaluador externo real.
 
-### `F2-EXT-07` — Ollama
+Validación CI asociada al incremento: `34248712103` — todos los jobs principales exitosos. Architecture Spike asociado: `34248712303` — exitoso.
 
-**Estado:** **RETIRADO / NO ADOPTADO**.
+### `F2-VAL-05` — Validación controlada de comportamiento semántico externo
 
-Ollama no forma parte del alcance activo del MVP. La implementación específica fue retirada del código activo y no se realizará validación live con Ollama. La decisión no invalida `SemanticEvaluatorPort` ni el diseño provider-neutral.
+**Estado:** **ABIERTO / NO EJECUTADO**.
+
+Objetivo: ejecutar el arnés contra un evaluador semántico externo real y comprobar, bajo condiciones controladas, que la respuesta normalizada conserva la procedencia y permite clasificar los casos alineado, no alineado y ambiguo conforme al protocolo de F2-VAL-04.
+
+La ejecución deberá registrar identidad y versión del modelo, prompt y método versionados, parámetros relevantes, casos de prueba, repeticiones equivalentes, respuestas normalizadas, evidencia primaria y errores de transporte, límites o esquema.
+
+No se introducirá scoring global ni se transformará la salida semántica en un veredicto global del producto.
 
 ## Persistencia y versionado
 
@@ -122,7 +128,7 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 
 ## Frente 2 — Evaluación observable
 
-**Estado:** **F2-EXT-06 VALIDADO**; Ollama retirado del alcance activo.
+**Estado:** Frontera provider-neutral validada; `F2-VAL-05` permanece abierto para la validación externa controlada.
 
 La baseline oficial permanece cerrada en F2-35. El trabajo posterior se gestiona como extensiones y validaciones explícitamente clasificadas, sin alterar la secuencia original.
 
@@ -142,7 +148,7 @@ Las versiones metodológicas son independientes del producto y deben mantenerse 
 
 ## Próximo trabajo
 
-No se debe crear un nuevo identificador `F2-XX` para continuar. El siguiente trabajo debe seleccionarse desde la clasificación posterior a F2-35 y registrarse antes de implementarlo. La siguiente prioridad debe ser una integración provider-neutral que no obligue a adoptar Ollama ni otro proveedor concreto, seguida de la validación de la interfaz externa cuando corresponda.
+El siguiente incremento canónico es `F2-VAL-05`. No se debe crear un nuevo identificador `F2-XX`. La implementación debe comenzar únicamente con un entorno externo controlado capaz de responder al contrato normalizado; las credenciales y parámetros operativos deben permanecer fuera del repositorio.
 
 ## Regla de documentación
 
