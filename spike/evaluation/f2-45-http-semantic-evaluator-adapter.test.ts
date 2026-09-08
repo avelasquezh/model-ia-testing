@@ -49,16 +49,19 @@ describe('F2-45 HTTP semantic evaluator adapter', () => {
     });
 
     const result = await evaluator.evaluate(input);
+    const call = transport.mock.calls.at(0);
 
     expect(result).toEqual(normalizedOutput);
     expect(transport).toHaveBeenCalledOnce();
-    expect(transport.mock.calls[0][0]).toBe('https://evaluator.example.test/evaluate');
-    expect(transport.mock.calls[0][1].method).toBe('POST');
-    expect(transport.mock.calls[0][1].headers).toEqual({
+    expect(call).toBeDefined();
+    if (!call) throw new Error('Expected transport to be called');
+    expect(call[0]).toBe('https://evaluator.example.test/evaluate');
+    expect(call[1].method).toBe('POST');
+    expect(call[1].headers).toEqual({
       'content-type': 'application/json',
       authorization: 'Bearer test-token',
     });
-    expect(JSON.parse(transport.mock.calls[0][1].body)).toEqual(input);
+    expect(JSON.parse(call[1].body)).toEqual(input);
     expect(mapResponse).toHaveBeenCalledWith(input, { providerResult: 'accepted' });
   });
 
