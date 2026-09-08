@@ -67,6 +67,8 @@ Ejemplo neutral disponible en:
 
 `examples/bot-observations.example.json`
 
+La validación del archivo se centraliza en `src/application/evaluation/BotObservationSetValidator.ts`, evitando que el arnés y futuras fuentes de observación implementen reglas divergentes.
+
 El arnés:
 
 - valida el esquema de observaciones;
@@ -82,6 +84,8 @@ El arnés:
 - conserva metadatos del SUT cuando hayan sido proporcionados;
 - falla explícitamente ante respuestas incompatibles con el contrato.
 
+La validación estructural cuenta con pruebas unitarias para versión de esquema, campos obligatorios, repetición, turno y evidencia.
+
 Variables operativas del evaluador:
 
 - `SEMANTIC_EVALUATOR_ENDPOINT` — obligatorio;
@@ -89,66 +93,12 @@ Variables operativas del evaluador:
 - `SEMANTIC_EVALUATOR_MODEL_ID`;
 - `SEMANTIC_EVALUATOR_MODEL_VERSION`;
 - `SEMANTIC_EVALUATOR_PROMPT_VERSION`;
-- `SEMANTIC_EVALUATOR_METHOD_VERSION`.
+- `SEMANTIC_EVALUATOR_METHOD_VERSION`;
+- `SEMANTIC_EVALUATOR_CRITERION_ID` — opcional;
+- `SEMANTIC_EVALUATOR_CRITERION_VERSION` — opcional.
 
-Variable operativa del SUT:
+## Criterio de cierre
 
-- `BOT_OBSERVATIONS_FILE` — archivo de observaciones producido por el mecanismo de prueba elegido.
+F2-VAL-05 no se cerrará por la existencia del arnés. Requiere una ejecución reproducible contra un SUT real y un evaluador semántico externo real, con evidencia suficiente, procedencia completa y resultados trazables.
 
-No se almacena ninguna URL del bot, token de canal, credencial o secreto en el repositorio.
-
-## Principio de no contaminación
-
-El ambiente de evaluación no debe contener:
-
-- URL fija de un bot;
-- selector CSS/XPath de una plataforma concreta;
-- ID fijo de página o número de teléfono;
-- webhook específico de proveedor;
-- SDK de Messenger, WhatsApp u otro canal en el dominio;
-- credenciales de un SUT;
-- respuestas esperadas codificadas para un bot concreto.
-
-Los adaptadores específicos, cuando se implementen, deben vivir fuera del dominio y producir `BotObservation`.
-
-## Matriz de validación
-
-La matriz ya no prescribe un bot concreto. Cada ejecución aporta sus propios casos y observaciones.
-
-| Dimensión | Evidencia |
-|---|---|
-| Intención alineada | Resultado ordinal del evaluador |
-| Intención no alineada | Resultado ordinal del evaluador |
-| Evidencia ambigua o insuficiente | Resultado ordinal y/o `evidenceInsufficient=true` |
-| Repetición | Consistencia ordinal por caso |
-| Proveniencia | Modelo, versión, prompt, método, evidencia y ejecución |
-| Canal | Metadato opcional, sin efecto arquitectónico |
-
-Cada caso se repite bajo condiciones metodológicas equivalentes. La repetibilidad se registra descriptivamente y no se transforma en score global.
-
-## Evidencia requerida para cerrar F2-VAL-05
-
-La ejecución real debe conservar:
-
-1. identidad y versión del modelo evaluador;
-2. versión de prompt y método;
-3. parámetros relevantes de generación, si existen;
-4. entrada del usuario y respuesta observable del SUT;
-5. intención esperada y versión;
-6. evidencia primaria vinculada;
-7. identidad del bot y versión, cuando estén disponibles;
-8. canal/transporte, cuando estén disponibles;
-9. salida normalizada del evaluador;
-10. resultado de cada repetición;
-11. errores de transporte, límite o esquema, si ocurren;
-12. fecha e identificador de ejecución suficiente para reconstrucción.
-
-## Criterio de salida
-
-F2-VAL-05 podrá cerrarse cuando exista una ejecución real reproducible contra un SUT real, con procedencia completa, contrato válido y resultados observables suficientes para clasificar el comportamiento conforme al protocolo metodológico vigente.
-
-La ejecución contra ChatBot.com puede utilizarse como una primera fuente de evidencia, pero no debe convertir esa plataforma en una dependencia del proyecto. Una posterior ejecución contra Messenger, WhatsApp o un bot web debe poder reutilizar el mismo contrato sin modificar el núcleo.
-
-La existencia o ejecución del arnés por sí sola no constituye evidencia de comportamiento IA real.
-
-No se introduce scoring global, ponderación ni aceptación/rechazo global del producto.
+No se introducirá scoring global ni se transformará la salida semántica en un veredicto global del producto.
