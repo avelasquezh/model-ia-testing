@@ -55,7 +55,7 @@ const assertInputContract = (input: SemanticEvaluationInput): void => {
   if (input.evidenceIds.length === 0) {
     throw new Error('Semantic evaluation input requires primary evidence references');
   }
-}
+};
 
 const evaluateWithControlledModel = (input: SemanticEvaluationInput): SemanticEvaluationOutput => {
   assertInputContract(input);
@@ -90,21 +90,26 @@ const evaluateWithControlledModel = (input: SemanticEvaluationInput): SemanticEv
   };
 };
 
-const baseInput = {
+const baseInput: SemanticEvaluationInput = {
   criterionId: 'D2-C01',
   criterionVersion: 'candidate-0.1',
   evidenceIds: ['evidence-turn-1'],
   userInput: 'Quiero comprar una camisa azul talla M',
   expectedIntent: 'El sistema debe identificar la intención de compra de una camisa y conservar los atributos explícitos.',
   expectedIntentVersion: 'intent-0.1',
+  observedResponse: 'La intención fue atendida.',
   allowedContext: [],
   modelId: 'controlled-semantic-evaluator',
   modelVersion: 'double-0.1',
   promptVersion: 'semantic-prompt-0.1',
   methodVersion: 'AI-METHOD-0.1',
-} as const;
+};
 
-const controlledCases: readonly ControlledSemanticCase[] = [
+const controlledCases: readonly [
+  ControlledSemanticCase,
+  ControlledSemanticCase,
+  ControlledSemanticCase,
+] = [
   {
     id: 'ALIGNED',
     input: { ...baseInput, observedResponse: 'La intención fue atendida.' },
@@ -134,9 +139,10 @@ describe('F2-44 semantic evaluation protocol spike', () => {
   });
 
   it('keeps the expected intent explicit instead of inferring it from the observed response', () => {
-    const result = evaluateWithControlledModel(controlledCases[0].input);
+    const alignedCase = controlledCases[0];
+    const result = evaluateWithControlledModel(alignedCase.input);
     expect(result.outcome).toBe('PASS');
-    expect(controlledCases[0].input.expectedIntent).toContain('intención de compra');
+    expect(alignedCase.input.expectedIntent).toContain('intención de compra');
     expect(result.evidenceIds).toEqual(['evidence-turn-1']);
   });
 
@@ -153,21 +159,24 @@ describe('F2-44 semantic evaluation protocol spike', () => {
       expect(result.justification.trim().length).toBeGreaterThan(0);
     }
 
-    expect(evaluateWithControlledModel(controlledCases[2].input).evidenceInsufficient).toBe(true);
+    const ambiguousCase = controlledCases[2];
+    expect(evaluateWithControlledModel(ambiguousCase.input).evidenceInsufficient).toBe(true);
   });
 
   it('preserves evidence identity and does not replace primary evidence with AI output', () => {
-    const result = evaluateWithControlledModel(controlledCases[0].input);
-    expect(result.evidenceIds).toEqual(controlledCases[0].input.evidenceIds);
+    const alignedCase = controlledCases[0];
+    const result = evaluateWithControlledModel(alignedCase.input);
+    expect(result.evidenceIds).toEqual(alignedCase.input.evidenceIds);
     expect(result.justification).not.toContain('evidence-transcript-replaced-by-ai');
   });
 
   it('is deterministic for repeated evaluation under identical controlled conditions', () => {
-    const first = evaluateWithControlledModel(controlledCases[0].input);
+    const alignedCase = controlledCases[0];
+    const first = evaluateWithControlledModel(alignedCase.input);
     const repetitions = [
-      evaluateWithControlledModel(controlledCases[0].input),
-      evaluateWithControlledModel(controlledCases[0].input),
-      evaluateWithControlledModel(controlledCases[0].input),
+      evaluateWithControlledModel(alignedCase.input),
+      evaluateWithControlledModel(alignedCase.input),
+      evaluateWithControlledModel(alignedCase.input),
     ];
 
     for (const result of repetitions) {
