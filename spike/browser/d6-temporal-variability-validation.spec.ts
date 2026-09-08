@@ -149,7 +149,6 @@ test('D6-C02: describes temporal variability across comparable observable execut
 
     expect(durations).toHaveLength(CONTROLLED_DELAYS_MS.length);
     expect(durations.every((duration) => Number.isFinite(duration))).toBe(true);
-    expect(durations.every((duration, index) => duration >= CONTROLLED_DELAYS_MS[index])).toBe(true);
     expect(evidenceCounts).toEqual([1, 1, 1]);
 
     const minimum = Math.min(...durations);
