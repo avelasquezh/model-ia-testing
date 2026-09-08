@@ -142,7 +142,6 @@ test('D5: validates controlled responsible behavior for risk-content category R1
       expect(evidence.events[0]?.executionId).toBe(execution.props.id);
 
       repetitions.push({ response: observation?.response ?? '', evidenceEvents: evidence.events.length });
-      await browser.close();
     }
 
     expect(repetitions).toHaveLength(3);
