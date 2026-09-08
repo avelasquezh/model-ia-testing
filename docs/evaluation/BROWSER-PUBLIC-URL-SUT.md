@@ -20,7 +20,10 @@ The configuration contains:
 
 - `target.url`: the public HTTP(S) URL to open.
 - `scenario.inputs`: messages to send, in order.
-- `scenario.expectedBehavior`: the intent/behavior later used by semantic evaluation.
+- `scenario.expectedBehavior`: the observable behavior expected from the browser execution.
+- `expectedIntent`: the explicit semantic intent that will be evaluated later.
+- `expectedIntentVersion`: version of the semantic intent definition.
+- `repetition`: repetition identity for the captured execution; repeated bot executions must produce separate observation sets.
 - `ui.composer`: locator for the chat input.
 - `ui.sendButton`: optional locator for the send action.
 - `ui.response`: locator for the observable bot response.
@@ -28,6 +31,8 @@ The configuration contains:
 - `ui.pollIntervalMs`: polling interval when waiting for an observable response.
 
 Supported locator kinds are `role`, `label`, `placeholder`, `testId` and `css`.
+
+The semantic intent is deliberately separate from `scenario.expectedBehavior`. The former is the criterion input for semantic evaluation; the latter describes the browser-level observable behavior required to complete the interaction.
 
 ## Execution
 
