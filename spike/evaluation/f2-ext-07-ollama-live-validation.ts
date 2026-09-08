@@ -1,12 +1,15 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { OllamaSemanticEvaluator } from '../../src/infrastructure/evaluation/OllamaSemanticEvaluator.js';
-import type { SemanticEvaluationInput } from '../../src/domain/evaluation/SemanticEvaluator.js';
+import type {
+  SemanticEvaluationInput,
+  SemanticEvaluationOutput,
+} from '../../src/domain/evaluation/SemanticEvaluator.js';
 
 type LiveRun = {
   readonly repetition: number;
   readonly startedAt: string;
   readonly finishedAt: string;
-  readonly outcome: SemanticEvaluationInput['modelId'] extends never ? never : string;
+  readonly outcome: SemanticEvaluationOutput['outcome'];
   readonly justification: string;
   readonly evidenceInsufficient: boolean;
 };
