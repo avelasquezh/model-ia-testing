@@ -25,8 +25,8 @@ No se utilizarán identificadores `F2-36`, `F2-37` ni superiores para ampliar re
 | F2-42 | `F2-VAL-02` | VALIDADO | Validación empírica controlada de criterios seleccionados |
 | F2-43 | `F2-VAL-03` | VALIDADO | Validación empírica de retención de contexto |
 | F2-44 | `F2-VAL-04` | VALIDADO | Contrato y protocolo controlado de evaluación semántica asistida por IA |
-| F2-45 | `F2-EXT-06` | EN EJECUCIÓN | Frontera provider-neutral para evaluador semántico IA |
-| F2-46 | `F2-EXT-07` | EN EJECUCIÓN | Adaptación Ollama y preparación de validación live |
+| F2-45 | `F2-EXT-06` | VALIDADO | Frontera provider-neutral para evaluador semántico IA |
+| F2-46 | `F2-EXT-07` | RETIRADO / NO ADOPTADO | Adaptación Ollama y validación live descartadas del alcance |
 
 Esta tabla es administrativa y no cambia la identidad histórica de los archivos. La secuencia oficial continúa siendo F2-01…F2-35.
 
@@ -98,19 +98,17 @@ Validación final registrada en CI `34173406820` y Architecture Spike `341734068
 
 ### `F2-EXT-06` — Frontera provider-neutral
 
-**Estado:** **EN EJECUCIÓN — CONTRATO MATERIALIZADO**.
+**Estado:** **CERRADO / VALIDADO**.
 
 Se materializó `SemanticEvaluatorPort` con entrada y salida normalizadas, preservando evidencia primaria, intención esperada, respuesta observable y procedencia de modelo, prompt, método, criterio y evidencia.
 
-El dominio no conoce SDKs, proveedores ni credenciales. La validación actual es contractual; no se declara todavía validado un modelo real. fileciteturn388file0L2-L2
+El dominio no conoce SDKs, proveedores ni credenciales. CI y Architecture Spike verificaron el límite provider-neutral.
 
-### `F2-EXT-07` — Adaptación Ollama
+### `F2-EXT-07` — Ollama
 
-**Estado:** **EN EJECUCIÓN — INTEGRACIÓN MATERIALIZADA, VALIDACIÓN LIVE PENDIENTE**.
+**Estado:** **RETIRADO / NO ADOPTADO**.
 
-Se materializó `OllamaSemanticEvaluator` sobre HTTP nativo. La integración está controlada por configuración externa y exige salida JSON normalizada. La ejecución live solo se habilita explícitamente con un modelo Ollama disponible; CI no simula esa validación.
-
-El cierre requiere evidencia live de conexión, normalización, trazabilidad, suficiencia de evidencia y repetición bajo condiciones equivalentes. fileciteturn389file0L2-L2
+Ollama no forma parte del alcance activo del MVP. La implementación específica fue retirada del código activo y no se realizará validación live con Ollama. La decisión no invalida `SemanticEvaluatorPort` ni el diseño provider-neutral.
 
 ## Persistencia y versionado
 
@@ -124,7 +122,7 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 
 ## Frente 2 — Evaluación observable
 
-**Estado:** **F2-EXT-07 EN EJECUCIÓN**.
+**Estado:** **F2-EXT-06 VALIDADO**; Ollama retirado del alcance activo.
 
 La baseline oficial permanece cerrada en F2-35. El trabajo posterior se gestiona como extensiones y validaciones explícitamente clasificadas, sin alterar la secuencia original.
 
@@ -144,7 +142,7 @@ Las versiones metodológicas son independientes del producto y deben mantenerse 
 
 ## Próximo trabajo
 
-No se debe crear un nuevo identificador `F2-XX` para continuar. El siguiente trabajo debe seleccionarse desde la clasificación posterior a F2-35 y registrarse antes de implementarlo. La prioridad técnica actual es cerrar la validación live de `F2-EXT-07` sin contaminar el dominio con el proveedor.
+No se debe crear un nuevo identificador `F2-XX` para continuar. El siguiente trabajo debe seleccionarse desde la clasificación posterior a F2-35 y registrarse antes de implementarlo. La siguiente prioridad debe ser una integración provider-neutral que no obligue a adoptar Ollama ni otro proveedor concreto, seguida de la validación de la interfaz externa cuando corresponda.
 
 ## Regla de documentación
 
