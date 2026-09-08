@@ -3,7 +3,7 @@
 **Fecha:** 2026-09-08  
 **Versión de producto declarada:** `0.1.0`  
 **Rama:** `main`  
-**Avance estimado del MVP:** **88%**  
+**Avance estimado del MVP:** **89%**  
 **Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 en consolidación metodológica ejecutable y F3 **VALIDADO**.
 
 ## Incrementos cerrados — F2-23 a F2-37
@@ -131,6 +131,22 @@ Validación final:
 
 El primer intento falló por errores de TypeScript bajo configuración estricta: faltaba `observedResponse` en el caso base y el acceso indexado a casos generaba posibles `undefined`. Se corrigió tipando explícitamente el contrato base y usando una tupla de casos controlados, sin relajar el compilador ni modificar el objetivo metodológico.
 
+## Incremento en ejecución — F2-45 frontera de evaluador semántico IA real
+
+**Estado:** **EN EJECUCIÓN — CONTRATO MATERIALIZADO**.
+
+F2-45 inicia la transición desde el doble metodológico de F2-44 hacia una integración que pueda recibir un evaluador IA real sin acoplar el dominio a un proveedor.
+
+Se materializó `src/domain/evaluation/SemanticEvaluator.ts`, que define `SemanticEvaluationInput`, `SemanticEvaluationOutput` y `SemanticEvaluatorPort`. El contrato conserva evidencia primaria, intención esperada versionada, respuesta observable, contexto permitido, identidad/versionado del modelo, prompt y método.
+
+El spike `spike/evaluation/f2-45-semantic-evaluator-port.test.ts` valida el límite provider-neutral, la separación entre evidencia primaria y salida generada y la conservación de procedencia.
+
+También se documentó `docs/evaluation/F2-45-REAL-AI-EVALUATOR-INTEGRATION.md` con el criterio para la siguiente ejecución con proveedor/modelo real.
+
+**Resultado actual:** contrato arquitectónico materializado. No se declara todavía validación de un proveedor o modelo IA real.
+
+La siguiente prueba deberá ejecutar un proveedor real bajo condiciones controladas, registrar identidad/versionado, prompt, parámetros relevantes, casos alineado/no alineado/ambiguo y repeticiones. F2-45 permanecerá abierto hasta disponer de esa evidencia.
+
 ## Persistencia y versionado
 
 Las referencias de versionado continúan persistidas como campos de primera clase. El plan metodológico se conserva en `evaluation_plan` y las condiciones comparables mediante `condition_fingerprint`. La reconstrucción de `Execution` mantiene ambos metadatos.
@@ -141,11 +157,11 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-44 **CERRADO / VALIDADO (CONTRATO Y PROTOCOLO)**.
+**Estado:** F2-45 **EN EJECUCIÓN — CONTRATO MATERIALIZADO**.
 
-La secuencia materializada llega hasta: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio → interpretación de cobertura por ejecución → métricas descriptivas de cobertura por ejecución → comparabilidad metodológica entre ejecuciones → comparación descriptiva de métricas de cobertura → validación controlada de dimensiones y criterios candidatos → validación empírica repetida de criterios seleccionados sobre doble controlado → validación empírica de retención de contexto entre turnos sobre doble controlado → contrato y protocolo controlado de evaluación semántica asistida por IA para D2-C01.
+La secuencia materializada llega hasta: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio → interpretación de cobertura por ejecución → métricas descriptivas de cobertura por ejecución → comparabilidad metodológica entre ejecuciones → comparación descriptiva de métricas de cobertura → validación controlada de dimensiones y criterios candidatos → validación empírica repetida de criterios seleccionados sobre doble controlado → validación empírica de retención de contexto entre turnos sobre doble controlado → contrato y protocolo controlado de evaluación semántica asistida por IA para D2-C01 → frontera provider-neutral para evaluador semántico IA.
 
-Todavía quedan fuera la interpretación normativa de diferencias entre ejecuciones, scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación entre escenarios y validación de un proveedor/modelo de IA real en condiciones controladas.
+Todavía quedan fuera la interpretación normativa de diferencias entre ejecuciones, scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación entre escenarios y validación empírica de un proveedor/modelo de IA real.
 
 ## Frente 3 — Arquitectura
 **Estado:** **VALIDADO**.
@@ -160,9 +176,7 @@ Las versiones metodológicas son independientes del producto y deben mantenerse 
 
 ## Próximo incremento — validación de proveedor/modelo IA real para D2-C01
 
-El siguiente incremento deberá tomar el contrato cerrado en F2-44 y evaluar su comportamiento con un proveedor o modelo de IA real bajo condiciones controladas. El objetivo será caracterizar reproducibilidad, sensibilidad a configuración, suficiencia de evidencia y estabilidad del resultado sin convertir la salida del modelo en un veredicto global.
-
-Deberán mantenerse el control de intención esperada previamente definida, evidencia primaria, identificación/versionado del modelo, prompt versionado, parámetros relevantes, salida estructurada y reglas explícitas. La selección de proveedor deberá tratarse como decisión técnica posterior al contrato, no como supuesto metodológico.
+La siguiente etapa de F2-45 deberá conectar un proveedor/modelo real mediante `SemanticEvaluatorPort` y ejecutar el protocolo controlado definido en F2-44. La selección de proveedor no deberá filtrarse al dominio.
 
 Scoring global, ponderaciones y aceptación/rechazo global continúan bloqueados.
 
