@@ -26,7 +26,7 @@ No se utilizarán identificadores `F2-36`, `F2-37` ni superiores para ampliar re
 | F2-43 | `F2-VAL-03` | VALIDADO | Validación empírica de retención de contexto |
 | F2-44 | `F2-VAL-04` | VALIDADO | Contrato y protocolo controlado de evaluación semántica asistida por IA |
 | F2-45 | `F2-EXT-06` | VALIDADO | Frontera provider-neutral y arnés operativo de evaluación semántica |
-| — | `F2-VAL-05` | ABIERTO | Validación controlada de comportamiento semántico con un evaluador externo real |
+| — | `F2-VAL-05` | PREPARADO | Validación controlada de comportamiento semántico con un evaluador externo real |
 
 Esta tabla es administrativa y no cambia la identidad histórica de los archivos. La secuencia oficial continúa siendo F2-01…F2-35.
 
@@ -108,9 +108,11 @@ Validación CI asociada al incremento: `34248712103` — todos los jobs principa
 
 ### `F2-VAL-05` — Validación controlada de comportamiento semántico externo
 
-**Estado:** **ABIERTO / NO EJECUTADO**.
+**Estado:** **PREPARADO / PENDIENTE DE EJECUCIÓN REAL**.
 
-Objetivo: ejecutar el arnés contra un evaluador semántico externo real y comprobar, bajo condiciones controladas, que la respuesta normalizada conserva la procedencia y permite clasificar los casos alineado, no alineado y ambiguo conforme al protocolo de F2-VAL-04.
+Se incorporó `docs/evaluation/F2-VAL-05-EXECUTION-PROTOCOL.md`, que define el entorno externo, la separación SUT/evaluador, la construcción de `BotObservation`, los parámetros operativos fuera del repositorio, los criterios de aceptación y la evidencia mínima requerida.
+
+Un entorno como el Testing Tool o Sample Page de ChatBot.com puede utilizarse como SUT para capturar respuestas observables; el repositorio permanece neutral respecto del proveedor y del canal. La validación todavía no se considera ejecutada hasta disponer de evidencia de un evaluador externo real y reproducible.
 
 La ejecución deberá registrar identidad y versión del modelo, prompt y método versionados, parámetros relevantes, casos de prueba, repeticiones equivalentes, respuestas normalizadas, evidencia primaria y errores de transporte, límites o esquema.
 
@@ -128,7 +130,7 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 
 ## Frente 2 — Evaluación observable
 
-**Estado:** Frontera provider-neutral validada; `F2-VAL-05` permanece abierto para la validación externa controlada.
+**Estado:** Frontera provider-neutral validada; `F2-VAL-05` preparado y pendiente de evidencia externa real.
 
 La baseline oficial permanece cerrada en F2-35. El trabajo posterior se gestiona como extensiones y validaciones explícitamente clasificadas, sin alterar la secuencia original.
 
@@ -148,7 +150,7 @@ Las versiones metodológicas son independientes del producto y deben mantenerse 
 
 ## Próximo trabajo
 
-El siguiente incremento canónico es `F2-VAL-05`. No se debe crear un nuevo identificador `F2-XX`. La implementación debe comenzar únicamente con un entorno externo controlado capaz de responder al contrato normalizado; las credenciales y parámetros operativos deben permanecer fuera del repositorio.
+El siguiente paso es ejecutar `F2-VAL-05` contra un entorno externo controlado. Primero debe obtenerse una captura reproducible del SUT y transformarse en `BotObservation`; después se ejecuta `npm run evaluation:semantic:live` contra un evaluador externo real y se genera el reporte visual. El estado solo podrá pasar a `VALIDADO` cuando la evidencia cumpla el protocolo.
 
 ## Regla de documentación
 
