@@ -1,9 +1,9 @@
 # Estado actual del proyecto — model-ia-testing
 
-**Fecha:** 2026-09-07  
+**Fecha:** 2026-09-08  
 **Versión de producto declarada:** `0.1.0`  
 **Rama:** `main`  
-**Avance estimado del MVP:** **82%**  
+**Avance estimado del MVP:** **84%**  
 **Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 en consolidación metodológica ejecutable y F3 **VALIDADO**.
 
 ## Incrementos cerrados — F2-23 a F2-37
@@ -71,6 +71,26 @@ Validación final:
 
 El primer intento de validación falló por dos incompatibilidades de TypeScript causadas por `exactOptionalPropertyTypes`; fueron corregidas sin modificar el contrato metodológico y validadas en la segunda ejecución.
 
+## Incremento cerrado — F2-42 validación empírica controlada
+
+**Estado:** **CERRADO / VALIDADO**.
+
+F2-42 extendió F2-41 hacia evidencia empírica obtenida mediante ejecución repetida sobre un doble conversacional controlado. Se validaron directamente tres candidatos: D1-C01 — respuesta funcional esperada; D6-C01 — tiempo hasta respuesta observable; D7-C02 — entrada de mensaje utilizable.
+
+D3-C01 quedó fuera porque el target controlado no conserva contexto conversacional entre turnos. D2-C01 permanece fuera por depender de un método reproducible de comparación semántica asistida por IA que aún no está cerrado. D4 y D5 requieren protocolos específicos adicionales.
+
+La prueba ejecutó tres repeticiones independientes bajo las mismas condiciones y verificó respuesta observable reproducible, medición de duración, screenshot no vacío y publicación de evidencia mediante `ExecutionEvidencePublisher`. El runner mantuvo el resultado `INCONCLUSIVE`, preservando la separación entre ejecución/observación y evaluación metodológica.
+
+La evidencia demuestra repetibilidad del mecanismo de observación sobre el doble controlado. No constituye evidencia de comportamiento de un sistema de producción.
+
+Validación final:
+
+- Commit `6e82f308181c230fe6ad1da4798d67041ba1b5a6`.
+- CI `34171940346` (`#302`) — **SUCCESS** en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
+- Architecture Spike `34171940304` (`#470`) — **SUCCESS** en TypeScript, pruebas unitarias/arquitectura, BDD, Playwright, migraciones PostgreSQL, integración de repositorio/versionado, manifiesto de evidencia, publicación de artefactos y Quality Gate.
+
+El primer intento sobre la implementación tuvo un fallo de `TS18048` causado por acceso a `result.observations` bajo TypeScript estricto. Se corrigió estrechando explícitamente la observación primaria sin relajar el compilador ni modificar el contrato metodológico.
+
 ## Persistencia y versionado
 
 Las referencias de versionado continúan persistidas como campos de primera clase. El plan metodológico se conserva en `evaluation_plan` y las condiciones comparables mediante `condition_fingerprint`. La reconstrucción de `Execution` mantiene ambos metadatos.
@@ -81,16 +101,16 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-41 **CERRADO / VALIDADO**.
+**Estado:** F2-42 **CERRADO / VALIDADO**.
 
-La secuencia materializada llega hasta: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio → interpretación de cobertura por ejecución → métricas descriptivas de cobertura por ejecución → comparabilidad metodológica entre ejecuciones → comparación descriptiva de métricas de cobertura → interpretación descriptiva de diferencias entre ejecuciones → validación controlada de dimensiones y criterios candidatos.
+La secuencia materializada llega hasta: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio → interpretación de cobertura por ejecución → métricas descriptivas de cobertura por ejecución → comparabilidad metodológica entre ejecuciones → comparación descriptiva de métricas de cobertura → interpretación descriptiva de diferencias entre ejecuciones → validación controlada de dimensiones y criterios candidatos → validación empírica repetida de criterios seleccionados sobre doble controlado.
 
 Todavía quedan fuera la interpretación normativa de diferencias entre ejecuciones, scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación entre escenarios y método productivo de evaluación semántica con IA.
 
 ## Frente 3 — Arquitectura
 **Estado:** **VALIDADO**.
 
-La combinación TypeScript + Node.js + arquitectura hexagonal + PostgreSQL + Cucumber/Gherkin + Playwright + GitHub Actions continúa validada mediante el spike ejecutable.
+La combinación TypeScript + Node.js + arquitectura hexagonal + PostgreSQL + Cucumber/Gherkin + Playwright + GitHub Actions continúa validada mediante spikes ejecutables.
 
 ## Versionado
 
@@ -98,13 +118,13 @@ La versión de producto permanece en `0.1.0`. No se incrementará por cada commi
 
 Las versiones metodológicas son independientes del producto y deben mantenerse reconstruibles junto con la identidad de ejecución y procedencia técnica.
 
-## Próximo incremento — F2-42 validación empírica controlada
+## Próximo incremento — F2-43 protocolo de contextualización conversacional
 
-F2-42 deberá ejecutar casos controlados sobre un sistema conversacional real o un doble de prueba representativo, capturando evidencia real y repeticiones bajo condiciones constantes.
+El siguiente incremento deberá abordar la observabilidad de criterios que requieren estado entre turnos. El primer candidato es D3-C01, mediante un protocolo controlado que introduzca contexto conversacional explícito, varias entradas relacionadas, condición de preservación de estado y evidencia suficiente para distinguir memoria real del target frente a respuestas coincidentales.
 
-La finalidad será determinar, para criterios candidatos seleccionados, si las propiedades observadas son realmente reproducibles y suficientemente evidenciadas para entrar al catálogo ejecutable. El resultado seguirá siendo metodológico: `SUPPORTED`, `REQUIRES_REFINEMENT`, `NOT_OBSERVABLE` o `INSUFFICIENT_EVIDENCE`.
+F2-43 no deberá convertir la memoria conversacional en scoring global ni asumir que una respuesta correcta aislada demuestra retención de contexto. El protocolo deberá conservar la secuencia completa de interacción y hacer explícitas sus precondiciones.
 
-F2-42 no deberá introducir scoring global, ponderaciones, criterios críticos, umbrales globales, causalidad ni evaluación semántica autónoma basada exclusivamente en IA.
+La definición concreta de F2-43 se realizará a partir de la evidencia obtenida en F2-42 y de las limitaciones actuales del doble controlado.
 
 ## Regla de documentación
 
