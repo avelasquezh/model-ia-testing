@@ -3,7 +3,7 @@
 **Fecha:** 2026-09-08  
 **Versión de producto declarada:** `0.1.0`  
 **Rama:** `main`  
-**Avance estimado del MVP:** **85%**  
+**Avance estimado del MVP:** **88%**  
 **Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 en consolidación metodológica ejecutable y F3 **VALIDADO**.
 
 ## Incrementos cerrados — F2-23 a F2-37
@@ -109,6 +109,28 @@ Validación final:
 
 El primer intento falló por `TS2339` al acceder a `turnIndex` sobre la unión `ExecutionEvidenceEvent`. Se corrigió estrechando los eventos a `OBSERVATION`, sin relajar TypeScript ni modificar el contrato metodológico.
 
+## Incremento cerrado — F2-44 protocolo de evaluación semántica reproducible asistida por IA
+
+**Estado:** **CERRADO / VALIDADO (CONTRATO Y PROTOCOLO)**.
+
+F2-44 formalizó y validó el contrato mínimo para D2-C01 — correspondencia con intención. El evaluador recibe explícitamente evidencia primaria, entrada, intención esperada versionada, respuesta observable, contexto permitido, identidad/versionado del evaluador, versión de prompt y versión metodológica.
+
+La salida quedó normalizada como resultado ordinal, justificación, insuficiencia de evidencia e identidad/versionado del evaluador. El protocolo distingue controladamente casos alineado, no alineado y ambiguo, y conserva la separación entre evidencia primaria y análisis asistido.
+
+La validación se realizó mediante `spike/evaluation/f2-44-semantic-evaluation-protocol.test.ts` utilizando un doble metodológico controlado (`controlled-semantic-evaluator`, `double-0.1`). Las repeticiones demostraron estabilidad bajo condiciones idénticas y la evidencia mantiene trazabilidad de la entrada al análisis.
+
+**Resultado metodológico:** `SUPPORTED` para el contrato y protocolo controlado de D2-C01.
+
+Esta validación no equivale a una integración ni validación de un proveedor de IA real. No se introduce scoring global, ponderación, umbral global, aceptación/rechazo global ni inferencia autónoma de intención. La validación posterior de un proveedor/modelo real deberá reutilizar este contrato y caracterizar su variabilidad.
+
+Validación final:
+
+- Commit de corrección validado: `a13453d9100815fe6cdc4a0bc711020711a08b1a`.
+- CI `34173406820` (`#317`) — **SUCCESS** en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
+- Architecture Spike `34173406825` (`#485`) — **SUCCESS** en TypeScript, pruebas unitarias/arquitectura, BDD, Playwright, migraciones PostgreSQL, integración de repositorio/versionado, manifiesto de evidencia, artefactos y Quality Gate.
+
+El primer intento falló por errores de TypeScript bajo configuración estricta: faltaba `observedResponse` en el caso base y el acceso indexado a casos generaba posibles `undefined`. Se corrigió tipando explícitamente el contrato base y usando una tupla de casos controlados, sin relajar el compilador ni modificar el objetivo metodológico.
+
 ## Persistencia y versionado
 
 Las referencias de versionado continúan persistidas como campos de primera clase. El plan metodológico se conserva en `evaluation_plan` y las condiciones comparables mediante `condition_fingerprint`. La reconstrucción de `Execution` mantiene ambos metadatos.
@@ -119,11 +141,11 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-43 **CERRADO / VALIDADO**.
+**Estado:** F2-44 **CERRADO / VALIDADO (CONTRATO Y PROTOCOLO)**.
 
-La secuencia materializada llega hasta: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio → interpretación de cobertura por ejecución → métricas descriptivas de cobertura por ejecución → comparabilidad metodológica entre ejecuciones → comparación descriptiva de métricas de cobertura → interpretación descriptiva de diferencias entre ejecuciones → validación controlada de dimensiones y criterios candidatos → validación empírica repetida de criterios seleccionados sobre doble controlado → validación empírica de retención de contexto entre turnos sobre doble controlado.
+La secuencia materializada llega hasta: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio → interpretación de cobertura por ejecución → métricas descriptivas de cobertura por ejecución → comparabilidad metodológica entre ejecuciones → comparación descriptiva de métricas de cobertura → validación controlada de dimensiones y criterios candidatos → validación empírica repetida de criterios seleccionados sobre doble controlado → validación empírica de retención de contexto entre turnos sobre doble controlado → contrato y protocolo controlado de evaluación semántica asistida por IA para D2-C01.
 
-Todavía quedan fuera la interpretación normativa de diferencias entre ejecuciones, scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación entre escenarios y método productivo de evaluación semántica con IA.
+Todavía quedan fuera la interpretación normativa de diferencias entre ejecuciones, scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación entre escenarios y validación de un proveedor/modelo de IA real en condiciones controladas.
 
 ## Frente 3 — Arquitectura
 **Estado:** **VALIDADO**.
@@ -136,13 +158,13 @@ La versión de producto permanece en `0.1.0`. No se incrementará por cada commi
 
 Las versiones metodológicas son independientes del producto y deben mantenerse reconstruibles junto con la identidad de ejecución y procedencia técnica.
 
-## Próximo incremento — F2-44 protocolo de evaluación semántica reproducible asistida por IA
+## Próximo incremento — validación de proveedor/modelo IA real para D2-C01
 
-El siguiente incremento deberá abordar D2-C01, que permanece abierto por depender de una comparación semántica asistida por IA todavía no formalizada de manera reproducible.
+El siguiente incremento deberá tomar el contrato cerrado en F2-44 y evaluar su comportamiento con un proveedor o modelo de IA real bajo condiciones controladas. El objetivo será caracterizar reproducibilidad, sensibilidad a configuración, suficiencia de evidencia y estabilidad del resultado sin convertir la salida del modelo en un veredicto global.
 
-F2-44 deberá definir primero el protocolo, no la integración productiva. Deberá establecer entrada y salida normalizadas, criterios semánticos observables, evidencia primaria, versión del modelo, configuración relevante, mecanismo de comparación y reglas explícitas para distinguir `SUPPORTED`, `REQUIRES_REFINEMENT`, `NOT_OBSERVABLE` e `INSUFFICIENT_EVIDENCE`.
+Deberán mantenerse el control de intención esperada previamente definida, evidencia primaria, identificación/versionado del modelo, prompt versionado, parámetros relevantes, salida estructurada y reglas explícitas. La selección de proveedor deberá tratarse como decisión técnica posterior al contrato, no como supuesto metodológico.
 
-La IA deberá interpretar evidencia previamente definida y su asistencia deberá quedar trazada. F2-44 no deberá introducir scoring global ni permitir que una salida probabilística sustituya la evidencia primaria.
+Scoring global, ponderaciones y aceptación/rechazo global continúan bloqueados.
 
 ## Regla de documentación
 
