@@ -1,66 +1,75 @@
-# F2-45 — Integración controlada de evaluador semántico IA real
+# F2-VAL-05 — Validación controlada de evaluador semántico IA real
 
-**Estado:** **EN EJECUCIÓN — FRONTERA HTTP + ARNÉS LIVE MATERIALIZADOS**
+**Estado:** **EN EJECUCIÓN — ARNÉS CONTROLADO MATERIALIZADO**
 
 ## Propósito
 
-F2-45 lleva F2-44 desde un doble controlado hacia una frontera de integración capaz de recibir un evaluador IA real sin acoplar el dominio a un proveedor concreto.
+F2-VAL-05 valida comportamiento semántico observable de un evaluador IA real conectado mediante `SemanticEvaluatorPort`, sin acoplar el dominio a un proveedor concreto.
 
-La primera decisión del incremento es separar el contrato metodológico del mecanismo de transporte o proveedor. La validación con un modelo real queda condicionada a una ejecución posterior con credenciales y entorno controlados; esta fase no declara validado ningún proveedor.
-
-## Resultado objetivo
-
-Demostrar que un evaluador IA real puede conectarse mediante `SemanticEvaluatorPort` y producir una salida normalizada compatible con F2-44 conservando:
-
-- evidencia primaria y sus identificadores;
-- intención esperada previamente definida;
-- respuesta observable;
-- contexto permitido;
-- identidad y versión del modelo;
-- versión del prompt y del método;
-- resultado ordinal y justificación;
-- insuficiencia explícita de evidencia.
+La validación separa tres niveles: contrato metodológico, integración/transporte y comportamiento observado del evaluador. Solo el tercer nivel aporta evidencia para cerrar este incremento.
 
 ## Límite arquitectónico
 
-El dominio no conocerá SDKs, nombres de proveedores, formatos propietarios ni credenciales.
+El dominio depende únicamente de `SemanticEvaluatorPort`. No conoce SDKs, formatos propietarios, credenciales ni detalles de infraestructura externa.
 
-La dependencia admitida será únicamente el contrato `SemanticEvaluatorPort`. Un adaptador de infraestructura podrá transformar una solicitud normalizada al protocolo de un proveedor y transformar posteriormente la respuesta al contrato interno.
+La integración utiliza `HttpSemanticEvaluatorAdapter`. El endpoint externo debe entregar la salida normalizada definida por el contrato interno o estar respaldado por una capa externa que realice ese mapeo.
 
-## Estado actual
+## Arnés controlado
 
-Se materializó:
+Se materializó `scripts/run-live-semantic-evaluator.ts`, ejecutable mediante `npm run evaluation:semantic:live`.
 
-- `src/domain/evaluation/SemanticEvaluator.ts` con entrada y salida normalizadas y `SemanticEvaluatorPort`;
-- `src/infrastructure/evaluation/HttpSemanticEvaluatorAdapter.ts` como frontera HTTP de infraestructura;
-- `spike/evaluation/f2-45-semantic-evaluator-port.test.ts` con validación del límite provider-neutral;
-- `spike/evaluation/f2-45-http-semantic-evaluator-adapter.test.ts` con transporte simulado, normalización y errores HTTP;
-- `scripts/run-live-semantic-evaluator.ts` como arnés opt-in para una ejecución contra un endpoint externo;
-- comando `npm run evaluation:semantic:live` para ejecutar el arnés sin incorporar credenciales al repositorio;
-- validación de esquema de la respuesta normalizada y conservación de procedencia de modelo, prompt, método, criterio y evidencia;
-- separación explícita entre evidencia primaria y salida del evaluador.
+El arnés:
 
-El adaptador HTTP no contiene conocimiento de un proveedor concreto. El mapeo de una respuesta externa se inyecta mediante `SemanticEvaluatorResponseMapper`, y las credenciales se suministran externamente mediante headers.
+- ejecuta tres casos semánticos de D2-C01: alineado, no alineado y ambiguo;
+- ejecuta cada caso en un número configurable de repeticiones, por defecto tres;
+- verifica identidad de criterio y versión;
+- verifica identidad y versión del modelo;
+- verifica versión de prompt y método;
+- verifica identidad de evidencia;
+- valida el resultado contra `EvaluationMethodology`;
+- informa si cada caso conserva el mismo resultado ordinal entre repeticiones;
+- falla explícitamente ante respuestas incompatibles con el contrato.
 
-El arnés live exige `SEMANTIC_EVALUATOR_ENDPOINT` y admite variables de entorno para autorización, identidad/versionado del modelo y versionado metodológico. No se ejecuta automáticamente en CI y no incluye ningún proveedor, token o secreto en el repositorio. Su existencia tampoco constituye evidencia de comportamiento IA real.
+Variables operativas:
 
-## Próxima prueba controlada
+- `SEMANTIC_EVALUATOR_ENDPOINT` — obligatorio;
+- `SEMANTIC_EVALUATOR_AUTHORIZATION` — opcional, externo al repositorio;
+- `SEMANTIC_EVALUATOR_MODEL_ID`;
+- `SEMANTIC_EVALUATOR_MODEL_VERSION`;
+- `SEMANTIC_EVALUATOR_PROMPT_VERSION`;
+- `SEMANTIC_EVALUATOR_METHOD_VERSION`;
+- `SEMANTIC_EVALUATOR_REPETITIONS` — opcional, por defecto `3`.
 
-La siguiente ejecución de F2-45 deberá usar un proveedor/modelo real en un entorno controlado y registrar como mínimo:
+No se almacenan credenciales ni secretos en Git.
 
-1. identidad y versión del proveedor/modelo;
-2. prompt/plantilla versionada;
+## Matriz de validación
+
+| Caso | Propósito | Evidencia esperada |
+|---|---|---|
+| D2-C01-1 | Respuesta alineada con la intención | Resultado ordinal consistente |
+| D2-C01-2 | Respuesta no alineada con la intención | Resultado ordinal consistente |
+| D2-C01-3 | Evidencia ambigua o insuficiente | Resultado ordinal consistente y/o `evidenceInsufficient=true` cuando corresponda |
+
+Cada caso se repite bajo condiciones metodológicas equivalentes. La repetibilidad se registra descriptivamente y no se transforma en score global.
+
+## Evidencia requerida para cerrar F2-VAL-05
+
+La ejecución real debe conservar:
+
+1. identidad y versión del modelo evaluador;
+2. versión de prompt y método;
 3. parámetros relevantes de generación, si existen;
-4. mismo conjunto de casos alineado, no alineado y ambiguo de F2-44;
-5. repetición bajo condiciones metodológicas equivalentes;
-6. respuesta normalizada del adaptador;
-7. evidencia primaria vinculada;
-8. cualquier error de transporte, límite o validación de esquema.
+4. entrada, expectativa y respuesta observable de cada caso;
+5. salida normalizada del evaluador;
+6. evidencia primaria vinculada;
+7. resultado de cada repetición;
+8. errores de transporte, límite o esquema, si ocurren;
+9. fecha/identificador de ejecución suficiente para reconstruir la prueba.
 
-No se deberá introducir scoring global ni convertir la salida del modelo en un veredicto global del producto.
+## Criterio de salida
 
-## Criterio de salida de F2-45
+F2-VAL-05 podrá cerrarse cuando exista una ejecución real reproducible del conjunto controlado, con procedencia completa, contrato válido y resultados observables suficientes para clasificar el comportamiento conforme al protocolo metodológico vigente.
 
-F2-45 podrá considerarse validado cuando un proveedor real pueda conectarse mediante el puerto sin contaminar el dominio y las repeticiones controladas permitan clasificar su comportamiento conforme al protocolo metodológico vigente.
+La existencia o ejecución del arnés por sí sola no constituye evidencia de comportamiento IA real.
 
-Hasta entonces, el incremento permanece abierto.
+No se introduce scoring global, ponderación ni aceptación/rechazo global del producto.
