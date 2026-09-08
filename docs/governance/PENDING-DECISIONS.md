@@ -20,7 +20,7 @@ Los identificadores **F2-36 a F2-46 no forman parte de la secuencia oficial del 
 | F2-43 | `F2-VAL-03` | Validación empírica de retención de contexto |
 | F2-44 | `F2-VAL-04` | Validación controlada del protocolo de evaluación semántica asistida por IA |
 | F2-45 | `F2-EXT-06` | Frontera provider-neutral para evaluador semántico IA |
-| F2-46 | `F2-EXT-07` | Adaptación Ollama y preparación de validación live |
+| F2-46 | `F2-EXT-07` | Adaptación Ollama, **retirada / no adoptada** |
 
 Esta clasificación **no renumera ni modifica retrospectivamente F2-01 a F2-35**. Los nombres históricos permanecen por trazabilidad de Git, pero no deben utilizarse para definir el próximo incremento del MVP.
 
@@ -32,8 +32,8 @@ Ninguna extensión posterior se considerará automáticamente parte de F2. Cualq
 - Definir tratamiento estadístico de repetición y variabilidad cuando exista evidencia suficiente.
 - Definir límites de confianza/incertidumbre si las métricas lo requieren.
 - **F2-44 cerrado a nivel de contrato y protocolo:** la validación usó un doble metodológico controlado; la validación de un proveedor/modelo de IA real continúa pendiente.
-- **F2-45 cerrado a nivel de frontera arquitectónica:** `SemanticEvaluatorPort` y el desacoplamiento provider-neutral quedaron materializados y validados por CI/Architecture Spike.
-- **F2-46 en ejecución:** adaptador real de Ollama materializado; falta ejecutar con un modelo local real y caracterizar reproducibilidad, variabilidad e insuficiencia de evidencia.
+- **F2-45 / F2-EXT-06 cerrado a nivel de frontera arquitectónica:** `SemanticEvaluatorPort` y el desacoplamiento provider-neutral quedaron materializados y validados por CI/Architecture Spike.
+- **F2-46 / F2-EXT-07 retirado:** Ollama no forma parte del alcance activo y no se realizará validación live con ese proveedor.
 - D4 y D5 requieren protocolos empíricos específicos antes de considerarse validados.
 
 ## Calificación
@@ -55,7 +55,7 @@ Las decisiones arquitectónicas documentadas como ADR pueden pasar a estado vali
 - ADR-006 — Estrategia BDD/TDD: **materializada en pruebas existentes; validación integral pendiente**.
 - ADR-007 — Almacenamiento de evidencia: **materializado parcialmente**.
 - ADR-008 — Aislamiento Playwright: **materializado parcialmente**.
-- ADR-009 — Evaluador IA: **contrato y trazabilidad base validados en F2-44; frontera provider-neutral validada en F2-45; adaptación Ollama materializada en F2-46; validación live con modelo real pendiente**.
+- ADR-009 — Evaluador IA: **contrato y trazabilidad base validados en F2-44; frontera provider-neutral validada en F2-EXT-06; ningún proveedor concreto adoptado**.
 - ADR-010 — CI/CD y Quality Gates: **materializado en workflows**.
 - ADR-011 — API y contratos: **pendiente de validación de la interfaz externa**.
 - ADR-012 — Autenticación y autorización: **política definida; implementación pública pendiente**.
@@ -83,7 +83,7 @@ F3 ya está validado mediante el Architecture Spike `34089149510`. El trabajo me
 
 ## Próximo punto de decisión
 
-El siguiente trabajo debe partir de `F2-INCREMENT-BASELINE.md` y **no crear un nuevo F2-XX**. La prioridad inmediata es decidir y ejecutar la extensión/validación posterior correspondiente, comenzando por cerrar la validación live del evaluador IA ya materializado, pero registrándola bajo la nomenclatura canónica posterior a F2-35.
+El siguiente trabajo debe partir de `F2-INCREMENT-BASELINE.md` y **no crear un nuevo F2-XX**. La prioridad es evolucionar la integración semántica mediante una frontera provider-neutral y seleccionar posteriormente un proveedor concreto solo cuando exista una decisión explícita y un entorno de validación controlado.
 
 El scoring global continúa explícitamente bloqueado.
 
