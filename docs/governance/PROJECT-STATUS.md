@@ -6,146 +6,111 @@
 **Avance estimado del MVP:** **89%**  
 **Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 en consolidación metodológica ejecutable y F3 **VALIDADO**.
 
-## Incrementos cerrados — F2-23 a F2-37
+## Gobierno de Frente 2
 
-F2-23 a F2-37 permanecen **CERRADOS / VALIDADOS** según la evidencia CI y Architecture Spike registrada en este documento.
+La baseline oficial del MVP de F2 comprende exactamente **F2-01 a F2-35**. La fuente normativa es `docs/evaluation/F2-INCREMENT-BASELINE.md`.
 
-## Incremento cerrado — F2-38 comparabilidad metodológica entre ejecuciones
+No se utilizarán identificadores `F2-36`, `F2-37` ni superiores para ampliar retrospectivamente el plan oficial. Los artefactos históricos que ya llevan esos nombres se conservan por trazabilidad de Git, pero se clasifican como trabajo posterior mediante la nomenclatura canónica `F2-EXT-*` o `F2-VAL-*`.
 
-**Estado:** **CERRADO / VALIDADO**.
+### Reconciliación del trabajo posterior a F2-35
 
-F2-38 formaliza la comparabilidad como precondición antes de comparar métricas de cobertura entre ejecuciones.
+| Identificador histórico | Clasificación canónica | Estado | Contenido |
+|---|---|---|---|
+| F2-36 | `F2-EXT-01` | VALIDADO | Interpretación de cobertura por ejecución |
+| F2-37 | `F2-EXT-02` | VALIDADO | Métricas descriptivas de cobertura por ejecución |
+| F2-38 | `F2-EXT-03` | VALIDADO | Comparabilidad metodológica entre ejecuciones |
+| F2-39 | `F2-EXT-04` | VALIDADO | Comparación descriptiva de métricas de cobertura |
+| F2-40 | `F2-EXT-05` | VALIDADO | Interpretación descriptiva de diferencias entre ejecuciones |
+| F2-41 | `F2-VAL-01` | VALIDADO | Validación controlada de dimensiones y criterios candidatos |
+| F2-42 | `F2-VAL-02` | VALIDADO | Validación empírica controlada de criterios seleccionados |
+| F2-43 | `F2-VAL-03` | VALIDADO | Validación empírica de retención de contexto |
+| F2-44 | `F2-VAL-04` | VALIDADO | Contrato y protocolo controlado de evaluación semántica asistida por IA |
+| F2-45 | `F2-EXT-06` | EN EJECUCIÓN | Frontera provider-neutral para evaluador semántico IA |
+| F2-46 | `F2-EXT-07` | EN EJECUCIÓN | Adaptación Ollama y preparación de validación live |
 
-La implementación introduce `EvaluationComparability` y `AssessEvaluationComparability`. La comparabilidad exige coincidencia de escenario, versión de escenario, método de evaluación, catálogo de criterios, reglas de decisión, fingerprint de condiciones, contexto y alcance del `EvaluationPlan`, criterios seleccionados y aplicabilidad.
+Esta tabla es administrativa y no cambia la identidad histórica de los archivos. La secuencia oficial continúa siendo F2-01…F2-35.
 
-La identidad de producto bajo prueba (`productVersion`) permanece como dimensión explícita de comparación y no bloquea por sí sola la comparabilidad metodológica.
+## Evidencia de F2-35
 
-El resultado distingue `COMPARABLE`, `NON_COMPARABLE` e `INSUFFICIENT_EVIDENCE`, y conserva razones auditables. Una incompatibilidad demostrable prevalece sobre la falta de evidencia; la falta de evidencia por sí sola no se interpreta como variabilidad del sistema.
+F2-35 formalizó la cobertura metodológica por criterio dentro de una ejecución. La cobertura distingue `APPLICABLE_EVALUATED`, `APPLICABLE_NOT_EVALUATED`, `NOT_APPLICABLE`, `INSUFFICIENT_EVIDENCE` e `INCONCLUSIVE`, sin introducir score ni decisión global. fileciteturn355file0L2-L2
 
-La validación final quedó registrada en el commit `308b08ca053ed1d2eb645566e83d77319f61257d`, con CI `34147632091` y Architecture Spike `34147632105`, ambos completamente exitosos.
+## Trabajo posterior reconciliado — F2-38 a F2-40
 
-## Incremento cerrado — F2-39 comparación descriptiva de métricas de cobertura
-
-**Estado:** **CERRADO / VALIDADO**.
-
-F2-39 compara descriptivamente las métricas de cobertura de dos ejecuciones únicamente después de que F2-38 establezca `COMPARABLE`.
-
-La diferencia es determinista y se expresa como `delta = right - left`. Se comparan conteos de criterios y ratios descriptivos de cobertura. Los ratios `null` conservan `null` en su delta.
-
-`productVersion` se conserva explícitamente para ambas ejecuciones, de modo que una diferencia de producto sea observable sin convertirla en una conclusión de mejora o regresión.
-
-La implementación está en `EvaluationCoverageComparison` y `CompareEvaluationCoverage`, con pruebas unitarias/aplicación y Architecture Spike específica.
-
-La validación final quedó registrada con CI `34147632091` y Architecture Spike `34147632105`, ambos completamente exitosos en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
-
-F2-39 permanece puramente descriptivo: no introduce scoring, ponderaciones, thresholds, criterios críticos, reglas de parada, inferencia estadística, aceptación/rechazo global, compensación entre criterios, agregación entre escenarios ni evaluación semántica con IA.
-
-## Incremento cerrado — F2-40 interpretación descriptiva de diferencias entre ejecuciones
+### `F2-EXT-03` — Comparabilidad metodológica entre ejecuciones
 
 **Estado:** **CERRADO / VALIDADO**.
 
-F2-40 introduce una capa descriptiva sobre los deltas producidos por F2-39. Recibe exclusivamente un `EvaluationCoverageComparison` y no recalcula cobertura ni comparabilidad.
+La comparabilidad se estableció como precondición para comparar métricas entre ejecuciones. Exige coincidencia de escenario, versión de escenario, método, catálogo, reglas, condiciones, contexto, alcance, selección y aplicabilidad. `productVersion` permanece observable sin bloquear por sí sola la comparación.
 
-La regla versionada `f2-interpretation-0.1` mapea determinísticamente cada delta: positivo a `INCREASED`, negativo a `DECREASED`, cero a `UNCHANGED` y `null` a `NOT_INTERPRETABLE`.
+Validación final: CI `34147632091` y Architecture Spike `34147632105`, ambos exitosos. fileciteturn384file0L2-L2
 
-La implementación conserva las identidades de las ejecuciones, las versiones de producto, la versión de la regla y una base explicativa. No transforma la dirección numérica en mejora, regresión, calidad, aceptación, rechazo o causalidad.
-
-La validación final quedó registrada sobre el commit `6a55bf1d168e37049e385ef5824766bbb0bd0395`, con CI `34167130840` (`#286`) y Architecture Spike `34167130834`, ambos completamente exitosos.
-
-## Incremento cerrado — F2-41 validación controlada de dimensiones y criterios candidatos
+### `F2-EXT-04` — Comparación descriptiva de métricas de cobertura
 
 **Estado:** **CERRADO / VALIDADO**.
 
-F2-41 convierte en protocolo ejecutable la decisión pendiente del Frente 2 sobre la observabilidad y reproducibilidad de criterios candidatos. Se cubrió un caso representativo de cada dimensión D1–D7, con entrada, precondiciones, expectativa, evidencia, mecanismo de observación, regla y limitaciones explícitas.
+La comparación se ejecuta únicamente cuando F2-EXT-03 determina `COMPARABLE` y expresa los deltas descriptivos como `right - left`. No interpreta las diferencias como mejora, regresión ni causalidad.
 
-La metodología candidata permanece deliberadamente en estado `DRAFT`. F2-41 valida la aptitud estructural del protocolo, pero no congela todavía la taxonomía como definitiva ni convierte la validación en una medida de calidad del producto.
+Validación final: CI `34147632091` y Architecture Spike `34147632105`, ambos exitosos. fileciteturn385file0L2-L2
 
-Para el criterio asistido por IA se exige conservar evidencia primaria y declarar la asistencia de IA. El criterio numérico exige método de medición explícito.
-
-La corrección final de tipado quedó registrada en el commit `020e9b8a638fd02fd4a881ea183a151d2cc936ec`.
-
-Validación final:
-
-- CI `34171221703` (`#293`) — **SUCCESS** en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
-- Architecture Spike `34171221652` (`#461`) — **SUCCESS** en TypeScript, pruebas unitarias/arquitectura, BDD, Playwright, migraciones PostgreSQL, integración de repositorio/versionado, manifiesto de evidencia, artefactos y Quality Gate.
-
-El primer intento de validación falló por dos incompatibilidades de TypeScript causadas por `exactOptionalPropertyTypes`; fueron corregidas sin modificar el contrato metodológico y validadas en la segunda ejecución.
-
-## Incremento cerrado — F2-42 validación empírica controlada
+### `F2-EXT-05` — Interpretación descriptiva de diferencias
 
 **Estado:** **CERRADO / VALIDADO**.
 
-F2-42 extendió F2-41 hacia evidencia empírica obtenida mediante ejecución repetida sobre un doble conversacional controlado. Se validaron directamente tres candidatos: D1-C01 — respuesta funcional esperada; D6-C01 — tiempo hasta respuesta observable; D7-C02 — entrada de mensaje utilizable.
+La regla `f2-interpretation-0.1` clasifica cada delta como `INCREASED`, `DECREASED`, `UNCHANGED` o `NOT_INTERPRETABLE`, manteniendo explícitamente separadas dirección numérica y juicio de calidad.
 
-D3-C01 quedó fuera porque el target controlado no conserva contexto conversacional entre turnos. D2-C01 permanece fuera por depender de un método reproducible de comparación semántica asistida por IA que aún no está cerrado. D4 y D5 requieren protocolos específicos adicionales.
+Validación final: CI `34167130840` y Architecture Spike `34167130834`, ambos exitosos. fileciteturn386file0L2-L2
 
-La prueba ejecutó tres repeticiones independientes bajo las mismas condiciones y verificó respuesta observable reproducible, medición de duración, screenshot no vacío y publicación de evidencia mediante `ExecutionEvidencePublisher`. El runner mantuvo el resultado `INCONCLUSIVE`, preservando la separación entre ejecución/observación y evaluación metodológica.
+## Validación posterior de criterios — F2-VAL-01 a F2-VAL-04
 
-La evidencia demuestra repetibilidad del mecanismo de observación sobre el doble controlado. No constituye evidencia de comportamiento de un sistema de producción.
-
-Validación final:
-
-- Commit `6e82f308181c230fe6ad1da4798d67041ba1b5a6`.
-- CI `34171940346` (`#302`) — **SUCCESS** en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
-- Architecture Spike `34171940304` (`#470`) — **SUCCESS** en TypeScript, pruebas unitarias/arquitectura, BDD, Playwright, migraciones PostgreSQL, integración de repositorio/versioning, manifiesto de evidencia, publicación de artefactos y Quality Gate.
-
-El primer intento sobre la implementación tuvo un fallo de `TS18048` causado por acceso a `result.observations` bajo TypeScript estricto. Se corrigió estrechando explícitamente la observación primaria sin relajar el compilador ni modificar el contrato metodológico.
-
-## Incremento cerrado — F2-43 retención de contexto conversacional
+### `F2-VAL-01` — Validación controlada de dimensiones y criterios candidatos
 
 **Estado:** **CERRADO / VALIDADO**.
 
-F2-43 llevó D3-C01 desde la exclusión de F2-42 hacia un protocolo empírico controlado para estado entre turnos. Se implementó un doble conversacional con un turno de establecimiento y un turno de verificación que no repite literalmente el dato establecido.
+Se cubrió un caso representativo de D1–D7 con entrada, precondiciones, expectativa, evidencia, observación, regla y limitaciones. El protocolo valida aptitud estructural y mantiene la metodología candidata en `DRAFT`.
 
-Se ejecutaron tres repeticiones independientes con sesiones de navegador nuevas bajo las mismas condiciones. En las tres se observó recuperación reproducible del dato, dos observaciones por ejecución, duración no negativa, screenshots no vacíos y dos eventos `OBSERVATION` con `turnIndex` `[0, 1]` publicados mediante `ExecutionEvidencePublisher`.
+Validación final: CI `34171221703` y Architecture Spike `34171221652`, ambos exitosos. fileciteturn387file0L2-L2
 
-El resultado metodológico es `SUPPORTED`. El resultado pertenece al protocolo y no representa PASS/FAIL del producto. La evidencia se limita al doble controlado y no constituye evidencia de comportamiento de un sistema de producción.
+### `F2-VAL-02` — Validación empírica controlada
 
-Validación final:
+**Estado:** **CERRADO / VALIDADO**.
 
-- Commit `99ab76be7d2e1349d9abd89640501cf1cdd76b18`.
-- CI `34172666958` (`#309`) — **SUCCESS** en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
-- Architecture Spike `34172666905` (`#477`) — **SUCCESS** en TypeScript, pruebas unitarias/arquitectura, BDD, Playwright, migraciones PostgreSQL, integración de repositorio/versionado, manifiesto de evidencia, artefactos y Quality Gate.
+Se realizaron tres repeticiones independientes sobre un doble conversacional controlado para D1-C01, D6-C01 y D7-C02. La evidencia demuestra repetibilidad del mecanismo de observación bajo condiciones controladas, no comportamiento de un sistema de producción.
 
-El primer intento falló por `TS2339` al acceder a `turnIndex` sobre la unión `ExecutionEvidenceEvent`. Se corrigió estrechando los eventos a `OBSERVATION`, sin relajar TypeScript ni modificar el contrato metodológico.
+Validación final registrada en CI `34171940346` y Architecture Spike `34171940304`, ambos exitosos.
 
-## Incremento cerrado — F2-44 protocolo de evaluación semántica reproducible asistida por IA
+### `F2-VAL-03` — Retención de contexto conversacional
 
-**Estado:** **CERRADO / VALIDADO (CONTRATO Y PROTOCOLO)**.
+**Estado:** **CERRADO / VALIDADO**.
 
-F2-44 formalizó y validó el contrato mínimo para D2-C01 — correspondencia con intención. El evaluador recibe explícitamente evidencia primaria, entrada, intención esperada versionada, respuesta observable, contexto permitido, identidad/versionado del evaluador, versión de prompt y versión metodológica.
+Se validó D3-C01 mediante tres sesiones independientes con un turno de establecimiento y un turno de verificación. La segunda respuesta recuperó de forma reproducible el contexto establecido y se conservaron dos observaciones por ejecución.
 
-La salida quedó normalizada como resultado ordinal, justificación, insuficiencia de evidencia e identidad/versionado del evaluador. El protocolo distingue controladamente casos alineado, no alineado y ambiguo, y conserva la separación entre evidencia primaria y análisis asistido.
+Validación final registrada en CI `34172666958` y Architecture Spike `34172666905`, ambos exitosos. fileciteturn393file0L2-L2
 
-La validación se realizó mediante `spike/evaluation/f2-44-semantic-evaluation-protocol.test.ts` utilizando un doble metodológico controlado (`controlled-semantic-evaluator`, `double-0.1`). Las repeticiones demostraron estabilidad bajo condiciones idénticas y la evidencia mantiene trazabilidad de la entrada al análisis.
+### `F2-VAL-04` — Protocolo de evaluación semántica asistida por IA
 
-**Resultado metodológico:** `SUPPORTED` para el contrato y protocolo controlado de D2-C01.
+**Estado:** **CERRADO / VALIDADO — CONTRATO Y PROTOCOLO**.
 
-Esta validación no equivale a una integración ni validación de un proveedor de IA real. No se introduce scoring global, ponderación, umbral global, aceptación/rechazo global ni inferencia autónoma de intención. La validación posterior de un proveedor/modelo real deberá reutilizar este contrato y caracterizar su variabilidad.
+Se formalizó D2-C01 con evidencia primaria, intención esperada versionada, respuesta observable, contexto permitido, identidad/versionado del evaluador, prompt y método. La validación utilizó un doble metodológico controlado; no equivale a validación de un proveedor IA real.
 
-Validación final:
+Validación final registrada en CI `34173406820` y Architecture Spike `34173406825`, ambos exitosos.
 
-- Commit de corrección validado: `a13453d9100815fe6cdc4a0bc711020711a08b1a`.
-- CI `34173406820` (`#317`) — **SUCCESS** en TypeScript, migraciones PostgreSQL, pruebas unitarias/aplicación, BDD, Playwright y Quality Gate.
-- Architecture Spike `34173406825` (`#485`) — **SUCCESS** en TypeScript, pruebas unitarias/arquitectura, BDD, Playwright, migraciones PostgreSQL, integración de repositorio/versionado, manifiesto de evidencia, artefactos y Quality Gate.
+## Extensiones de evaluador IA
 
-El primer intento falló por errores de TypeScript bajo configuración estricta: faltaba `observedResponse` en el caso base y el acceso indexado a casos generaba posibles `undefined`. Se corrigió tipando explícitamente el contrato base y usando una tupla de casos controlados, sin relajar el compilador ni modificar el objetivo metodológico.
-
-## Incremento en ejecución — F2-45 frontera de evaluador semántico IA real
+### `F2-EXT-06` — Frontera provider-neutral
 
 **Estado:** **EN EJECUCIÓN — CONTRATO MATERIALIZADO**.
 
-F2-45 inicia la transición desde el doble metodológico de F2-44 hacia una integración que pueda recibir un evaluador IA real sin acoplar el dominio a un proveedor.
+Se materializó `SemanticEvaluatorPort` con entrada y salida normalizadas, preservando evidencia primaria, intención esperada, respuesta observable y procedencia de modelo, prompt, método, criterio y evidencia.
 
-Se materializó `src/domain/evaluation/SemanticEvaluator.ts`, que define `SemanticEvaluationInput`, `SemanticEvaluationOutput` y `SemanticEvaluatorPort`. El contrato conserva evidencia primaria, intención esperada versionada, respuesta observable, contexto permitido, identidad/versionado del modelo, prompt y método.
+El dominio no conoce SDKs, proveedores ni credenciales. La validación actual es contractual; no se declara todavía validado un modelo real. fileciteturn388file0L2-L2
 
-El spike `spike/evaluation/f2-45-semantic-evaluator-port.test.ts` valida el límite provider-neutral, la separación entre evidencia primaria y salida generada y la conservación de procedencia.
+### `F2-EXT-07` — Adaptación Ollama
 
-También se documentó `docs/evaluation/F2-45-REAL-AI-EVALUATOR-INTEGRATION.md` con el criterio para la siguiente ejecución con proveedor/modelo real.
+**Estado:** **EN EJECUCIÓN — INTEGRACIÓN MATERIALIZADA, VALIDACIÓN LIVE PENDIENTE**.
 
-**Resultado actual:** contrato arquitectónico materializado. No se declara todavía validación de un proveedor o modelo IA real.
+Se materializó `OllamaSemanticEvaluator` sobre HTTP nativo. La integración está controlada por configuración externa y exige salida JSON normalizada. La ejecución live solo se habilita explícitamente con un modelo Ollama disponible; CI no simula esa validación.
 
-La siguiente prueba deberá ejecutar un proveedor real bajo condiciones controladas, registrar identidad/versionado, prompt, parámetros relevantes, casos alineado/no alineado/ambiguo y repeticiones. F2-45 permanecerá abierto hasta disponer de esa evidencia.
+El cierre requiere evidencia live de conexión, normalización, trazabilidad, suficiencia de evidencia y repetición bajo condiciones equivalentes. fileciteturn389file0L2-L2
 
 ## Persistencia y versionado
 
@@ -154,16 +119,19 @@ Las referencias de versionado continúan persistidas como campos de primera clas
 El valor `legacy-unknown` se utiliza únicamente para información histórica realmente ausente; no completa silenciosamente nuevas ejecuciones.
 
 ## Frente 1 — Núcleo funcional
+
 **Estado:** Implementado en gran parte y cubierto por pruebas.
 
 ## Frente 2 — Evaluación observable
-**Estado:** F2-45 **EN EJECUCIÓN — CONTRATO MATERIALIZADO**.
 
-La secuencia materializada llega hasta: delimitación de núcleo → selección contextual → vinculación con ejecución → repetición/variabilidad → estadística descriptiva → interpretación → juicio metodológico → decisión explícita mediante regla versionada → agregación de decisiones → vinculación de la agregación con el conjunto de criterios seleccionado → separación de criterios `APPLICABLE` y `NOT_APPLICABLE` en la agregación → cobertura metodológica por criterio → interpretación de cobertura por ejecución → métricas descriptivas de cobertura por ejecución → comparabilidad metodológica entre ejecuciones → comparación descriptiva de métricas de cobertura → validación controlada de dimensiones y criterios candidatos → validación empírica repetida de criterios seleccionados sobre doble controlado → validación empírica de retención de contexto entre turnos sobre doble controlado → contrato y protocolo controlado de evaluación semántica asistida por IA para D2-C01 → frontera provider-neutral para evaluador semántico IA.
+**Estado:** **F2-EXT-07 EN EJECUCIÓN**.
 
-Todavía quedan fuera la interpretación normativa de diferencias entre ejecuciones, scoring, ponderaciones, criterios críticos definitivos, reglas de parada, agregación entre escenarios y validación empírica de un proveedor/modelo de IA real.
+La baseline oficial permanece cerrada en F2-35. El trabajo posterior se gestiona como extensiones y validaciones explícitamente clasificadas, sin alterar la secuencia original.
+
+El scoring global, ponderaciones y aceptación/rechazo global continúan bloqueados hasta que exista una decisión metodológica específica.
 
 ## Frente 3 — Arquitectura
+
 **Estado:** **VALIDADO**.
 
 La combinación TypeScript + Node.js + arquitectura hexagonal + PostgreSQL + Cucumber/Gherkin + Playwright + GitHub Actions continúa validada mediante spikes ejecutables.
@@ -174,12 +142,10 @@ La versión de producto permanece en `0.1.0`. No se incrementará por cada commi
 
 Las versiones metodológicas son independientes del producto y deben mantenerse reconstruibles junto con la identidad de ejecución y procedencia técnica.
 
-## Próximo incremento — validación de proveedor/modelo IA real para D2-C01
+## Próximo trabajo
 
-La siguiente etapa de F2-45 deberá conectar un proveedor/modelo real mediante `SemanticEvaluatorPort` y ejecutar el protocolo controlado definido en F2-44. La selección de proveedor no deberá filtrarse al dominio.
-
-Scoring global, ponderaciones y aceptación/rechazo global continúan bloqueados.
+No se debe crear un nuevo identificador `F2-XX` para continuar. El siguiente trabajo debe seleccionarse desde la clasificación posterior a F2-35 y registrarse antes de implementarlo. La prioridad técnica actual es cerrar la validación live de `F2-EXT-07` sin contaminar el dominio con el proveedor.
 
 ## Regla de documentación
 
-Cada incremento o corrección debe actualizar este documento con el estado verificable resultante. Los cambios de comportamiento deben incluir la actualización de estado en el mismo commit siempre que sea técnicamente viable.
+Cada incremento o corrección debe actualizar el estado verificable resultante. Todo trabajo posterior a F2-35 debe declarar su clasificación canónica antes de ejecutarse y no puede redefinir retrospectivamente la baseline oficial.
