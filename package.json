@@ -11,8 +11,7 @@
     "test:browser": "playwright test",
     "evidence:viewer": "tsx src/infrastructure/evidence/serve-live-evidence.ts",
     "db:migrate": "tsx scripts/migrate.ts",
-    "test:architecture": "npm run build && npm test && npm run test:bdd && npm run test:browser",
-    "test:f2-ext-07:live": "tsx spike/evaluation/f2-ext-07-ollama-live-validation.ts"
+    "test:architecture": "npm run build && npm test && npm run test:bdd && npm run test:browser"
   },
   "engines": {
     "node": ">=22"
