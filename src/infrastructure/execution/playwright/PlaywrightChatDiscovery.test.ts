@@ -16,7 +16,7 @@ describe('PlaywrightChatDiscovery', () => {
 
     await page.setContent(`
       <main>
-        <section role="log" aria-label="Conversation"></section>
+        <section role="log" aria-label="Conversation" style="display:block;width:300px;height:100px;">Respuesta inicial</section>
         <input placeholder="Escribe un mensaje" />
         <button aria-label="Enviar mensaje">Enviar</button>
       </main>
