@@ -23,14 +23,17 @@ export class PlaywrightChatDiscovery {
       this.page.locator('button[title*="enviar" i]'),
     ]);
 
-    const response = await this.findFirstVisible([
-      this.page.getByRole('log'),
-      this.page.locator('[aria-live="polite"]'),
-      this.page.locator('[aria-live="assertive"]'),
-      this.page.locator('[data-testid*="message" i]'),
-      this.page.locator('[class*="message" i]'),
-      this.page.locator('[class*="response" i]'),
-    ]);
+    const response = await this.findFirstVisibleExcluding(
+      [
+        this.page.locator('[data-testid*="message" i]'),
+        this.page.locator('[aria-live="polite"]'),
+        this.page.locator('[aria-live="assertive"]'),
+        this.page.getByRole('log'),
+        this.page.locator('[class*="response" i]'),
+        this.page.locator('[class*="message" i]'),
+      ],
+      [composer, sendButton],
+    );
 
     if (!response) throw new Error('Chat response could not be discovered on the public URL');
 
@@ -42,14 +45,33 @@ export class PlaywrightChatDiscovery {
   }
 
   private async findFirstVisible(candidates: Locator[]): Promise<Locator | null> {
+    return this.findFirstVisibleExcluding(candidates, []);
+  }
+
+  private async findFirstVisibleExcluding(candidates: Locator[], excluded: Array<Locator | null>): Promise<Locator | null> {
     for (const candidate of candidates) {
       const count = await candidate.count();
       for (let index = 0; index < count; index += 1) {
         const item = candidate.nth(index);
-        if (await item.isVisible()) return item;
+        if (!await item.isVisible()) continue;
+        if (await this.isExcluded(item, excluded)) continue;
+        return item;
       }
     }
     return null;
+  }
+
+  private async isExcluded(candidate: Locator, excluded: Array<Locator | null>): Promise<boolean> {
+    for (const locator of excluded) {
+      if (!locator) continue;
+      const count = await locator.count();
+      for (let index = 0; index < count; index += 1) {
+        if (await locator.nth(index).evaluate((node, candidateNode) => node === candidateNode, await candidate.elementHandle())) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   private toDefinition(locator: Locator): PlaywrightLocatorDefinition {
