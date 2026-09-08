@@ -25,6 +25,14 @@ export class PlaywrightConversationAdapter implements ConversationPort {
     await browserSession.navigate(targetUrl, timeoutMs);
 
     const config = await this.uiConfigs.findByTargetUrl(targetUrl);
+    if (!config && !browserSession.page) {
+      return new PlaywrightConversationSession(
+        browserSession,
+        new UnconfiguredConversationUi(),
+        timeoutMs,
+      );
+    }
+
     const uiConfig = config
       ? this.toPlaywrightConfig(config)
       : await new PlaywrightChatDiscovery(browserSession.page).discover();
@@ -61,10 +69,20 @@ export class PlaywrightConversationAdapter implements ConversationPort {
   }
 }
 
+class UnconfiguredConversationUi implements ConversationUi {
+  public async sendMessage(_input: string, _timeoutMs: number): Promise<string> {
+    throw new Error('Conversation UI interaction is not configured yet');
+  }
+}
+
+interface ConversationUi {
+  sendMessage(input: string, timeoutMs: number): Promise<string>;
+}
+
 class PlaywrightConversationSession implements ConversationSession {
   public constructor(
     private readonly browserSession: PlaywrightBrowserSession,
-    private readonly ui: PlaywrightConversationUi,
+    private readonly ui: ConversationUi,
     private readonly timeoutMs: number,
   ) {}
 
