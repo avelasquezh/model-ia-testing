@@ -1,11 +1,11 @@
-import type { Outcome } from '../../domain/evaluation/EvaluationMethodology.js';
+import type { EvaluationOutcome } from '../../domain/evaluation/EvaluationMethodology.js';
 
 export type EvaluationCaseResult = {
   caseId: string;
   repetition: number;
   turn: number;
   conversationId: string;
-  outcome: Outcome;
+  outcome: EvaluationOutcome;
   evidenceInsufficient: boolean;
   channel?: string;
   transport?: string;
@@ -28,7 +28,7 @@ export type EvaluationRun = {
 };
 
 const SCHEMA_VERSION = 'bot-observation-0.1';
-const OUTCOMES = new Set<Outcome>(['PASS', 'FAIL', 'PARTIAL', 'INCONCLUSIVE', 'NOT_EVALUABLE']);
+const OUTCOMES = new Set<EvaluationOutcome>(['PASS', 'FAIL', 'PARTIAL', 'INCONCLUSIVE', 'NOT_EVALUABLE']);
 
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === 'string' && value.trim().length > 0;
@@ -67,7 +67,7 @@ const assertCaseResult = (value: unknown, index: number): asserts value is Evalu
     }
   }
 
-  if (typeof result.outcome !== 'string' || !OUTCOMES.has(result.outcome as Outcome)) {
+  if (typeof result.outcome !== 'string' || !OUTCOMES.has(result.outcome as EvaluationOutcome)) {
     throw new Error(`Evaluation case ${index} has unsupported outcome`);
   }
 
