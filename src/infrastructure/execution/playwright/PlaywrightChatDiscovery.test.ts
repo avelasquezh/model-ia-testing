@@ -23,8 +23,16 @@ describe('PlaywrightChatDiscovery', () => {
 
     const discovered = await new PlaywrightChatDiscovery(page).discover();
 
+    expect(discovered.composer.kind).toBe('locator');
+    expect(discovered.sendButton?.kind).toBe('locator');
+    expect(discovered.response.kind).toBe('locator');
+
+    if (discovered.composer.kind !== 'locator') throw new Error('Expected locator definition');
+    if (discovered.sendButton?.kind !== 'locator') throw new Error('Expected locator definition');
+    if (discovered.response.kind !== 'locator') throw new Error('Expected locator definition');
+
     expect(await discovered.composer.value.getAttribute('placeholder')).toBe('Escribe un mensaje');
-    expect(await discovered.sendButton?.value.getAttribute('aria-label')).toBe('Enviar mensaje');
+    expect(await discovered.sendButton.value.getAttribute('aria-label')).toBe('Enviar mensaje');
     expect(await discovered.response.value.getAttribute('role')).toBe('log');
 
     await context.close();
