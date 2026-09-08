@@ -138,6 +138,9 @@ test('F2-43: empirically validates conversational context retention across turns
       );
 
       const observations = result.observations ?? [];
+      const observationEvents = evidence.events.filter(
+        (event): event is Extract<ExecutionEvidenceEvent, { readonly type: 'OBSERVATION' }> => event.type === 'OBSERVATION',
+      );
       expect(result.status).toBe('INCONCLUSIVE');
       expect(result.errors ?? []).toHaveLength(0);
       expect(observations).toHaveLength(2);
@@ -152,7 +155,7 @@ test('F2-43: empirically validates conversational context retention across turns
       expect(evidence.events).toHaveLength(2);
       expect(evidence.events.every((event) => event.type === 'OBSERVATION')).toBe(true);
       expect(evidence.events.every((event) => event.executionId === execution.props.id)).toBe(true);
-      expect(evidence.events.map((event) => event.turnIndex)).toEqual([0, 1]);
+      expect(observationEvents.map((event) => event.turnIndex)).toEqual([0, 1]);
 
       repetitions.push({
         responses: observations.map((observation) => observation.response),
