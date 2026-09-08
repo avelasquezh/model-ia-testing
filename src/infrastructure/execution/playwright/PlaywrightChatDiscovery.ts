@@ -1,15 +1,10 @@
 import type { Locator, Page } from '@playwright/test';
-
-export type DiscoveredChatUi = {
-  readonly composer: Locator;
-  readonly response: Locator;
-  readonly sendButton?: Locator;
-};
+import type { PlaywrightConversationUiConfig, PlaywrightLocatorDefinition } from './PlaywrightConversationUi.js';
 
 export class PlaywrightChatDiscovery {
   public constructor(private readonly page: Page) {}
 
-  public async discover(): Promise<DiscoveredChatUi> {
+  public async discover(): Promise<PlaywrightConversationUiConfig> {
     const composer = await this.findFirstVisible([
       this.page.getByRole('textbox', { name: /message|mensaje|chat|escribe|type/i }),
       this.page.getByPlaceholder(/message|mensaje|chat|escribe|type/i),
@@ -39,7 +34,11 @@ export class PlaywrightChatDiscovery {
 
     if (!response) throw new Error('Chat response could not be discovered on the public URL');
 
-    return { composer, response, ...(sendButton ? { sendButton } : {}) };
+    return {
+      composer: this.toDefinition(composer),
+      response: this.toDefinition(response),
+      ...(sendButton ? { sendButton: this.toDefinition(sendButton) } : {}),
+    };
   }
 
   private async findFirstVisible(candidates: Locator[]): Promise<Locator | null> {
@@ -51,5 +50,9 @@ export class PlaywrightChatDiscovery {
       }
     }
     return null;
+  }
+
+  private toDefinition(locator: Locator): PlaywrightLocatorDefinition {
+    return { kind: 'locator', value: locator };
   }
 }
