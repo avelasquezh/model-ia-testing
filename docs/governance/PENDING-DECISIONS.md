@@ -7,7 +7,7 @@ Este registro distingue decisiones metodológicas aún no aprobadas de decisione
 - Validar dimensiones y criterios definitivos del Frente 2 mediante casos reales/controlados. **F2-41 cerrado: aptitud estructural demostrada; F2-42 cerrado: repetibilidad empírica demostrada sobre un doble conversacional controlado para D1, D6 y D7; F2-43 cerrado: retención de contexto conversacional demostrada metodológicamente sobre un doble controlado para D3-C01.**
 - Definir tratamiento estadístico de repetición y variabilidad cuando exista evidencia suficiente.
 - Definir límites de confianza/incertidumbre si las métricas lo requieren.
-- Validar el rol de IA en criterios semánticos mediante evidencia controlada y método reproducible. **Siguiente incremento: F2-44.**
+- **F2-44 en ejecución:** validar el rol de IA en criterios semánticos mediante evidencia controlada y método reproducible.
 - D4 y D5 requieren protocolos empíricos específicos antes de considerarse validados.
 
 ## Calificación
@@ -57,6 +57,6 @@ F3 ya está validado mediante el Architecture Spike `34089149510`. El trabajo me
 
 ## Próximo punto de decisión
 
-F2-44 — protocolo de evaluación semántica reproducible asistida por IA para D2-C01. Antes de integrar un proveedor o un evaluador autónomo, se deberá definir el contrato de evaluación, la normalización de entradas y salidas, las variables de configuración que deben versionarse, la evidencia primaria requerida, el criterio de reproducibilidad y las reglas metodológicas de interpretación. El scoring global continúa explícitamente bloqueado.
+Ejecutar F2-44 como protocolo controlado de evaluación semántica reproducible asistida por IA para D2-C01. Antes de integrar un proveedor o un evaluador autónomo, se deberá validar el contrato de evaluación, la normalización de entradas y salidas, las variables de configuración que deben versionarse, la evidencia primaria requerida, el criterio de reproducibilidad y las reglas metodológicas de interpretación. El scoring global continúa explícitamente bloqueado.
 
 Ninguna decisión marcada como Pendiente deberá considerarse aprobada por defecto durante la implementación.
