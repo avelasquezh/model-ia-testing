@@ -5,7 +5,7 @@ import type {
   SemanticEvaluationOutput,
 } from '../src/domain/evaluation/SemanticEvaluator.js';
 import { EvaluationMethodology } from '../src/domain/evaluation/EvaluationMethodology.js';
-import type { BotObservationSet } from '../src/domain/evaluation/BotObservation.js';
+import { parseBotObservationSet } from '../src/application/evaluation/BotObservationSetValidator.js';
 
 const endpoint = process.env.SEMANTIC_EVALUATOR_ENDPOINT?.trim();
 const authorization = process.env.SEMANTIC_EVALUATOR_AUTHORIZATION?.trim();
@@ -21,52 +21,17 @@ const methodVersion = process.env.SEMANTIC_EVALUATOR_METHOD_VERSION?.trim() || '
 const criterionIdOverride = process.env.SEMANTIC_EVALUATOR_CRITERION_ID?.trim();
 const criterionVersionOverride = process.env.SEMANTIC_EVALUATOR_CRITERION_VERSION?.trim();
 
-const parseObservationSet = (raw: string): BotObservationSet => {
-  const parsed: unknown = JSON.parse(raw);
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('Bot observation file must contain a JSON object');
+const parseObservationFile = (raw: string) => {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error('Bot observation file must contain valid JSON');
   }
-
-  const candidate = parsed as Record<string, unknown>;
-  if (candidate.schemaVersion !== 'bot-observation-0.1') {
-    throw new Error('Unsupported bot observation schemaVersion');
-  }
-  if (!Array.isArray(candidate.observations) || candidate.observations.length === 0) {
-    throw new Error('Bot observation file must contain at least one observation');
-  }
-
-  for (const [index, observation] of candidate.observations.entries()) {
-    if (!observation || typeof observation !== 'object' || Array.isArray(observation)) {
-      throw new Error(`Invalid bot observation at index ${index}`);
-    }
-    const item = observation as Record<string, unknown>;
-    for (const field of [
-      'caseId',
-      'conversationId',
-      'userInput',
-      'observedResponse',
-      'expectedIntent',
-      'expectedIntentVersion',
-    ]) {
-      if (typeof item[field] !== 'string' || !item[field].trim()) {
-        throw new Error(`Bot observation field is required: ${field}`);
-      }
-    }
-    if (!Number.isInteger(item.repetition) || Number(item.repetition) < 1) {
-      throw new Error('Bot observation repetition must be a positive integer');
-    }
-    if (!Number.isInteger(item.turn) || Number(item.turn) < 1) {
-      throw new Error('Bot observation turn must be a positive integer');
-    }
-    if (!Array.isArray(item.evidenceIds) || !item.evidenceIds.every((id) => typeof id === 'string' && id.trim())) {
-      throw new Error('Bot observation evidenceIds must be a non-empty string array');
-    }
-  }
-
-  return parsed as BotObservationSet;
+  return parseBotObservationSet(parsed);
 };
 
-const observationSet = parseObservationSet(await readFile(observationsFile, 'utf8'));
+const observationSet = parseObservationFile(await readFile(observationsFile, 'utf8'));
 const observations = observationSet.observations;
 
 const mapResponse = (request: SemanticEvaluationInput, payload: unknown): SemanticEvaluationOutput => {
