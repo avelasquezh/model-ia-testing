@@ -2,6 +2,30 @@
 
 Este registro distingue decisiones metodológicas aún no aprobadas de decisiones arquitectónicas documentadas como baseline o pendientes de validación.
 
+## Gobierno de la secuencia F2
+
+La baseline oficial del MVP de Frente 2 comprende exactamente **F2-01 a F2-35**. El documento normativo es `docs/evaluation/F2-INCREMENT-BASELINE.md`.
+
+Los identificadores **F2-36 a F2-46 no forman parte de la secuencia oficial del MVP**. Se conservan como nombres históricos de artefactos ya materializados para no perder trazabilidad, pero desde esta fecha se clasifican así:
+
+| Identificador histórico | Clasificación canónica | Contenido |
+|---|---|---|
+| F2-36 | `F2-EXT-01` | Interpretación de cobertura por ejecución |
+| F2-37 | `F2-EXT-02` | Métricas descriptivas de cobertura por ejecución |
+| F2-38 | `F2-EXT-03` | Comparabilidad metodológica entre ejecuciones |
+| F2-39 | `F2-EXT-04` | Comparación descriptiva de métricas de cobertura |
+| F2-40 | `F2-EXT-05` | Interpretación descriptiva de diferencias entre ejecuciones |
+| F2-41 | `F2-VAL-01` | Validación controlada de dimensiones y criterios candidatos |
+| F2-42 | `F2-VAL-02` | Validación empírica controlada de criterios seleccionados |
+| F2-43 | `F2-VAL-03` | Validación empírica de retención de contexto |
+| F2-44 | `F2-VAL-04` | Validación controlada del protocolo de evaluación semántica asistida por IA |
+| F2-45 | `F2-EXT-06` | Frontera provider-neutral para evaluador semántico IA |
+| F2-46 | `F2-EXT-07` | Adaptación Ollama y preparación de validación live |
+
+Esta clasificación **no renumera ni modifica retrospectivamente F2-01 a F2-35**. Los nombres históricos permanecen por trazabilidad de Git, pero no deben utilizarse para definir el próximo incremento del MVP.
+
+Ninguna extensión posterior se considerará automáticamente parte de F2. Cualquier nuevo trabajo deberá registrarse como `F2-EXT-*`, `F2-VAL-*` o como evolución metodológica explícita de un incremento existente.
+
 ## Metodología de evaluación
 
 - Validar dimensiones y criterios definitivos del Frente 2 mediante casos reales/controlados. **F2-41 cerrado: aptitud estructural demostrada; F2-42 cerrado: repetibilidad empírica demostrada sobre un doble conversacional controlado para D1, D6 y D7; F2-43 cerrado: retención de contexto conversacional demostrada metodológicamente sobre un doble controlado para D3-C01; F2-44 cerrado: contrato y protocolo controlado de evaluación semántica asistida por IA demostrado para D2-C01.**
@@ -59,7 +83,7 @@ F3 ya está validado mediante el Architecture Spike `34089149510`. El trabajo me
 
 ## Próximo punto de decisión
 
-Ejecutar F2-46 con un modelo real de Ollama mediante `OllamaSemanticEvaluator`. La validación debe demostrar conexión, normalización, trazabilidad y estabilidad bajo repetición, manteniendo la intención esperada predefinida y la evidencia primaria. La selección de Ollama como primer proveedor de prueba no congela el proveedor futuro.
+El siguiente trabajo debe partir de `F2-INCREMENT-BASELINE.md` y **no crear un nuevo F2-XX**. La prioridad inmediata es decidir y ejecutar la extensión/validación posterior correspondiente, comenzando por cerrar la validación live del evaluador IA ya materializado, pero registrándola bajo la nomenclatura canónica posterior a F2-35.
 
 El scoring global continúa explícitamente bloqueado.
 
