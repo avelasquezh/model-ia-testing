@@ -1,6 +1,7 @@
 export type BotObservation = {
   caseId: string;
   conversationId: string;
+  repetition: number;
   turn: number;
   userInput: string;
   observedResponse: string;
