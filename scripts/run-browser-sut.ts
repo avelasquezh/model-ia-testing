@@ -49,12 +49,12 @@ const observations: BotObservationSet = {
   observations: (result.observations ?? []).map((observation, index) => ({
     caseId: scenario.props.id,
     conversationId: execution.props.id,
-    repetition: 1,
+    repetition: config.repetition,
     turn: index + 1,
     userInput: observation.input,
     observedResponse: observation.response,
-    expectedIntent: scenario.props.expectedBehavior,
-    expectedIntentVersion: `scenario-${scenario.props.version}`,
+    expectedIntent: config.expectedIntent,
+    expectedIntentVersion: config.expectedIntentVersion,
     evidenceIds: [`${execution.props.id}:turn-${String(index + 1).padStart(2, '0')}`],
     transport: 'browser',
     executionId: execution.props.id,
@@ -77,6 +77,9 @@ function parseConfig(value: unknown): {
   target: { id: string; name: string; url: string; status: 'ACTIVE' | 'INACTIVE' };
   scenario: Omit<ConstructorParameters<typeof Scenario>[0], 'targetId'> & { targetId?: string };
   ui: ConversationUiConfig;
+  expectedIntent: string;
+  expectedIntentVersion: string;
+  repetition: number;
   executionId?: string;
 } {
   if (!isRecord(value)) throw new Error('Browser SUT config must be a JSON object');
@@ -111,6 +114,16 @@ function parseConfig(value: unknown): {
   if (!Number.isInteger(scenario.version) || scenario.version < 1) {
     throw new Error('Browser SUT scenario version must be a positive integer');
   }
+  if (typeof value.expectedIntent !== 'string' || !value.expectedIntent.trim()) {
+    throw new Error('Browser SUT expectedIntent is required');
+  }
+  if (typeof value.expectedIntentVersion !== 'string' || !value.expectedIntentVersion.trim()) {
+    throw new Error('Browser SUT expectedIntentVersion is required');
+  }
+  const repetition = value.repetition === undefined ? 1 : value.repetition;
+  if (!Number.isInteger(repetition) || repetition < 1) {
+    throw new Error('Browser SUT repetition must be a positive integer');
+  }
 
   validateUiConfig(ui);
 
@@ -123,6 +136,9 @@ function parseConfig(value: unknown): {
     },
     scenario: scenario as Omit<ConstructorParameters<typeof Scenario>[0], 'targetId'> & { targetId?: string },
     ui: ui as ConversationUiConfig,
+    expectedIntent: value.expectedIntent,
+    expectedIntentVersion: value.expectedIntentVersion,
+    repetition,
     ...(typeof value.executionId === 'string' && value.executionId.trim() ? { executionId: value.executionId } : {}),
   };
 }
