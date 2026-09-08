@@ -43,18 +43,47 @@ El protocolo deberá controlar, como mínimo:
 
 Una ejecución no será comparable con otra si cambia una variable metodológica relevante sin quedar registrada.
 
+## Contrato mínimo de entrada
+
+El evaluador deberá recibir un objeto determinista que identifique explícitamente:
+
+- `criterionId` y versión;
+- `evidenceIds` de evidencia primaria;
+- `userInput`;
+- `expectedIntent` y versión;
+- `observedResponse`;
+- `allowedContext`;
+- `modelId` y `modelVersion`;
+- `promptVersion`;
+- `methodVersion`.
+
+La intención no podrá derivarse exclusivamente del texto de la respuesta observada.
+
 ## Salida normalizada
 
 El evaluador deberá producir una salida estructurada y validable, como mínimo con:
 
-- resultado ordinal predefinido;
+- resultado ordinal predefinido (`PASS`, `FAIL`, `PARTIAL`, `INCONCLUSIVE`, `NOT_EVALUABLE`);
 - justificación breve trazable a la evidencia proporcionada;
 - indicación explícita de insuficiencia de evidencia cuando corresponda;
 - identificación del modelo/proveedor;
 - versión del prompt/plantilla;
 - versión del criterio o regla aplicada.
 
-La estructura exacta del contrato se fijará durante la implementación posterior a este protocolo; F2-44 no asume todavía un proveedor concreto.
+La salida deberá permanecer separada de la evidencia primaria y no podrá mutar el contenido evaluado.
+
+La estructura exacta de persistencia queda abierta para la implementación, pero estos campos son obligatorios para considerar el análisis reconstruible.
+
+## Regla metodológica del resultado
+
+La evaluación semántica no convertirá directamente el resultado ordinal en calidad del producto. El resultado metodológico de F2-44 se obtendrá posteriormente aplicando una regla explícita sobre los resultados observados y su estabilidad.
+
+Como baseline del spike:
+
+- `PASS` en caso alineado → evidencia de correspondencia observable;
+- `FAIL` en caso no alineado → evidencia de ausencia de correspondencia;
+- `INCONCLUSIVE` o `NOT_EVALUABLE` en caso ambiguo/insuficiente → evidencia insuficiente para decidir;
+- `PARTIAL` → requiere una regla explícita de refinamiento antes de cerrar el método.
 
 ## Reproducibilidad
 
@@ -114,6 +143,8 @@ F2-44 no introduce:
 - sustitución de evidencia primaria por texto generado por IA;
 - inferencia automática de la intención esperada sin especificación previa.
 
+Tampoco fija todavía un proveedor concreto. La selección de proveedor será una decisión posterior a la validación del contrato y del método.
+
 ## Criterio de salida
 
 F2-44 podrá validarse cuando:
@@ -128,4 +159,4 @@ F2-44 podrá validarse cuando:
 
 ## Trazabilidad
 
-`D2-C01 → Evidencia primaria → Intención esperada versionada → Configuración del evaluador → Análisis IA trazable → Regla de decisión → Repetición → Resultado metodológico`
+`D2-C01 → Evidencia primaria → Intención esperada versionada → Contrato de evaluación → Configuración del evaluador → Análisis IA trazable → Regla de decisión → Repetición → Resultado metodológico`
