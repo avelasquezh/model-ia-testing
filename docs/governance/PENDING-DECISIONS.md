@@ -4,10 +4,11 @@ Este registro distingue decisiones metodológicas aún no aprobadas de decisione
 
 ## Metodología de evaluación
 
-- Validar dimensiones y criterios definitivos del Frente 2 mediante casos reales/controlados. **F2-41 cerrado: aptitud estructural demostrada; F2-42 inicia validación empírica controlada sobre un target ejecutable.**
+- Validar dimensiones y criterios definitivos del Frente 2 mediante casos reales/controlados. **F2-41 cerrado: aptitud estructural demostrada; F2-42 cerrado: repetibilidad empírica demostrada sobre un doble conversacional controlado para D1, D6 y D7.**
 - Definir tratamiento estadístico de repetición y variabilidad cuando exista evidencia suficiente.
 - Definir límites de confianza/incertidumbre si las métricas lo requieren.
 - Validar el rol de IA en criterios semánticos mediante evidencia controlada y método reproducible.
+- Protocolizar D3-C01 para validar retención de contexto conversacional mediante una secuencia explícita de múltiples turnos y evidencia primaria suficiente.
 
 ## Calificación
 
@@ -20,7 +21,7 @@ Este registro distingue decisiones metodológicas aún no aprobadas de decisione
 
 ## Arquitectura — estado actual
 
-Las decisiones arquitectónicas documentadas como ADR pueden pasar a estado validado únicamente cuando existe evidencia suficiente. A 2026-09-07, varias decisiones ya están materializadas y el spike F3 está VALIDADO.
+Las decisiones arquitectónicas documentadas como ADR pueden pasar a estado validado únicamente cuando existe evidencia suficiente. A 2026-09-08, varias decisiones ya están materializadas y el spike F3 está VALIDADO.
 
 - ADR-003 — Stack tecnológico: **baseline materializada; validación integral pendiente**.
 - ADR-004 — Persistencia PostgreSQL: **baseline materializada; migraciones y repositorio de Execution implementados; validación operacional integral pendiente**.
@@ -40,7 +41,7 @@ Las decisiones arquitectónicas documentadas como ADR pueden pasar a estado vali
 
 ## Validación técnica pendiente
 
-F3 ya está validado mediante el Architecture Spike `34089149510`. El trabajo metodológico de F2 ya no está bloqueado por arquitectura y continúa con contratos, casos controlados y validación empírica.
+F3 ya está validado mediante el Architecture Spike `34089149510`. El trabajo metodológico de F2 ya no está bloqueado por arquitectura y continúa con protocolos específicos para criterios todavía no demostrados.
 
 ## Automatización
 
@@ -56,6 +57,6 @@ F3 ya está validado mediante el Architecture Spike `34089149510`. El trabajo me
 
 ## Próximo punto de decisión
 
-Ejecutar F2-42 sobre un target conversacional controlado y medir repetibilidad de evidencia para criterios candidatos seleccionados. El scoring global continúa explícitamente bloqueado hasta cerrar estas decisiones.
+Definir y ejecutar F2-43 como protocolo controlado de retención de contexto conversacional para D3-C01. El objetivo será demostrar que una información introducida en un turno puede ser requerida de forma verificable en turnos posteriores y que la evidencia permite distinguir retención de contexto de coincidencia accidental. El scoring global continúa explícitamente bloqueado.
 
 Ninguna decisión marcada como Pendiente deberá considerarse aprobada por defecto durante la implementación.
