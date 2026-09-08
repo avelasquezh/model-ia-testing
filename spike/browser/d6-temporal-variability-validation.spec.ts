@@ -44,15 +44,12 @@ function startVariableDelayChatbot(): Promise<{ server: Server; url: string }> {
         const input = document.getElementById('composer');
         const send = document.getElementById('send');
         const messages = document.getElementById('messages');
-        let repetition = 0;
-        const delays = [80, 120, 160];
+        const delay = Number(new URLSearchParams(window.location.search).get('delayMs') ?? '0');
 
         function reply() {
           const value = input.value.trim();
           if (!value) return;
 
-          const delay = delays[repetition] ?? delays[delays.length - 1];
-          repetition += 1;
           window.setTimeout(() => {
             const item = document.createElement('p');
             item.setAttribute('data-testid', 'response');
@@ -107,6 +104,14 @@ test('D6-C02: describes temporal variability across comparable observable execut
     const evidenceCounts: number[] = [];
 
     for (const index of [0, 1, 2]) {
+      const expectedDelay = CONTROLLED_DELAYS_MS[index];
+      expect(expectedDelay).toBeDefined();
+      const executionTarget = new Target({
+        id: target.props.id,
+        name: target.props.name,
+        url: `${controlled.url}?delayMs=${expectedDelay}`,
+        status: 'ACTIVE',
+      });
       const browser = new PlaywrightBrowserAdapter();
       const uiConfigs: ConversationUiConfigRepository = new InMemoryUiConfigRepository({
         composer: { kind: 'label', value: 'Message' },
@@ -122,19 +127,17 @@ test('D6-C02: describes temporal variability across comparable observable execut
         id: `execution-d6-c02-${index + 1}`,
         scenarioId: scenario.props.id,
         scenarioVersion: scenario.props.version,
-        targetId: target.props.id,
-        targetUrl: target.props.url,
+        targetId: executionTarget.props.id,
+        targetUrl: executionTarget.props.url,
         status: 'PENDING',
       }).start();
 
       const result = await runner.execute(
-        { execution, scenario, target },
+        { execution, scenario, target: executionTarget },
         { timeoutMs: 15_000 },
       );
 
       const observation = result.observations?.[0];
-      const expectedDelay = CONTROLLED_DELAYS_MS[index];
-      expect(expectedDelay).toBeDefined();
       expect(result.status).toBe('INCONCLUSIVE');
       expect(result.errors ?? []).toHaveLength(0);
       expect(observation?.response).toBe(EXPECTED_RESPONSE);
