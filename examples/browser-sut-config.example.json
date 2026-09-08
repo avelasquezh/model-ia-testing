@@ -1,0 +1,30 @@
+{
+  "target": {
+    "id": "target-public-chatbot",
+    "name": "Public chatbot",
+    "url": "https://example.com/chat",
+    "status": "ACTIVE"
+  },
+  "scenario": {
+    "id": "CASE-01",
+    "name": "Intent recognition",
+    "objective": "Verify that the bot responds to a controlled purchase intent",
+    "description": "Browser execution against the public URL supplied for the system under test.",
+    "inputs": [
+      { "value": "Quiero una camisa azul talla M" }
+    ],
+    "expectedBehavior": "El sistema debe identificar la intención de compra de una camisa y conservar los atributos explícitos.",
+    "finishConditions": [
+      { "description": "A bot response is visible in the conversation." }
+    ],
+    "version": 1
+  },
+  "ui": {
+    "composer": { "kind": "role", "role": "textbox", "name": "Message" },
+    "sendButton": { "kind": "role", "role": "button", "name": "Send" },
+    "response": { "kind": "css", "value": "[data-testid=\"response\"]" },
+    "responseTimeoutMs": 10000,
+    "pollIntervalMs": 100
+  },
+  "executionId": "browser-public-url-001"
+}
