@@ -48,6 +48,39 @@ describe('Execution', () => {
     expect(finished.props.versionContext).toBe(versionContext);
   });
 
+  it('does not let a newer methodology version mutate a historical execution', () => {
+    const historicalContext = new EvaluationVersionContext({
+      productVersion: '0.1.0',
+      evaluationMethodVersion: 'f2-method-0.1',
+      criterionCatalogVersion: 'f2-criteria-0.1',
+      decisionRulesVersion: 'f2-rules-0.1',
+    });
+    const newerContext = new EvaluationVersionContext({
+      productVersion: '0.1.0',
+      evaluationMethodVersion: 'f2-method-0.2',
+      criterionCatalogVersion: 'f2-criteria-0.2',
+      decisionRulesVersion: 'f2-rules-0.2',
+    });
+
+    const historical = new Execution({
+      ...pending().props,
+      versionContext: historicalContext,
+    }).start().finish('PASSED');
+    const newer = new Execution({
+      ...pending().props,
+      id: 'execution-2',
+      versionContext: newerContext,
+    }).start().finish('PASSED');
+
+    expect(historical.props.versionContext.props.evaluationMethodVersion).toBe('f2-method-0.1');
+    expect(historical.props.versionContext.props.criterionCatalogVersion).toBe('f2-criteria-0.1');
+    expect(historical.props.versionContext.props.decisionRulesVersion).toBe('f2-rules-0.1');
+    expect(newer.props.versionContext.props.evaluationMethodVersion).toBe('f2-method-0.2');
+    expect(newer.props.versionContext.props.criterionCatalogVersion).toBe('f2-criteria-0.2');
+    expect(newer.props.versionContext.props.decisionRulesVersion).toBe('f2-rules-0.2');
+    expect(historical.props.versionContext).not.toBe(newer.props.versionContext);
+  });
+
   it('retains the evaluation plan snapshot across its lifecycle', () => {
     const plan = evaluationPlan();
     const running = new Execution({
