@@ -1,33 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
+import { parseEvaluationRun } from '../src/application/evaluation/EvaluationRunValidator.js';
 
 type Outcome = 'PASS' | 'FAIL' | 'PARTIAL' | 'INCONCLUSIVE' | 'NOT_EVALUABLE';
-
-type CaseResult = {
-  caseId: string;
-  repetition: number;
-  turn: number;
-  conversationId: string;
-  outcome: Outcome;
-  evidenceInsufficient: boolean;
-  channel?: string;
-  transport?: string;
-  botId?: string;
-  botVersion?: string;
-  executionId?: string;
-};
-
-type EvaluationRun = {
-  status: 'VALIDATED_REPEATABILITY' | 'NON_REPEATABLE_OBSERVATION';
-  observationSchemaVersion: string;
-  observationsFile: string;
-  evaluator: {
-    modelId: string;
-    modelVersion: string;
-    promptVersion: string;
-    methodVersion: string;
-  };
-  cases: CaseResult[];
-};
 
 const inputFile = process.env.EVALUATION_RESULT_FILE?.trim();
 const outputFile = process.env.EVALUATION_REPORT_FILE?.trim() || 'artifacts/evaluation-report.html';
@@ -41,17 +15,7 @@ const escapeHtml = (value: unknown): string => String(value ?? '')
   .replaceAll('"', '&quot;')
   .replaceAll("'", '&#39;');
 
-const parseRun = (raw: string): EvaluationRun => {
-  const parsed: unknown = JSON.parse(raw);
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Evaluation result must be a JSON object');
-  const run = parsed as Record<string, unknown>;
-  if (run.observationSchemaVersion !== 'bot-observation-0.1') throw new Error('Unsupported observation schema version');
-  if (!Array.isArray(run.cases) || run.cases.length === 0) throw new Error('Evaluation result must contain cases');
-  if (!run.evaluator || typeof run.evaluator !== 'object') throw new Error('Evaluation result must contain evaluator provenance');
-  return parsed as EvaluationRun;
-};
-
-const run = parseRun(await readFile(inputFile, 'utf8'));
+const run = parseEvaluationRun(JSON.parse(await readFile(inputFile, 'utf8')));
 const counts = new Map<Outcome, number>();
 for (const result of run.cases) counts.set(result.outcome, (counts.get(result.outcome) || 0) + 1);
 const cases = [...new Set(run.cases.map((result) => result.caseId))];
