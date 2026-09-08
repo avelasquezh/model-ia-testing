@@ -5,7 +5,8 @@ export type PlaywrightLocatorDefinition =
   | { readonly kind: 'label'; readonly value: string | RegExp }
   | { readonly kind: 'placeholder'; readonly value: string | RegExp }
   | { readonly kind: 'testId'; readonly value: string }
-  | { readonly kind: 'css'; readonly value: string };
+  | { readonly kind: 'css'; readonly value: string }
+  | { readonly kind: 'locator'; readonly value: Locator };
 
 export type PlaywrightConversationUiConfig = {
   readonly composer: PlaywrightLocatorDefinition;
@@ -34,7 +35,6 @@ export class PlaywrightConversationUi implements ConversationUi {
   public async sendMessage(input: string, timeoutMs: number): Promise<string> {
     const responseLocator = this.locate(this.config.response);
     const previous = await this.readResponseState(responseLocator);
-
     const composer = this.locate(this.config.composer);
     await composer.fill(input, { timeout: timeoutMs });
 
@@ -59,6 +59,8 @@ export class PlaywrightConversationUi implements ConversationUi {
         return this.page.getByTestId(definition.value);
       case 'css':
         return this.page.locator(definition.value);
+      case 'locator':
+        return definition.value;
     }
   }
 
@@ -74,18 +76,12 @@ export class PlaywrightConversationUi implements ConversationUi {
     timeoutMs: number,
   ): Promise<string> {
     const deadline = Date.now() + Math.min(timeoutMs, this.responseTimeoutMs);
-
     while (Date.now() < deadline) {
       const current = await this.readResponseState(locator);
-
       if (current.count > previous.count && current.value) return current.value;
-      if (current.count === previous.count && current.value && current.value !== previous.value) {
-        return current.value;
-      }
-
+      if (current.count === previous.count && current.value && current.value !== previous.value) return current.value;
       await this.page.waitForTimeout(this.pollIntervalMs);
     }
-
     throw new Error('Conversation response was not observed before timeout');
   }
 }
