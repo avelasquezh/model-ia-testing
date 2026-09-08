@@ -36,7 +36,7 @@ const isNonEmptyString = (value: unknown): value is string =>
 const isPositiveInteger = (value: unknown): value is number =>
   typeof value === 'number' && Number.isInteger(value) && value > 0;
 
-const assertProvenance = (value: unknown): asserts value is EvaluationRun['evaluator'] => {
+const validateProvenance = (value: unknown): EvaluationRun['evaluator'] => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('Evaluation result evaluator provenance must be an object');
   }
@@ -47,9 +47,16 @@ const assertProvenance = (value: unknown): asserts value is EvaluationRun['evalu
       throw new Error(`Evaluation result evaluator requires non-empty field: ${field}`);
     }
   }
+
+  return {
+    modelId: evaluator.modelId,
+    modelVersion: evaluator.modelVersion,
+    promptVersion: evaluator.promptVersion,
+    methodVersion: evaluator.methodVersion,
+  };
 };
 
-const assertCaseResult = (value: unknown, index: number): asserts value is EvaluationCaseResult => {
+const validateCaseResult = (value: unknown, index: number): EvaluationCaseResult => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`Evaluation case ${index} must be an object`);
   }
@@ -80,6 +87,20 @@ const assertCaseResult = (value: unknown, index: number): asserts value is Evalu
       throw new Error(`Evaluation case ${index} requires non-empty optional field: ${field}`);
     }
   }
+
+  return {
+    caseId: result.caseId,
+    repetition: result.repetition,
+    turn: result.turn,
+    conversationId: result.conversationId,
+    outcome: result.outcome as EvaluationOutcome,
+    evidenceInsufficient: result.evidenceInsufficient,
+    ...(result.channel !== undefined ? { channel: result.channel } : {}),
+    ...(result.transport !== undefined ? { transport: result.transport } : {}),
+    ...(result.botId !== undefined ? { botId: result.botId } : {}),
+    ...(result.botVersion !== undefined ? { botVersion: result.botVersion } : {}),
+    ...(result.executionId !== undefined ? { executionId: result.executionId } : {}),
+  };
 };
 
 export const parseEvaluationRun = (raw: unknown): EvaluationRun => {
@@ -97,12 +118,18 @@ export const parseEvaluationRun = (raw: unknown): EvaluationRun => {
   if (!isNonEmptyString(run.observationsFile)) {
     throw new Error('Evaluation result requires observationsFile');
   }
-  assertProvenance(run.evaluator);
+  const evaluator = validateProvenance(run.evaluator);
 
   if (!Array.isArray(run.cases) || run.cases.length === 0) {
     throw new Error('Evaluation result must contain cases');
   }
-  run.cases.forEach(assertCaseResult);
+  const cases = run.cases.map(validateCaseResult);
 
-  return run as EvaluationRun;
+  return {
+    status: run.status,
+    observationSchemaVersion: run.observationSchemaVersion,
+    observationsFile: run.observationsFile,
+    evaluator,
+    cases,
+  };
 };
