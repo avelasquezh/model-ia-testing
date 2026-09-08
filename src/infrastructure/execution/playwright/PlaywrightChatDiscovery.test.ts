@@ -1,6 +1,7 @@
 import { chromium } from '@playwright/test';
 import { afterAll, describe, expect, it } from 'vitest';
 import { PlaywrightChatDiscovery } from './PlaywrightChatDiscovery.js';
+import type { PlaywrightLocatorDefinition } from './PlaywrightConversationUi.js';
 
 const browser = await chromium.launch({ headless: true });
 
@@ -27,13 +28,9 @@ describe('PlaywrightChatDiscovery', () => {
     expect(discovered.sendButton?.kind).toBe('locator');
     expect(discovered.response.kind).toBe('locator');
 
-    if (discovered.composer.kind !== 'locator') throw new Error('Expected locator definition');
-    if (discovered.sendButton?.kind !== 'locator') throw new Error('Expected locator definition');
-    if (discovered.response.kind !== 'locator') throw new Error('Expected locator definition');
-
-    expect(await discovered.composer.value.getAttribute('placeholder')).toBe('Escribe un mensaje');
-    expect(await discovered.sendButton.value.getAttribute('aria-label')).toBe('Enviar mensaje');
-    expect(await discovered.response.value.getAttribute('role')).toBe('log');
+    expect(await locatorAttribute(discovered.composer, 'placeholder')).toBe('Escribe un mensaje');
+    expect(await locatorAttribute(discovered.sendButton!, 'aria-label')).toBe('Enviar mensaje');
+    expect(await locatorAttribute(discovered.response, 'role')).toBe('log');
 
     await context.close();
   });
@@ -50,3 +47,10 @@ describe('PlaywrightChatDiscovery', () => {
     await context.close();
   });
 });
+
+async function locatorAttribute(definition: PlaywrightLocatorDefinition, attribute: string): Promise<string | null> {
+  if (definition.kind !== 'locator') {
+    throw new Error(`Expected a discovered locator definition, received ${definition.kind}`);
+  }
+  return definition.value.getAttribute(attribute);
+}
