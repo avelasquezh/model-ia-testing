@@ -94,7 +94,7 @@ export class PlaywrightConversationUi implements ConversationUi {
     while (Date.now() < deadline) {
       const current = await this.readResponseState(locator);
       const response = this.findNewResponse(previous, current, input);
-      if (response) {
+      if (response && !this.isTransientResponse(response)) {
         if (response === candidate) {
           stablePolls += 1;
         } else {
@@ -106,6 +106,10 @@ export class PlaywrightConversationUi implements ConversationUi {
       await this.page.waitForTimeout(this.pollIntervalMs);
     }
     throw new Error('Conversation response was not observed before timeout');
+  }
+
+  private isTransientResponse(value: string): boolean {
+    return /^(typing|escribiendo|thinking|pensando|generating|generando)(?:\.{2,}|…+|\s*)$/i.test(value.trim());
   }
 
   private findNewResponse(previous: ResponseState, current: ResponseState, input: string): string | null {
