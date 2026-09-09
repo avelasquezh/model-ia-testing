@@ -12,13 +12,20 @@ import type {
 import type { BrowserAutomationPort } from '../../../application/ports/BrowserAutomationPort.js';
 import { PlaywrightChatDiscovery } from './PlaywrightChatDiscovery.js';
 import { PlaywrightConversationUi, type PlaywrightConversationUiConfig } from './PlaywrightConversationUi.js';
+import type { ChatDiscoveryReport } from './ChatDiscoveryReport.js';
 import { type PlaywrightBrowserSession } from './PlaywrightBrowserAdapter.js';
 
 export class PlaywrightConversationAdapter implements ConversationPort {
+  private lastDiscoveryReport: ChatDiscoveryReport | null = null;
+
   public constructor(
     private readonly browser: BrowserAutomationPort,
     private readonly uiConfigs: ConversationUiConfigRepository,
   ) {}
+
+  public getDiscoveryReport(): ChatDiscoveryReport | null {
+    return this.lastDiscoveryReport;
+  }
 
   public async open(targetUrl: string, timeoutMs: number): Promise<ConversationSession> {
     const browserSession = (await this.browser.open()) as PlaywrightBrowserSession;
@@ -33,9 +40,15 @@ export class PlaywrightConversationAdapter implements ConversationPort {
       );
     }
 
-    const uiConfig = config
-      ? this.toPlaywrightConfig(config)
-      : await new PlaywrightChatDiscovery(browserSession.page).discover();
+    let uiConfig: PlaywrightConversationUiConfig;
+    if (config) {
+      uiConfig = this.toPlaywrightConfig(config);
+    } else {
+      const discovery = new PlaywrightChatDiscovery(browserSession.page);
+      const result = await discovery.discoverWithEvidence();
+      this.lastDiscoveryReport = result.report;
+      uiConfig = result.config;
+    }
 
     const ui = new PlaywrightConversationUi(browserSession.page, uiConfig);
     return new PlaywrightConversationSession(browserSession, ui, timeoutMs);
