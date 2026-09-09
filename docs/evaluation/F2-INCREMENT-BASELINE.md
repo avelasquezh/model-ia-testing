@@ -66,23 +66,13 @@ Cuando un incremento histórico no conservó el número en el nombre del archivo
 
 La cronología histórica del commit `98af7f08dfa16bf467156cbd4513f572da667d17` registra explícitamente las operaciones de F2-01 a F2-05 y posteriormente las etapas de trazabilidad de medición, modelo/priorización de riesgo, agregación, no compensación de críticos, falsos positivos/negativos, evaluación asistida por IA, repetición, estadística y métricas. Ese mismo histórico introduce explícitamente F2-18, F2-19, F2-20 y F2-21.
 
-El documento F2-15 declara explícitamente que F2-16 es la capa de reglas de decisión, y F2-16 declara que F2-15 define métricas y unidades. fileciteturn358file0L2-L2 fileciteturn356file0L2-L2
+El documento F2-15 declara explícitamente que F2-16 es la capa de reglas de decisión, y F2-16 declara que F2-15 define métricas y unidades.
 
-F2-17 declara que sigue a F2-16 y precede a F2-18. fileciteturn363file0L2-L2
+F2-17 declara que sigue a F2-16 y precede a F2-18.
 
 ### Tramo F2-22 a F2-35
 
-Los archivos numerados actuales confirman la continuidad de F2-22 a F2-35. Ejemplos directos:
-
-- F2-22 formaliza el contrato metodológico. fileciteturn379file0L2-L2
-- F2-23 formaliza las invariantes de versionado. fileciteturn380file0L2-L2
-- F2-24 fija el perímetro del MVP. fileciteturn377file0L2-L2
-- F2-25 materializa la selección contextual. fileciteturn378file0L2-L2
-- F2-26 vincula el plan con la ejecución. fileciteturn368file0L2-L2
-- F2-27 y F2-28 cubren repetición y tratamiento estadístico descriptivo. fileciteturn364file0L2-L2 fileciteturn365file0L2-L2
-- F2-29, F2-30, F2-31 y F2-32 completan la cadena interpretación → juicio → decisión → agregación. fileciteturn371file0L2-L2 fileciteturn372file0L2-L2 fileciteturn373file0L2-L2 fileciteturn374file0L2-L2
-- F2-33 y F2-34 restringen la agregación al plan y a los criterios aplicables. fileciteturn375file0L2-L2 fileciteturn376file0L2-L2
-- F2-35 cierra el tramo con cobertura metodológica. fileciteturn355file0L2-L2
+Los archivos numerados actuales confirman la continuidad de F2-22 a F2-35.
 
 ## Regla de gobierno de la secuencia
 
@@ -96,12 +86,12 @@ Los archivos numerados actuales confirman la continuidad de F2-22 a F2-35. Ejemp
 
 ## Relación con el trabajo posterior ya materializado
 
-Existen documentos posteriores denominados F2-36 en adelante en el estado actual de `main`, por ejemplo F2-36 de interpretación de cobertura y F2-46 de validación con Ollama. fileciteturn366file0L2-L2 fileciteturn389file0L2-L2
+Existen documentos históricos posteriores denominados F2-36 en adelante. No forman parte de la baseline oficial de 35 incrementos definida aquí. Se conservan por trazabilidad y se clasifican mediante `F2-EXT-*` o `F2-VAL-*` según el registro de decisiones vigente.
 
-Esos documentos **no forman parte de la baseline oficial de 35 incrementos definida aquí**. Deben tratarse como trabajo posterior/extensión hasta que una decisión metodológica formal determine su nomenclatura definitiva. No deben utilizarse para redefinir retrospectivamente el MVP original.
+El histórico `F2-46` correspondía a una adaptación/validación live con Ollama. Esa línea de trabajo fue **retirada y no adoptada**; Ollama no forma parte del alcance activo del proyecto y no debe utilizarse como próximo paso ni como proveedor asumido.
 
 ## Estado de reconstrucción
 
 **RECONSTRUIDO: 35/35 incrementos oficiales.**
 
-La siguiente tarea metodológica no debe comenzar con un nuevo número. Primero se debe clasificar formalmente el trabajo posterior existente frente a esta baseline y actualizar la documentación de estado para que no vuelva a aparecer una secuencia improvisada.
+La siguiente tarea metodológica debe partir de la clasificación del trabajo posterior y de las decisiones vigentes, sin crear una secuencia F2-36+ improvisada. El siguiente trabajo activo es `F2-VAL-05`, cuya ejecución real depende de un entorno externo controlado y de evidencia externa reproducible.
