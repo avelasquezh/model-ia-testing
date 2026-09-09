@@ -7,6 +7,7 @@ export type EvaluationCaseResult = {
   conversationId: string;
   outcome: EvaluationOutcome;
   evidenceInsufficient: boolean;
+  evidenceIds: string[];
   channel?: string;
   transport?: string;
   botId?: string;
@@ -60,6 +61,13 @@ const requireOutcome = (value: unknown, index: number): EvaluationOutcome => {
   return value as EvaluationOutcome;
 };
 
+const requireEvidenceIds = (value: unknown, index: number): string[] => {
+  if (!Array.isArray(value) || value.length === 0 || !value.every((id) => typeof id === 'string' && id.trim().length > 0)) {
+    throw new Error(`Evaluation case ${index} requires non-empty evidenceIds`);
+  }
+  return [...value] as string[];
+};
+
 const validateProvenance = (value: unknown): EvaluationRun['evaluator'] => {
   const evaluator = asRecord(value, 'Evaluation result evaluator provenance must be an object');
 
@@ -83,6 +91,7 @@ const validateCaseResult = (value: unknown, index: number): EvaluationCaseResult
     throw new Error(`Evaluation case ${index} requires boolean evidenceInsufficient`);
   }
   const evidenceInsufficient = result.evidenceInsufficient;
+  const evidenceIds = requireEvidenceIds(result.evidenceIds, index);
 
   const optionalFields = ['channel', 'transport', 'botId', 'botVersion', 'executionId'] as const;
   const optional: Partial<Pick<EvaluationCaseResult, (typeof optionalFields)[number]>> = {};
@@ -99,6 +108,7 @@ const validateCaseResult = (value: unknown, index: number): EvaluationCaseResult
     conversationId,
     outcome,
     evidenceInsufficient,
+    evidenceIds,
     ...optional,
   };
 };
