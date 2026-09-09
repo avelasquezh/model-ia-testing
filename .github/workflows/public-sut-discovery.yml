@@ -1,10 +1,24 @@
 name: Public SUT discovery corpus
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/infrastructure/execution/playwright/**'
+      - 'scripts/run-browser-sut.ts'
+      - 'scripts/run-public-sut-discovery.ts'
+      - 'scripts/merge-discovery-reports.ts'
+      - 'examples/browser-sut-*.json'
+      - 'examples/public-sut-discovery-corpus.json'
+      - '.github/workflows/public-sut-discovery.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: public-sut-discovery-main
+  cancel-in-progress: false
 
 jobs:
   discover:
