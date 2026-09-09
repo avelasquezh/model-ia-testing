@@ -8,6 +8,7 @@ const validCase = {
   conversationId: 'conversation-01',
   outcome: 'PASS',
   evidenceInsufficient: false,
+  evidenceIds: ['evidence-01'],
 };
 
 const validRun = {
@@ -24,7 +25,7 @@ const validRun = {
 };
 
 describe('EvaluationRunValidator', () => {
-  it('accepts a valid normalized evaluation result', () => {
+  it('accepts a valid normalized evaluation result and preserves evidence identity', () => {
     expect(parseEvaluationRun(validRun)).toEqual(validRun);
   });
 
@@ -54,6 +55,18 @@ describe('EvaluationRunValidator', () => {
       ...validRun,
       cases: [{ ...validCase, evidenceInsufficient: 'false' }],
     })).toThrow('evidenceInsufficient');
+  });
+
+  it('rejects missing or empty evidence identity', () => {
+    expect(() => parseEvaluationRun({
+      ...validRun,
+      cases: [{ ...validCase, evidenceIds: undefined }],
+    })).toThrow('evidenceIds');
+
+    expect(() => parseEvaluationRun({
+      ...validRun,
+      cases: [{ ...validCase, evidenceIds: [] }],
+    })).toThrow('evidenceIds');
   });
 
   it('rejects empty optional provenance fields when supplied', () => {
