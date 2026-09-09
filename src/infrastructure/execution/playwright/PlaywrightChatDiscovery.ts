@@ -1,6 +1,17 @@
-import type { Locator, Page } from '@playwright/test';
+import type { Frame, Locator, Page } from '@playwright/test';
 import type { PlaywrightConversationUiConfig, PlaywrightLocatorDefinition } from './PlaywrightConversationUi.js';
 import type { ChatDiscoveryCandidate, ChatDiscoveryReport } from './ChatDiscoveryReport.js';
+
+type ChatCandidateSpec = {
+  readonly strategy: string;
+  readonly locator: Locator;
+  readonly confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+};
+
+type SearchContext = {
+  readonly name: string;
+  readonly context: Page | Frame;
+};
 
 export class PlaywrightChatDiscovery {
   public constructor(private readonly page: Page) {}
@@ -18,44 +29,43 @@ export class PlaywrightChatDiscovery {
     const selected: ChatDiscoveryReport['selected'] = {};
 
     try {
-      const composerCandidates = [
-        { strategy: 'role:textbox[name~message|mensaje|chat|escribe|type]', locator: this.page.getByRole('textbox', { name: /message|mensaje|chat|escribe|type/i }), confidence: 'HIGH' as const },
-        { strategy: 'placeholder~message|mensaje|chat|escribe|type', locator: this.page.getByPlaceholder(/message|mensaje|chat|escribe|type/i), confidence: 'HIGH' as const },
-        { strategy: 'textarea', locator: this.page.locator('textarea'), confidence: 'MEDIUM' as const },
-        { strategy: 'input[type=text]', locator: this.page.locator('input[type="text"]'), confidence: 'LOW' as const },
-        { strategy: '[contenteditable=true]', locator: this.page.locator('[contenteditable="true"]'), confidence: 'MEDIUM' as const },
-      ];
-      const composer = await this.findFirstVisible(composerCandidates.map((candidate) => candidate.locator));
-      await this.recordCandidates(candidates, 'composer', composerCandidates, composer);
+      let contexts = this.searchContexts();
+      let composerSpecs = this.buildComposerCandidates(contexts);
+      let composer = await this.findFirstVisible(composerSpecs.map((candidate) => candidate.locator));
+      await this.recordCandidates(candidates, 'composer', composerSpecs, composer);
+
+      if (!composer) {
+        const launcherSpecs = this.buildLauncherCandidates(contexts);
+        const launcher = await this.findFirstVisible(launcherSpecs.map((candidate) => candidate.locator));
+        await this.recordCandidates(candidates, 'launcher', launcherSpecs, launcher);
+        if (launcher) {
+          selected.launcher = await this.selection(launcher, launcherSpecs);
+          await launcher.click({ timeout: 5_000 });
+          await this.page.waitForTimeout(750);
+
+          contexts = this.searchContexts();
+          composerSpecs = this.buildComposerCandidates(contexts);
+          composer = await this.findFirstVisible(composerSpecs.map((candidate) => candidate.locator));
+          await this.recordCandidates(candidates, 'composer', composerSpecs, composer);
+        }
+      }
+
       if (!composer) throw new Error('Chat composer could not be discovered on the public URL');
-      selected.composer = await this.selection(composer, composerCandidates);
+      selected.composer = await this.selection(composer, composerSpecs);
 
-      const sendCandidates = [
-        { strategy: 'role:button[name~send|enviar|submit|mandar]', locator: this.page.getByRole('button', { name: /send|enviar|submit|mandar/i }), confidence: 'HIGH' as const },
-        { strategy: 'button[aria-label*=send]', locator: this.page.locator('button[aria-label*="send" i]'), confidence: 'HIGH' as const },
-        { strategy: 'button[title*=send]', locator: this.page.locator('button[title*="send" i]'), confidence: 'MEDIUM' as const },
-        { strategy: 'button[aria-label*=enviar]', locator: this.page.locator('button[aria-label*="enviar" i]'), confidence: 'HIGH' as const },
-        { strategy: 'button[title*=enviar]', locator: this.page.locator('button[title*="enviar" i]'), confidence: 'MEDIUM' as const },
-      ];
-      const sendButton = await this.findFirstVisible(sendCandidates.map((candidate) => candidate.locator));
-      await this.recordCandidates(candidates, 'sendButton', sendCandidates, sendButton);
-      if (sendButton) selected.sendButton = await this.selection(sendButton, sendCandidates);
+      const sendSpecs = this.buildSendCandidates(contexts);
+      const sendButton = await this.findFirstVisible(sendSpecs.map((candidate) => candidate.locator));
+      await this.recordCandidates(candidates, 'sendButton', sendSpecs, sendButton);
+      if (sendButton) selected.sendButton = await this.selection(sendButton, sendSpecs);
 
-      const responseCandidates = [
-        { strategy: '[data-testid*=message]', locator: this.page.locator('[data-testid*="message" i]'), confidence: 'HIGH' as const },
-        { strategy: '[aria-live=polite]', locator: this.page.locator('[aria-live="polite"]'), confidence: 'HIGH' as const },
-        { strategy: '[aria-live=assertive]', locator: this.page.locator('[aria-live="assertive"]'), confidence: 'HIGH' as const },
-        { strategy: 'role:log', locator: this.page.getByRole('log'), confidence: 'HIGH' as const },
-        { strategy: '[class*=response]', locator: this.page.locator('[class*="response" i]'), confidence: 'MEDIUM' as const },
-        { strategy: '[class*=message]', locator: this.page.locator('[class*="message" i]'), confidence: 'LOW' as const },
-      ];
+      const responseSpecs = this.buildResponseCandidates(contexts);
       const response = await this.findFirstVisibleExcluding(
-        responseCandidates.map((candidate) => candidate.locator),
+        responseSpecs.map((candidate) => candidate.locator),
         [composer, sendButton],
       );
-      await this.recordCandidates(candidates, 'response', responseCandidates, response);
+      await this.recordCandidates(candidates, 'response', responseSpecs, response);
       if (!response) throw new Error('Chat response could not be discovered on the public URL');
-      selected.response = await this.selection(response, responseCandidates);
+      selected.response = await this.selection(response, responseSpecs);
 
       return {
         config: {
@@ -69,6 +79,73 @@ export class PlaywrightChatDiscovery {
       const message = error instanceof Error ? error.message : String(error);
       throw new ChatDiscoveryError(message, this.buildReport('FAILED', candidates, selected, message));
     }
+  }
+
+  private searchContexts(): SearchContext[] {
+    const frames = this.page.frames().filter((frame) => frame !== this.page.mainFrame());
+    return [
+      { name: 'main', context: this.page },
+      ...frames.map((frame, index) => ({
+        name: `frame:${index + 1}:${frame.url() || 'unknown'}`,
+        context: frame,
+      })),
+    ];
+  }
+
+  private buildLauncherCandidates(contexts: readonly SearchContext[]): ChatCandidateSpec[] {
+    const candidates: ChatCandidateSpec[] = [];
+    for (const { name, context } of contexts) {
+      candidates.push(
+        { strategy: `${name}:role:button[name~chat|help|assistant|support|message]`, locator: context.getByRole('button', { name: /chat|help|assistant|support|message/i }), confidence: 'HIGH' },
+        { strategy: `${name}:aria-label~chat|help|assistant|support|message`, locator: context.locator('[aria-label*="chat" i], [aria-label*="help" i], [aria-label*="assistant" i], [aria-label*="support" i], [aria-label*="message" i]'), confidence: 'MEDIUM' },
+        { strategy: `${name}:title~chat|help|assistant|support|message`, locator: context.locator('[title*="chat" i], [title*="help" i], [title*="assistant" i], [title*="support" i], [title*="message" i]'), confidence: 'MEDIUM' },
+        { strategy: `${name}:data-testid~chat|launcher|widget`, locator: context.locator('[data-testid*="chat" i], [data-testid*="launcher" i], [data-testid*="widget" i]'), confidence: 'MEDIUM' },
+      );
+    }
+    return candidates;
+  }
+
+  private buildComposerCandidates(contexts: readonly SearchContext[]): ChatCandidateSpec[] {
+    const candidates: ChatCandidateSpec[] = [];
+    for (const { name, context } of contexts) {
+      candidates.push(
+        { strategy: `${name}:role:textbox[name~message|mensaje|chat|escribe|type]`, locator: context.getByRole('textbox', { name: /message|mensaje|chat|escribe|type/i }), confidence: 'HIGH' },
+        { strategy: `${name}:placeholder~message|mensaje|chat|escribe|type`, locator: context.getByPlaceholder(/message|mensaje|chat|escribe|type/i), confidence: 'HIGH' },
+        { strategy: `${name}:textarea`, locator: context.locator('textarea'), confidence: 'MEDIUM' },
+        { strategy: `${name}:input[type=text]`, locator: context.locator('input[type="text"]'), confidence: 'LOW' },
+        { strategy: `${name}:[contenteditable=true]`, locator: context.locator('[contenteditable="true"]'), confidence: 'MEDIUM' },
+      );
+    }
+    return candidates;
+  }
+
+  private buildSendCandidates(contexts: readonly SearchContext[]): ChatCandidateSpec[] {
+    const candidates: ChatCandidateSpec[] = [];
+    for (const { name, context } of contexts) {
+      candidates.push(
+        { strategy: `${name}:role:button[name~send|enviar|submit|mandar]`, locator: context.getByRole('button', { name: /send|enviar|submit|mandar/i }), confidence: 'HIGH' },
+        { strategy: `${name}:button[aria-label*=send]`, locator: context.locator('button[aria-label*="send" i]'), confidence: 'HIGH' },
+        { strategy: `${name}:button[title*=send]`, locator: context.locator('button[title*="send" i]'), confidence: 'MEDIUM' },
+        { strategy: `${name}:button[aria-label*=enviar]`, locator: context.locator('button[aria-label*="enviar" i]'), confidence: 'HIGH' },
+        { strategy: `${name}:button[title*=enviar]`, locator: context.locator('button[title*="enviar" i]'), confidence: 'MEDIUM' },
+      );
+    }
+    return candidates;
+  }
+
+  private buildResponseCandidates(contexts: readonly SearchContext[]): ChatCandidateSpec[] {
+    const candidates: ChatCandidateSpec[] = [];
+    for (const { name, context } of contexts) {
+      candidates.push(
+        { strategy: `${name}:[data-testid*=message]`, locator: context.locator('[data-testid*="message" i]'), confidence: 'HIGH' },
+        { strategy: `${name}:[aria-live=polite]`, locator: context.locator('[aria-live="polite"]'), confidence: 'HIGH' },
+        { strategy: `${name}:[aria-live=assertive]`, locator: context.locator('[aria-live="assertive"]'), confidence: 'HIGH' },
+        { strategy: `${name}:role=log`, locator: context.getByRole('log'), confidence: 'HIGH' },
+        { strategy: `${name}:[class*=response]`, locator: context.locator('[class*="response" i]'), confidence: 'MEDIUM' },
+        { strategy: `${name}:[class*=message]`, locator: context.locator('[class*="message" i]'), confidence: 'LOW' },
+      );
+    }
+    return candidates;
   }
 
   private buildReport(
@@ -88,21 +165,19 @@ export class PlaywrightChatDiscovery {
     };
   }
 
-  private async recordCandidates<T extends { strategy: string; locator: Locator; confidence: 'HIGH' | 'MEDIUM' | 'LOW' }>(
+  private async recordCandidates(
     report: ChatDiscoveryCandidate[],
     role: ChatDiscoveryCandidate['role'],
-    candidates: readonly T[],
+    candidates: readonly ChatCandidateSpec[],
     selected: Locator | null,
   ): Promise<void> {
     for (const candidate of candidates) {
       const count = await candidate.locator.count();
-      let visible = false;
       let element: ChatDiscoveryCandidate['element'];
       if (count > 0) {
         for (let index = 0; index < count; index += 1) {
           const item = candidate.locator.nth(index);
           if (await item.isVisible()) {
-            visible = true;
             element = await this.elementEvidence(item);
             break;
           }
@@ -118,13 +193,12 @@ export class PlaywrightChatDiscovery {
         confidence: candidate.confidence,
         ...(element ? { element } : {}),
       });
-      void visible;
     }
   }
 
-  private async selection<T extends { strategy: string; locator: Locator; confidence: 'HIGH' | 'MEDIUM' | 'LOW' }>(
+  private async selection(
     locator: Locator,
-    candidates: readonly T[],
+    candidates: readonly ChatCandidateSpec[],
   ): Promise<{ strategy: string; confidence: 'HIGH' | 'MEDIUM' | 'LOW'; evidence?: ChatDiscoveryCandidate['element'] }> {
     for (const candidate of candidates) {
       if (await this.sameElement(locator, candidate.locator)) {
@@ -146,6 +220,7 @@ export class PlaywrightChatDiscovery {
       placeholder: node.getAttribute('placeholder'),
       testId: node.getAttribute('data-testid'),
       text: (node.textContent ?? '').trim().slice(0, 160) || null,
+      frameUrl: window.location.href,
     }));
   }
 
