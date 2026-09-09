@@ -1,6 +1,6 @@
 import { chromium } from '@playwright/test';
 import { afterAll, describe, expect, it } from 'vitest';
-import { PlaywrightConversationUi } from './PlaywrightConversationUi.js';
+import { PlaywrightConversationUi, ConversationResponseTimeoutError } from './PlaywrightConversationUi.js';
 
 const browser = await chromium.launch({ headless: true });
 
@@ -177,6 +177,35 @@ describe('PlaywrightConversationUi', () => {
     });
 
     await expect(ui.sendMessage('Hola', 2_000)).resolves.toBe('Respuesta final');
+
+    await context.close();
+  });
+
+  it('raises a typed response timeout error when no new observable response appears', async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await page.setContent(`
+      <main>
+        <input aria-label="Mensaje" />
+        <button id="send">Enviar</button>
+        <div data-testid="assistant-message">Bienvenido</div>
+      </main>
+    `);
+
+    const ui = new PlaywrightConversationUi(page, {
+      composer: { kind: 'role', role: 'textbox', name: 'Mensaje' },
+      sendButton: { kind: 'role', role: 'button', name: 'Enviar' },
+      response: { kind: 'testId', value: 'assistant-message' },
+      responseTimeoutMs: 100,
+      pollIntervalMs: 10,
+    });
+
+    await expect(ui.sendMessage('Hola', 100)).rejects.toBeInstanceOf(ConversationResponseTimeoutError);
+    await expect(ui.sendMessage.bind(ui, 'Hola', 100)).rejects.toMatchObject({
+      name: 'RESPONSE_TIMEOUT',
+      message: 'Conversation response was not observed before timeout',
+    });
 
     await context.close();
   });
