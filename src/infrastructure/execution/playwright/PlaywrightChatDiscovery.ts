@@ -1,6 +1,6 @@
 import type { Frame, Locator, Page } from '@playwright/test';
 import type { PlaywrightConversationUiConfig, PlaywrightLocatorDefinition } from './PlaywrightConversationUi.js';
-import type { ChatDiscoveryCandidate, ChatDiscoveryReport } from './ChatDiscoveryReport.js';
+import type { ChatDiscoveryCandidate, ChatDiscoveryReport, ChatDiscoveryTraversalStep } from './ChatDiscoveryReport.js';
 
 type ChatCandidateSpec = {
   readonly strategy: string;
@@ -12,6 +12,10 @@ type SearchContext = {
   readonly name: string;
   readonly context: Page | Frame;
 };
+
+const MAX_TRAVERSAL_DEPTH = 2;
+const MAX_TRAVERSAL_CLICKS = 6;
+const TRANSITION_WAIT_MS = 500;
 
 export class PlaywrightChatDiscovery {
   public constructor(private readonly page: Page) {}
@@ -27,6 +31,7 @@ export class PlaywrightChatDiscovery {
   }> {
     const candidates: ChatDiscoveryCandidate[] = [];
     const selected: ChatDiscoveryReport['selected'] = {};
+    const traversalPath: ChatDiscoveryTraversalStep[] = [];
 
     try {
       await this.dismissConsentBanners();
@@ -44,8 +49,9 @@ export class PlaywrightChatDiscovery {
         await this.recordCandidates(candidates, 'launcher', launcherSpecs, launcher);
         if (launcher) {
           selected.launcher = await this.selection(launcher, launcherSpecs);
+          traversalPath.push({ depth: 0, strategy: selected.launcher.strategy, evidence: selected.launcher.evidence });
           await launcher.click({ timeout: 5_000 });
-          await this.page.waitForTimeout(750);
+          await this.page.waitForTimeout(TRANSITION_WAIT_MS);
 
           contexts = this.searchContexts();
           const postOpenCaptcha = await this.findVisibleCaptchaGate();
@@ -55,6 +61,13 @@ export class PlaywrightChatDiscovery {
           composer = await this.findFirstVisible(composerSpecs.map((candidate) => candidate.locator));
           await this.recordCandidates(candidates, 'composer', composerSpecs, composer);
         }
+      }
+
+      if (!composer) {
+        const traversalResult = await this.traverseNestedWidgets(candidates, traversalPath, composerSpecs);
+        composer = traversalResult.composer;
+        composerSpecs = traversalResult.composerSpecs;
+        contexts = traversalResult.contexts;
       }
 
       if (!composer) throw new Error('Chat composer could not be discovered on the public URL');
@@ -80,12 +93,80 @@ export class PlaywrightChatDiscovery {
           response: this.toDefinition(response),
           ...(sendButton ? { sendButton: this.toDefinition(sendButton) } : {}),
         },
-        report: this.buildReport('DISCOVERED', candidates, selected),
+        report: this.buildReport('DISCOVERED', candidates, selected, traversalPath),
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new ChatDiscoveryError(message, this.buildReport('FAILED', candidates, selected, message));
+      throw new ChatDiscoveryError(message, this.buildReport('FAILED', candidates, selected, traversalPath, message));
     }
+  }
+
+  private async traverseNestedWidgets(
+    candidates: ChatDiscoveryCandidate[],
+    traversalPath: ChatDiscoveryTraversalStep[],
+    initialComposerSpecs: readonly ChatCandidateSpec[],
+  ): Promise<{
+    readonly composer: Locator | null;
+    readonly composerSpecs: ChatCandidateSpec[];
+    readonly contexts: SearchContext[];
+  }> {
+    let contexts = this.searchContexts();
+    let composerSpecs = [...initialComposerSpecs];
+    let composer = await this.findFirstVisible(composerSpecs.map((candidate) => candidate.locator));
+    if (composer) return { composer, composerSpecs, contexts };
+
+    const visited = new Set<string>();
+    let clicks = 0;
+
+    for (let depth = 1; depth <= MAX_TRAVERSAL_DEPTH && clicks < MAX_TRAVERSAL_CLICKS; depth += 1) {
+      contexts = this.searchContexts();
+      composerSpecs = this.buildComposerCandidates(contexts);
+      composer = await this.findFirstVisible(composerSpecs.map((candidate) => candidate.locator));
+      await this.recordCandidates(candidates, 'composer', composerSpecs, composer);
+      if (composer) return { composer, composerSpecs, contexts };
+
+      const traversalSpecs = this.buildNestedWidgetCandidates(contexts);
+      let clickedAtDepth = false;
+
+      for (const spec of traversalSpecs) {
+        const count = await spec.locator.count();
+        for (let index = 0; index < count && clicks < MAX_TRAVERSAL_CLICKS; index += 1) {
+          const item = spec.locator.nth(index);
+          if (!await item.isVisible()) continue;
+          if (!await item.isEnabled().catch(() => false)) continue;
+
+          const evidence = await this.elementEvidence(item).catch(() => null);
+          if (!evidence) continue;
+          const visitKey = `${spec.strategy}#${index}|${evidence.frameUrl}|${evidence.tagName}|${evidence.ariaLabel}|${evidence.testId}|${evidence.text}`;
+          if (visited.has(visitKey)) continue;
+          visited.add(visitKey);
+
+          try {
+            await item.click({ timeout: 3_000 });
+          } catch {
+            continue;
+          }
+
+          clicks += 1;
+          clickedAtDepth = true;
+          traversalPath.push({ depth, strategy: spec.strategy, evidence });
+          await this.page.waitForTimeout(TRANSITION_WAIT_MS);
+
+          const captcha = await this.findVisibleCaptchaGate();
+          if (captcha) throw new Error(`CAPTCHA access gate detected (${captcha.strategy})`);
+
+          contexts = this.searchContexts();
+          composerSpecs = this.buildComposerCandidates(contexts);
+          composer = await this.findFirstVisible(composerSpecs.map((candidate) => candidate.locator));
+          await this.recordCandidates(candidates, 'composer', composerSpecs, composer);
+          if (composer) return { composer, composerSpecs, contexts };
+        }
+      }
+
+      if (!clickedAtDepth) break;
+    }
+
+    return { composer: null, composerSpecs, contexts };
   }
 
   private searchContexts(): SearchContext[] {
@@ -104,11 +185,11 @@ export class PlaywrightChatDiscovery {
     const consentNames = /^(accept|accept all|allow|allow all|agree|got it|aceptar|aceptar todo|aceptar todas|permitir|permitir todas|de acuerdo|entendido)(\s+(cookies?|all|todas?|todo))?$/i;
 
     for (const { context } of contexts) {
-      const candidates = [
+      const consentCandidates = [
         context.getByRole('button', { name: consentNames }),
         context.locator('[aria-label*="accept" i], [aria-label*="cookie" i], [aria-label*="aceptar" i], [data-testid*="cookie" i] button'),
       ];
-      for (const candidate of candidates) {
+      for (const candidate of consentCandidates) {
         const visible = await this.findFirstVisible([candidate]);
         if (!visible) continue;
         try {
@@ -149,6 +230,22 @@ export class PlaywrightChatDiscovery {
         { strategy: `${name}:aria-label~chat|help|assistant|support|message`, locator: context.locator('[aria-label*="chat" i], [aria-label*="help" i], [aria-label*="assistant" i], [aria-label*="support" i], [aria-label*="message" i]'), confidence: 'MEDIUM' },
         { strategy: `${name}:title~chat|help|assistant|support|message`, locator: context.locator('[title*="chat" i], [title*="help" i], [title*="assistant" i], [title*="support" i], [title*="message" i]'), confidence: 'MEDIUM' },
         { strategy: `${name}:data-testid~chat|launcher|widget`, locator: context.locator('[data-testid*="chat" i], [data-testid*="launcher" i], [data-testid*="widget" i]'), confidence: 'MEDIUM' },
+      );
+    }
+    return candidates;
+  }
+
+  private buildNestedWidgetCandidates(contexts: readonly SearchContext[]): ChatCandidateSpec[] {
+    const candidates: ChatCandidateSpec[] = [];
+    const intermediaryName = /contact|customer service|customer support|service|help|assistant|support|chat|message|atención|contacto|servicio|ayuda|asesor|asistente|mensaje/i;
+    for (const { name, context } of contexts) {
+      candidates.push(
+        { strategy: `${name}:nested:role:button[name~contact|service|help|assistant|support|chat|message]`, locator: context.getByRole('button', { name: intermediaryName }), confidence: 'MEDIUM' },
+        { strategy: `${name}:nested:[aria-haspopup]`, locator: context.locator('button[aria-haspopup], [role="button"][aria-haspopup]'), confidence: 'MEDIUM' },
+        { strategy: `${name}:nested:[aria-expanded=false]`, locator: context.locator('button[aria-expanded="false"], [role="button"][aria-expanded="false"]'), confidence: 'LOW' },
+        { strategy: `${name}:nested:aria-label~contact|service|help|assistant|support|chat|message`, locator: context.locator('[aria-label*="contact" i], [aria-label*="service" i], [aria-label*="help" i], [aria-label*="assistant" i], [aria-label*="support" i], [aria-label*="chat" i], [aria-label*="message" i]'), confidence: 'MEDIUM' },
+        { strategy: `${name}:nested:title~contact|service|help|assistant|support|chat|message`, locator: context.locator('[title*="contact" i], [title*="service" i], [title*="help" i], [title*="assistant" i], [title*="support" i], [title*="chat" i], [title*="message" i]'), confidence: 'LOW' },
+        { strategy: `${name}:nested:data-testid~contact|service|help|assistant|support|chat|message|widget`, locator: context.locator('[data-testid*="contact" i], [data-testid*="service" i], [data-testid*="help" i], [data-testid*="assistant" i], [data-testid*="support" i], [data-testid*="chat" i], [data-testid*="message" i], [data-testid*="widget" i]'), confidence: 'LOW' },
       );
     }
     return candidates;
@@ -201,6 +298,7 @@ export class PlaywrightChatDiscovery {
     status: ChatDiscoveryReport['status'],
     candidates: readonly ChatDiscoveryCandidate[],
     selected: ChatDiscoveryReport['selected'],
+    traversalPath: readonly ChatDiscoveryTraversalStep[],
     error?: string,
   ): ChatDiscoveryReport {
     return {
@@ -210,6 +308,7 @@ export class PlaywrightChatDiscovery {
       discoveredAt: new Date().toISOString(),
       candidates,
       selected,
+      ...(traversalPath.length > 0 ? { traversalPath } : {}),
       ...(error ? { error } : {}),
     };
   }
