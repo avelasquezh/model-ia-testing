@@ -10,15 +10,37 @@ The benchmark measures whether adaptive discovery improves discovery and verifie
 
 For every target:
 
-1. Reset the browser/session to the same initial state.
-2. Run LEGACY discovery.
-3. Record candidate count, selected launcher, composer/send/response outcome, errors and duration.
-4. Reset again.
-5. Run ADAPTIVE discovery.
-6. Record the same measurements plus experiment count, DOM-diff signals and evidence score.
-7. Classify the final outcome using the same functional verification contract.
+1. Create a fresh Playwright browser context.
+2. Navigate to the target URL and run LEGACY discovery.
+3. Close the context completely.
+4. Create a second fresh context, navigate to the same target URL and run ADAPTIVE discovery.
+5. Persist both observations in one versioned benchmark report.
 
-The models must not share the selected locator from the other model during the experiment.
+Fresh contexts are the controlled reset mechanism. The models never share a selected locator, page state or browser storage from the other run.
+
+The current orchestrator measures **discovery only**. `CHAT_SURFACE_FOUND` means that the discovery model identified a chat-like surface; it does not mean that SEND → RECEIVE was proven. Functional verification remains a separate authority and is explicitly marked `NOT_PERFORMED` by the benchmark CLI.
+
+## Running the benchmark
+
+Use the maintained public corpus by default:
+
+```bash
+npm run browser:discovery:benchmark
+```
+
+Optional configuration:
+
+```bash
+DISCOVERY_BENCHMARK_CORPUS_FILE=examples/public-sut-discovery-corpus.json \
+DISCOVERY_BENCHMARK_OUTPUT_FILE=artifacts/browser-sut/adaptive-discovery-benchmark.json \
+DISCOVERY_BENCHMARK_TIMEOUT_MS=30000 \
+ADAPTIVE_DISCOVERY_MAX_CANDIDATES=40 \
+ADAPTIVE_DISCOVERY_MAX_CLICKS=12 \
+ADAPTIVE_DISCOVERY_THRESHOLD=35 \
+npm run browser:discovery:benchmark
+```
+
+The report contains one observation per model and target, adaptive experiment evidence where applicable, a comparison summary and an explicit error list. External SUTs can change or block automation, so a failed target is evidence about that runtime condition rather than automatic proof that the model is wrong.
 
 ## Primary metrics
 
@@ -28,6 +50,8 @@ The models must not share the selected locator from the other model during the e
 - **Candidate efficiency** = experiments performed before the first high-confidence chat candidate.
 - **Coverage delta** = adaptive discovery rate minus legacy discovery rate.
 - **Verification delta** = adaptive verification rate minus legacy verification rate.
+
+The current discovery-only report can calculate discovery and efficiency metrics. Verification and precision must be calculated only after a downstream functional probe supplies the ground-truth outcome.
 
 ## Precision definition
 
