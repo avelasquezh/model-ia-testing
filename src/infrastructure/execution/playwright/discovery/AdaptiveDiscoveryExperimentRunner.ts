@@ -40,10 +40,19 @@ export class AdaptiveDiscoveryExperimentRunner {
     const candidates = await this.collectCandidates();
     const experiments: DiscoveryExperimentResult[] = [];
     let clicksAttempted = 0;
+    const maxClicks = this.options.maxClicks ?? DEFAULT_MAX_CLICKS;
+    const highConfidenceThreshold = this.options.highConfidenceThreshold ?? HIGH_CONFIDENCE_THRESHOLD;
 
     for (const handle of candidates) {
-      if (clicksAttempted >= (this.options.maxClicks ?? DEFAULT_MAX_CLICKS)) break;
-      if (handle.candidate.score < (this.options.highConfidenceThreshold ?? HIGH_CONFIDENCE_THRESHOLD)) continue;
+      if (clicksAttempted >= maxClicks) break;
+
+      // The score is a ranking signal, not an eligibility gate. A low-scoring
+      // candidate can still be the actual launcher on an unfamiliar SUT. The
+      // behavioral experiment is what decides whether the candidate is useful.
+      // Keep the threshold available as evidence metadata without preventing
+      // exploration of candidates below it.
+      const isHighConfidence = handle.candidate.score >= highConfidenceThreshold;
+      void isHighConfidence;
 
       const before = await this.snapshot();
       const beforeUrl = this.page.url();
