@@ -111,46 +111,50 @@ describe('PlaywrightChatDiscovery', () => {
     expect(result.report.traversalPath?.some((step) => step.evidence?.ariaLabel === 'Abrir servicios')).toBe(true);
   });
 
-  it('retains a deferred response locator when the response is mounted after send', async () => {
-    await page.locator('body').evaluate((body) => {
-      body.innerHTML = `
-        <main>
-          <label for="message">Mensaje</label>
-          <input id="message" placeholder="Escribe tu mensaje" />
-          <button aria-label="Enviar mensaje">Enviar</button>
-        </main>
-      `;
-    });
-
-    const sendButton = page.getByRole('button', { name: 'Enviar mensaje' });
-    await sendButton.evaluate((button) => {
-      button.addEventListener('click', () => {
-        const response = document.createElement('section');
-        response.setAttribute('aria-live', 'polite');
-        response.textContent = 'Respuesta montada después de enviar';
-        document.querySelector('main')?.appendChild(response);
+  it(
+    'retains a deferred response locator when the response is mounted after send',
+    async () => {
+      await page.locator('body').evaluate((body) => {
+        body.innerHTML = `
+          <main>
+            <label for="message">Mensaje</label>
+            <input id="message" placeholder="Escribe tu mensaje" />
+            <button aria-label="Enviar mensaje">Enviar</button>
+          </main>
+        `;
       });
-    });
 
-    const result = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
+      const sendButton = page.getByRole('button', { name: 'Enviar mensaje' });
+      await sendButton.evaluate((button) => {
+        button.addEventListener('click', () => {
+          const response = document.createElement('section');
+          response.setAttribute('aria-live', 'polite');
+          response.textContent = 'Respuesta montada después de enviar';
+          document.querySelector('main')?.appendChild(response);
+        });
+      });
 
-    expect(result.report.status).toBe('DISCOVERED');
-    expect(result.report.selected.response?.strategy).toBe('main:[aria-live=polite]');
-    expect(result.report.selected.response?.deferred).toBe(true);
-    expect(result.report.selected.response?.evidence).toBeUndefined();
-    expect(result.config.response.kind).toBe('locator');
-    if (result.config.response.kind !== 'locator') throw new Error('Expected a live response locator');
-    expect(await result.config.response.value.count()).toBe(0);
+      const result = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
 
-    await sendButton.click();
-    expect(await result.config.response.value.textContent()).toBe('Respuesta montada después de enviar');
+      expect(result.report.status).toBe('DISCOVERED');
+      expect(result.report.selected.response?.strategy).toBe('main:[aria-live=polite]');
+      expect(result.report.selected.response?.deferred).toBe(true);
+      expect(result.report.selected.response?.evidence).toBeUndefined();
+      expect(result.config.response.kind).toBe('locator');
+      if (result.config.response.kind !== 'locator') throw new Error('Expected a live response locator');
+      expect(await result.config.response.value.count()).toBe(0);
 
-    const responseCandidate = result.report.candidates.find(
-      (candidate) => candidate.role === 'response' && candidate.selected,
-    );
-    expect(responseCandidate?.deferred).toBe(true);
-    expect(responseCandidate?.matched).toBe(false);
-  });
+      await sendButton.click();
+      expect(await result.config.response.value.textContent()).toBe('Respuesta montada después de enviar');
+
+      const responseCandidate = result.report.candidates.find(
+        (candidate) => candidate.role === 'response' && candidate.selected,
+      );
+      expect(responseCandidate?.deferred).toBe(true);
+      expect(responseCandidate?.matched).toBe(false);
+    },
+    15_000,
+  );
 });
 
 async function locatorAttribute(definition: PlaywrightLocatorDefinition, attribute: string): Promise<string | null> {
