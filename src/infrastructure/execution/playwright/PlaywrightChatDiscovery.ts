@@ -119,11 +119,10 @@ export class PlaywrightChatDiscovery {
       return priorityDifference !== 0 ? priorityDifference : left.index - right.index;
     });
 
-    for (const { candidate } of ranked) {
-      if (await candidate.locator.count() === 0) return { locator: candidate.locator, deferred: true };
-    }
-
-    return { locator: null, deferred: false };
+    const deferred = ranked[0];
+    return deferred
+      ? { locator: deferred.candidate.locator, deferred: true }
+      : { locator: null, deferred: false };
   }
 
   private deferredResponsePriority(strategy: string): number {
