@@ -1,0 +1,21 @@
+{
+  "target": {
+    "id": "olimpica-home",
+    "name": "Olimpica public home",
+    "url": "https://www.olimpica.com/",
+    "status": "ACTIVE"
+  },
+  "scenario": {
+    "id": "DISCOVERY-OLIMPICA",
+    "name": "Nested chatbot discovery baseline",
+    "objective": "Discover a public chatbot interface that may be nested inside another widget and capture an observable response.",
+    "description": "Provider-neutral discovery against the Olimpica home page, exercising bounded nested-widget traversal, iframe inspection, and observable response discovery.",
+    "inputs": [{ "id": "input-01", "value": "Hola, ¿puedes ayudarme?" }],
+    "expectedBehavior": "The chat interface accepts the message and exposes an observable bot response without provider-specific locators.",
+    "finishConditions": [{ "type": "OBSERVATION_CAPTURED", "description": "A non-empty bot response is captured." }],
+    "version": 1
+  },
+  "expectedIntent": "Answer the user's support question using the chatbot's available knowledge.",
+  "expectedIntentVersion": "public-discovery-intent-0.1",
+  "repetition": 1
+}
