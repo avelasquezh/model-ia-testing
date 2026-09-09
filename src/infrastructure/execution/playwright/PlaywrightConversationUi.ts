@@ -88,10 +88,21 @@ export class PlaywrightConversationUi implements ConversationUi {
     timeoutMs: number,
   ): Promise<string> {
     const deadline = Date.now() + Math.min(timeoutMs, this.responseTimeoutMs);
+    let candidate: string | null = null;
+    let stablePolls = 0;
+
     while (Date.now() < deadline) {
       const current = await this.readResponseState(locator);
       const response = this.findNewResponse(previous, current, input);
-      if (response) return response;
+      if (response) {
+        if (response === candidate) {
+          stablePolls += 1;
+        } else {
+          candidate = response;
+          stablePolls = 1;
+        }
+        if (stablePolls >= 2) return response;
+      }
       await this.page.waitForTimeout(this.pollIntervalMs);
     }
     throw new Error('Conversation response was not observed before timeout');
@@ -107,9 +118,7 @@ export class PlaywrightConversationUi implements ConversationUi {
       if (!previousValues.has(value)) return value;
 
       const previousAtIndex = previous.values[index]?.trim() ?? '';
-      if (current.count === previous.count && value !== previousAtIndex && value !== normalizedInput) {
-        return value;
-      }
+      if (value !== previousAtIndex && value !== normalizedInput) return value;
     }
 
     if (current.count > previous.count) {
