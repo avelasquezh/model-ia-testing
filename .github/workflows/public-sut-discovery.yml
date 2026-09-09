@@ -38,6 +38,8 @@ jobs:
             config: examples/browser-sut-sitemind.json
           - target: querywing-demo
             config: examples/browser-sut-querywing.json
+          - target: olimpica-home
+            config: examples/browser-sut-olimpica-home.json
     steps:
       - name: Checkout
         uses: actions/checkout@v5
