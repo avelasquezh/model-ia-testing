@@ -45,6 +45,13 @@
       "name": "DeepAI public chat",
       "url": "https://deepai.org/chat",
       "status": "CANDIDATE"
+    },
+    {
+      "id": "minciencias-chat-minciencias",
+      "name": "MinCiencias Atención al Ciudadano - Chat MinCiencias",
+      "url": "http://minciencias.gov.co/atencion-al-ciudadano/chat-minciencias",
+      "status": "CANDIDATE",
+      "notes": "User-supplied public URL. HTTP scheme retained exactly as supplied; requires runtime discovery verification."
     }
   ],
   "method": {
