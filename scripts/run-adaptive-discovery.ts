@@ -8,38 +8,28 @@ const maxCandidates = parsePositiveInteger(process.env.ADAPTIVE_DISCOVERY_MAX_CA
 const maxClicks = parsePositiveInteger(process.env.ADAPTIVE_DISCOVERY_MAX_CLICKS, 12);
 const threshold = parseInteger(process.env.ADAPTIVE_DISCOVERY_THRESHOLD, 35);
 
-if (!targetUrl) {
-  throw new Error('ADAPTIVE_DISCOVERY_URL is required');
-}
+if (!targetUrl) throw new Error('ADAPTIVE_DISCOVERY_URL is required');
 
 const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage();
   await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-
   const runner = new AdaptiveDiscoveryExperimentRunner(page, {
     maxCandidates,
     maxClicks,
     highConfidenceThreshold: threshold,
   });
   const result = await runner.run();
-
-  await mkdir(outputFile.substring(0, outputFile.lastIndexOf('/')) || '.', { recursive: true });
-  await writeFile(outputFile, JSON.stringify({
+  const report = {
     schemaVersion: 'adaptive-discovery-0.1',
     targetUrl,
     options: { maxCandidates, maxClicks, threshold },
+    generatedAt: new Date().toISOString(),
     ...result,
-  }, null, 2));
-
-  console.log(JSON.stringify({
-    targetUrl,
-    outputFile,
-    candidatesConsidered: result.candidatesConsidered,
-    clicksAttempted: result.clicksAttempted,
-    experiments: result.experiments.length,
-    selected: result.selected?.classification ?? null,
-  }, null, 2));
+  };
+  await mkdir(outputFile.substring(0, outputFile.lastIndexOf('/')) || '.', { recursive: true });
+  await writeFile(outputFile, JSON.stringify(report, null, 2));
+  console.log(JSON.stringify({ targetUrl, outputFile, candidatesConsidered: result.candidatesConsidered, clicksAttempted: result.clicksAttempted, experiments: result.experiments.length, selected: result.selected?.classification ?? null }, null, 2));
 } finally {
   await browser.close();
 }
