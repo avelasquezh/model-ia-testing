@@ -12,7 +12,7 @@ const escapeHtml = (value: unknown): string => String(value ?? '')
   .replaceAll('&', '&amp;')
   .replaceAll('<', '&lt;')
   .replaceAll('>', '&gt;')
-  .replaceAll('\"', '&quot;')
+  .replaceAll('"', '&quot;')
   .replaceAll("'", '&#39;');
 
 const run = parseEvaluationRun(JSON.parse(await readFile(inputFile, 'utf8')));
