@@ -3,16 +3,16 @@ import { parseEvaluationRun } from '../src/application/evaluation/EvaluationRunV
 
 type Outcome = 'PASS' | 'FAIL' | 'PARTIAL' | 'INCONCLUSIVE' | 'NOT_EVALUABLE';
 
-const inputFile = process.env.EVALUATION_RESULT_FILE?.trim();
+const inputFile = process.argv[2]?.trim() || process.env.EVALUATION_RESULT_FILE?.trim();
 const outputFile = process.env.EVALUATION_REPORT_FILE?.trim() || 'artifacts/evaluation-report.html';
 
-if (!inputFile) throw new Error('EVALUATION_RESULT_FILE is required');
+if (!inputFile) throw new Error('Evaluation result file argument or EVALUATION_RESULT_FILE is required');
 
 const escapeHtml = (value: unknown): string => String(value ?? '')
   .replaceAll('&', '&amp;')
   .replaceAll('<', '&lt;')
   .replaceAll('>', '&gt;')
-  .replaceAll('"', '&quot;')
+  .replaceAll('\"', '&quot;')
   .replaceAll("'", '&#39;');
 
 const run = parseEvaluationRun(JSON.parse(await readFile(inputFile, 'utf8')));
@@ -39,6 +39,7 @@ const resultRows = run.cases.map((result) => `<tr>
   <td>${result.evidenceInsufficient ? 'Yes' : 'No'}</td>
   <td>${escapeHtml(result.channel || '—')}</td>
   <td>${escapeHtml(result.botVersion || '—')}</td>
+  <td>${escapeHtml(result.evidenceIds.join(', '))}</td>
 </tr>`).join('');
 const repeatabilityRows = repeatability.map((item) => `<tr><td>${escapeHtml(item.caseId)}</td><td>${item.observations}</td><td>${escapeHtml(item.outcome)}</td></tr>`).join('');
 
@@ -59,7 +60,7 @@ body{font-family:system-ui,sans-serif;margin:0;background:#f6f7f9;color:#20242a}
 <div class="card">Source<strong>${escapeHtml(run.observationsFile)}</strong></div>
 </div>
 <h2>Outcome distribution</h2><section><div class="bar">${outcomeOrder.map((outcome) => `<span class="segment ${outcome.toLowerCase()}" style="width:${((counts.get(outcome)||0)/run.cases.length)*100}%"></span>`).join('')}</div><table><thead><tr><th>Outcome</th><th>Count</th></tr></thead><tbody>${summaryRows}</tbody></table></section>
-<h2>Results and traceability</h2><section><table><thead><tr><th>Case</th><th>Rep.</th><th>Turn</th><th>Conversation</th><th>Outcome</th><th>Evidence insufficient</th><th>Channel</th><th>Bot version</th></tr></thead><tbody>${resultRows}</tbody></table></section>
+<h2>Results and traceability</h2><section><table><thead><tr><th>Case</th><th>Rep.</th><th>Turn</th><th>Conversation</th><th>Outcome</th><th>Evidence insufficient</th><th>Channel</th><th>Bot version</th><th>Evidence IDs</th></tr></thead><tbody>${resultRows}</tbody></table></section>
 <h2>Repeatability</h2><section><table><thead><tr><th>Case</th><th>Observations</th><th>Result</th></tr></thead><tbody>${repeatabilityRows}</tbody></table></section>
 <h2>Interpretation</h2><section><p>This report intentionally does not calculate a synthetic global quality score. Results remain attributable to individual cases, evidence and provenance.</p></section>
 </main></body></html>`;
