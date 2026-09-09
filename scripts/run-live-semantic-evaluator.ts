@@ -107,6 +107,7 @@ const results: Array<{
   conversationId: string;
   outcome: SemanticEvaluationOutput['outcome'];
   evidenceInsufficient: boolean;
+  evidenceIds: string[];
   channel?: string;
   transport?: string;
   botId?: string;
@@ -141,6 +142,7 @@ for (const observation of observations) {
     conversationId: observation.conversationId,
     outcome: result.outcome,
     evidenceInsufficient: result.evidenceInsufficient,
+    evidenceIds: [...result.evidenceIds],
     ...(observation.channel ? { channel: observation.channel } : {}),
     ...(observation.transport ? { transport: observation.transport } : {}),
     ...(observation.botId ? { botId: observation.botId } : {}),
