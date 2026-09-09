@@ -16,7 +16,6 @@ const args = [
   `json:${reportPath}`,
   '--format',
   'progress',
-  '--publish-quiet',
 ];
 
 try {
