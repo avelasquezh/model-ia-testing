@@ -25,6 +25,12 @@ export type DiscoveryBenchmarkRunResult = {
   }[];
 };
 
+export function classifyAdaptiveDiscoveryOutcome(run: Pick<AdaptiveDiscoveryRun, 'selected' | 'experiments'>): DiscoveryAttemptOutcome {
+  if (run.selected) return 'CHAT_SURFACE_FOUND';
+  if (run.experiments.length > 0) return 'CANDIDATE_FOUND';
+  return 'NOT_FOUND';
+}
+
 export class ParallelDiscoveryBenchmarkRunner {
   public constructor(
     private readonly browser: Browser,
@@ -48,8 +54,8 @@ export class ParallelDiscoveryBenchmarkRunner {
           });
 
           const observation = model === 'LEGACY'
-            ? await this.runLegacy(page, target, startedAt)
-            : await this.runAdaptive(page, target, startedAt);
+            ? await this.runLegacy(page, target.url, startedAt)
+            : await this.runAdaptive(page, target.url, startedAt);
           observations.push(observation);
           await context.close();
         } catch (error) {
@@ -72,14 +78,14 @@ export class ParallelDiscoveryBenchmarkRunner {
 
   private async runLegacy(
     page: Page,
-    target: DiscoveryBenchmarkTarget,
+    targetUrl: string,
     startedAt: number,
   ): Promise<BenchmarkObservation> {
     try {
       const result = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
       return {
         model: 'LEGACY',
-        targetUrl: target.url,
+        targetUrl,
         outcome: 'CHAT_SURFACE_FOUND',
         attempts: result.report.candidates.length,
         durationMs: Date.now() - startedAt,
@@ -91,7 +97,7 @@ export class ParallelDiscoveryBenchmarkRunner {
       const hasCandidate = Boolean(report?.selected && Object.keys(report.selected).length > 0);
       return {
         model: 'LEGACY',
-        targetUrl: target.url,
+        targetUrl,
         outcome: hasCandidate ? 'CANDIDATE_FOUND' : 'NOT_FOUND',
         attempts: report?.candidates?.length ?? 0,
         durationMs: Date.now() - startedAt,
@@ -101,19 +107,14 @@ export class ParallelDiscoveryBenchmarkRunner {
 
   private async runAdaptive(
     page: Page,
-    target: DiscoveryBenchmarkTarget,
+    targetUrl: string,
     startedAt: number,
   ): Promise<BenchmarkObservation> {
     const run: AdaptiveDiscoveryRun = await new AdaptiveDiscoveryExperimentRunner(page, this.options.adaptive).run();
-    const outcome: DiscoveryAttemptOutcome = run.selected
-      ? 'CHAT_SURFACE_FOUND'
-      : run.experiments.length > 0
-        ? 'CANDIDATE_FOUND'
-        : 'NOT_FOUND';
     return {
       model: 'ADAPTIVE',
-      targetUrl: target.url,
-      outcome,
+      targetUrl,
+      outcome: classifyAdaptiveDiscoveryOutcome(run),
       attempts: run.clicksAttempted,
       durationMs: Date.now() - startedAt,
       adaptive: run,
