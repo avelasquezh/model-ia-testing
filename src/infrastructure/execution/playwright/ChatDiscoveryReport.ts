@@ -1,4 +1,4 @@
-export type ChatDiscoveryRole = 'composer' | 'sendButton' | 'response';
+export type ChatDiscoveryRole = 'launcher' | 'composer' | 'sendButton' | 'response';
 
 export type ChatDiscoveryCandidate = {
   readonly role: ChatDiscoveryRole;
@@ -14,6 +14,7 @@ export type ChatDiscoveryCandidate = {
     readonly placeholder: string | null;
     readonly testId: string | null;
     readonly text: string | null;
+    readonly frameUrl?: string | null;
   };
 };
 
