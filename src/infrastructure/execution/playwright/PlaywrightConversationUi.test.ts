@@ -123,7 +123,7 @@ describe('PlaywrightConversationUi', () => {
           document.getElementById('send').addEventListener('click', () => {
             const user = document.createElement('div');
             user.dataset.testid = 'chat-message';
-            user.textContent = document.getElementById('composer')?.value || 'Hola';
+            user.textContent = 'Hola';
             document.querySelector('main').appendChild(user);
             setTimeout(() => {
               const response = document.createElement('div');
@@ -149,7 +149,7 @@ describe('PlaywrightConversationUi', () => {
     await context.close();
   });
 
-  it('detects a response when the same response node changes after send', async () => {
+  it('waits through a transient response state before returning the stable response', async () => {
     const context = await browser.newContext();
     const page = await context.newPage();
 
@@ -176,7 +176,7 @@ describe('PlaywrightConversationUi', () => {
       pollIntervalMs: 10,
     });
 
-    await expect(ui.sendMessage('Hola', 2_000)).resolves.toBe('Escribiendo…');
+    await expect(ui.sendMessage('Hola', 2_000)).resolves.toBe('Respuesta final');
 
     await context.close();
   });
