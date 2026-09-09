@@ -1,9 +1,10 @@
 export default {
   default: {
     paths: ['spike/bdd/**/*.feature'],
-    import: ['spike/bdd/**/*.steps.ts'],
-    requireModule: ['tsx/esm'],
+    import: [
+      './spike/bdd/tsx-register.mjs',
+      'spike/bdd/**/*.steps.ts',
+    ],
     format: ['progress'],
-    publishQuiet: true,
   },
 };
