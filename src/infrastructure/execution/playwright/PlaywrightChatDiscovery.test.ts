@@ -160,10 +160,22 @@ describe('PlaywrightChatDiscovery', () => {
             if (typeof property !== 'string' || !tracedMethods.has(property) || typeof value !== 'function') {
               return value;
             }
-            return async (...args: unknown[]) => {
+            return (...args: unknown[]) => {
               console.log(`[deferred-stage] enter ${property}`);
               try {
-                const result = await value.apply(receiver, args);
+                const result = value.apply(receiver, args);
+                if (result && typeof result === 'object' && 'then' in result && typeof result.then === 'function') {
+                  return result.then(
+                    (resolved: unknown) => {
+                      console.log(`[deferred-stage] exit ${property}`);
+                      return resolved;
+                    },
+                    (error: unknown) => {
+                      console.log(`[deferred-stage] error ${property}: ${error instanceof Error ? error.message : String(error)}`);
+                      throw error;
+                    },
+                  );
+                }
                 console.log(`[deferred-stage] exit ${property}`);
                 return result;
               } catch (error) {
