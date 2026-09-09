@@ -118,10 +118,42 @@ describe('PlaywrightChatDiscovery', () => {
     await context.close();
   });
 
-  it('fails explicitly when no response container can be discovered', async () => {
+  it('retains a deferred response locator when the response is mounted after send', async () => {
     const context = await browser.newContext();
     const page = await context.newPage();
-    await page.setContent('<input placeholder="Escribe un mensaje" />');
+
+    await page.setContent(`
+      <main>
+        <input placeholder="Escribe un mensaje" />
+        <button aria-label="Enviar mensaje">Enviar</button>
+        <script>
+          document.querySelector('button').addEventListener('click', () => {
+            const response = document.createElement('section');
+            response.setAttribute('aria-live', 'polite');
+            response.textContent = 'Respuesta montada después de enviar';
+            document.querySelector('main').appendChild(response);
+          });
+        </script>
+      </main>
+    `);
+
+    const result = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
+
+    expect(result.report.status).toBe('DISCOVERED');
+    expect(result.report.selected.response?.strategy).toBe('main:[aria-live=polite]');
+    expect(result.report.selected.response?.evidence).toBeUndefined();
+    expect(await result.config.response.value.count()).toBe(0);
+
+    await page.getByRole('button', { name: 'Enviar mensaje' }).click();
+    expect(await result.config.response.value.textContent()).toBe('Respuesta montada después de enviar');
+
+    await context.close();
+  });
+
+  it('still fails explicitly when no response strategy is available', async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.setContent('<input placeholder="Escribe un mensaje" /><div class="unrelated">contenido</div>');
 
     await expect(new PlaywrightChatDiscovery(page).discover()).rejects.toThrow(
       'Chat response could not be discovered on the public URL',
