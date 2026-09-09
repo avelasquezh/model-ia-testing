@@ -71,7 +71,7 @@ describe('PlaywrightChatDiscovery', () => {
         <button aria-label="Abrir atención al cliente" id="outer-widget">Atención</button>
         <section id="chat" style="display:none" aria-label="Chat">
           <section role="log">Respuesta inicial</section>
-          <input id="composer" placeholder="Escribe tu mensaje" />
+          <input id="composer" placeholder="Escribe un mensaje" />
           <button aria-label="Enviar mensaje">Enviar</button>
         </section>
         <script>
@@ -114,7 +114,6 @@ describe('PlaywrightChatDiscovery', () => {
   it(
     'retains a deferred response locator when the response is mounted after send',
     async () => {
-      console.log('[deferred] fixture:start');
       await page.locator('body').evaluate((body) => {
         body.innerHTML = `
           <main>
@@ -124,7 +123,6 @@ describe('PlaywrightChatDiscovery', () => {
           </main>
         `;
       });
-      console.log('[deferred] fixture:mounted');
 
       const sendButton = page.getByRole('button', { name: 'Enviar mensaje' });
       await sendButton.evaluate((button) => {
@@ -135,10 +133,8 @@ describe('PlaywrightChatDiscovery', () => {
           document.querySelector('main')?.appendChild(response);
         });
       });
-      console.log('[deferred] handler:attached');
 
       const result = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
-      console.log('[deferred] discovery:done');
 
       expect(result.report.status).toBe('DISCOVERED');
       expect(result.report.selected.response?.strategy).toBe('main:[aria-live=polite]');
@@ -147,12 +143,9 @@ describe('PlaywrightChatDiscovery', () => {
       expect(result.config.response.kind).toBe('locator');
       if (result.config.response.kind !== 'locator') throw new Error('Expected a live response locator');
       expect(await result.config.response.value.count()).toBe(0);
-      console.log('[deferred] response:absent-confirmed');
 
       await sendButton.dispatchEvent('click');
-      console.log('[deferred] event:dispatched');
       expect(await result.config.response.value.count()).toBe(1);
-      console.log('[deferred] response:mounted');
       expect(await result.config.response.value.textContent()).toBe('Respuesta montada después de enviar');
 
       const responseCandidate = result.report.candidates.find(
@@ -160,7 +153,6 @@ describe('PlaywrightChatDiscovery', () => {
       );
       expect(responseCandidate?.deferred).toBe(true);
       expect(responseCandidate?.matched).toBe(false);
-      console.log('[deferred] test:done');
     },
     15_000,
   );
