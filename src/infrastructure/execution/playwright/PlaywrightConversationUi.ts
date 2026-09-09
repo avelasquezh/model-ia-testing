@@ -1,5 +1,13 @@
 import type { Locator, Page } from '@playwright/test';
 
+export class ConversationResponseTimeoutError extends Error {
+  public override readonly name = 'RESPONSE_TIMEOUT';
+
+  public constructor() {
+    super('Conversation response was not observed before timeout');
+  }
+}
+
 export type PlaywrightLocatorDefinition =
   | { readonly kind: 'role'; readonly role: Parameters<Page['getByRole']>[0]; readonly name?: string | RegExp }
   | { readonly kind: 'label'; readonly value: string | RegExp }
@@ -105,7 +113,7 @@ export class PlaywrightConversationUi implements ConversationUi {
       }
       await this.page.waitForTimeout(this.pollIntervalMs);
     }
-    throw new Error('Conversation response was not observed before timeout');
+    throw new ConversationResponseTimeoutError();
   }
 
   private isTransientResponse(value: string): boolean {
