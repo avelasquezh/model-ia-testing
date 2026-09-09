@@ -6,6 +6,7 @@ export type ChatDiscoveryCandidate = {
   readonly matched: boolean;
   readonly count: number;
   readonly selected: boolean;
+  readonly deferred?: boolean;
   readonly confidence: 'HIGH' | 'MEDIUM' | 'LOW';
   readonly element?: {
     readonly tagName: string;
@@ -40,6 +41,7 @@ export type ChatDiscoveryReport = {
   readonly selected: Partial<Record<ChatDiscoveryRole, {
     readonly strategy: string;
     readonly confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+    readonly deferred?: boolean;
     readonly evidence?: ChatDiscoveryCandidate['element'];
   }>>;
   readonly traversalPath?: readonly ChatDiscoveryTraversalStep[];
