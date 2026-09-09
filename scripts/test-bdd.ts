@@ -9,9 +9,9 @@ const reportPath = join(tempDirectory, 'cucumber.json');
 const args = [
   'spike/bdd/**/*.feature',
   '--import',
+  './spike/bdd/tsx-register.mjs',
+  '--import',
   'spike/bdd/**/*.steps.ts',
-  '--require-module',
-  'tsx/esm',
   '--format',
   `json:${reportPath}`,
   '--format',
