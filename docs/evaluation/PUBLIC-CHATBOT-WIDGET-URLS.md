@@ -12,6 +12,8 @@ Some public pages introduce a prerequisite before the chatbot can be used, such 
 
 CAPTCHA and similar anti-automation challenges are also access gates. The browser layer may detect and report a visible challenge, but must not solve, bypass, disable or evade it.
 
+Some sites also place the chat inside another widget or UI container. Discovery must therefore inspect the rendered DOM hierarchy, accessible names and attributes, open Shadow DOM, and loaded iframe contexts. When the chat becomes available only after clicking a legitimate container/launcher, the browser may traverse that interaction in a bounded and evidence-backed way rather than treating the nested chat as absent.
+
 ## Registered URLs
 
 | ID | URL | Notes |
@@ -36,6 +38,7 @@ CAPTCHA and similar anti-automation challenges are also access gates. The browse
 | `mintransporte-chat-virtual` | https://mintransporte.gov.co/publicaciones/8095/chat-virtual/ | User-supplied MinTransporte chat page; runtime must verify the current chat entry point and any consent or form gate. |
 | `renault-formularios` | https://www.renault.com.co/formularios.html | User-supplied Renault Colombia forms page; candidate may expose a pre-chat/form flow rather than a directly available composer. |
 | `tullave-canales-comunicacion` | https://www.tullaveplus.gov.co/servicio-al-ciudadano/canales-de-comunicacion | User-supplied TuLlave Plus communication channels page; runtime must verify the current chat entry point and any consent or form gate. |
+| `olimpica-home` | https://www.olimpica.com/ | User-supplied Olímpica public site; candidate specifically retained to exercise nested-widget, iframe and accessible Shadow DOM discovery. |
 | `chatbot-sample-page` | https://www.chatbot.com/help/chat-widget/sample-page/ | Existing public ChatBot.com sample page in the discovery corpus. |
 | `candordesk-demo` | https://candordesk.com/demo | Existing public CandorDesk demo in the discovery corpus. |
 | `sitemind-demo` | https://www.sitemind.tech/demo | Existing public SiteMind demo in the discovery corpus. |
@@ -46,6 +49,8 @@ CAPTCHA and similar anti-automation challenges are also access gates. The browse
 The URLs in this document are evidence sources and test targets. The browser automation implementation must remain provider-neutral: it must receive a URL, inspect the rendered page, discover the launcher/composer/send/response controls, collect evidence and then attempt the configured interaction.
 
 Before chatbot discovery, the current implementation makes a bounded attempt to dismiss common English/Spanish cookie-consent controls in the main document and loaded iframes. This is convenience automation, not a general consent bypass mechanism.
+
+Nested widgets must be handled as a discovery/traversal problem. The preferred order is: inspect the current rendered DOM and accessibility tree; inspect open Shadow DOM through normal Playwright locators; inspect loaded iframe contexts; then perform only bounded clicks on plausible parent launchers when their semantics indicate that they may reveal a chat/support surface. The traversal must collect the parent and child evidence so the eventual locator candidate explains how the chat was reached.
 
 Required pre-chat forms are an access gate unless the execution provides legitimate test data through configuration. The runner must not invent personal data.
 
