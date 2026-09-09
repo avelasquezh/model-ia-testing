@@ -2,7 +2,7 @@ import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
 type Candidate = {
-  readonly role: 'composer' | 'sendButton' | 'response';
+  readonly role: 'launcher' | 'composer' | 'sendButton' | 'response';
   readonly strategy: string;
   readonly matched: boolean;
   readonly count: number;
