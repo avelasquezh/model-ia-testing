@@ -293,9 +293,8 @@ export class PlaywrightChatDiscovery {
       candidates.push(
         { strategy: `${name}:role:textbox[name~message|mensaje|chat|escribe|type]`, locator: context.getByRole('textbox', { name: /message|mensaje|chat|escribe|type/i }), confidence: 'HIGH' },
         { strategy: `${name}:placeholder~message|mensaje|chat|escribe|type`, locator: context.getByPlaceholder(/message|mensaje|chat|escribe|type/i), confidence: 'HIGH' },
-        { strategy: `${name}:aria-label~message|mensaje|chat|escribe|type`, locator: context.locator('[aria-label*="message" i], [aria-label*="mensaje" i], [aria-label*="chat" i], [aria-label*="escribe" i], [aria-label*="type" i]'), confidence: 'MEDIUM' },
-        { strategy: `${name}:name~message|mensaje|chat|prompt|query`, locator: context.locator('[name*="message" i], [name*="mensaje" i], [name*="chat" i], [name*="prompt" i], [name*="query" i]'), confidence: 'MEDIUM' },
-        { strategy: `${name}:data-testid~composer|message-input|chat-input`, locator: context.locator('[data-testid*="composer" i], [data-testid*="message-input" i], [data-testid*="chat-input" i]'), confidence: 'MEDIUM' },
+        { strategy: `${name}:data-testid~composer|message|input`, locator: context.locator('[data-testid*="composer" i], [data-testid*="message" i], [data-testid*="input" i]'), confidence: 'MEDIUM' },
+        { strategy: `${name}:name~message|mensaje|chat|input`, locator: context.locator('textarea[name*="message" i], textarea[name*="mensaje" i], input[name*="message" i], input[name*="mensaje" i]'), confidence: 'MEDIUM' },
       );
     }
     return candidates;
@@ -306,10 +305,9 @@ export class PlaywrightChatDiscovery {
     for (const { name, context } of contexts) {
       candidates.push(
         { strategy: `${name}:role:button[name~send|enviar|submit|mandar]`, locator: context.getByRole('button', { name: /send|enviar|submit|mandar/i }), confidence: 'HIGH' },
-        { strategy: `${name}:button[aria-label*=send]`, locator: context.locator('button[aria-label*="send" i]'), confidence: 'HIGH' },
-        { strategy: `${name}:button[title*=send]`, locator: context.locator('button[title*="send" i]'), confidence: 'MEDIUM' },
-        { strategy: `${name}:button[aria-label*=enviar]`, locator: context.locator('button[aria-label*="enviar" i]'), confidence: 'HIGH' },
-        { strategy: `${name}:button[title*=enviar]`, locator: context.locator('button[title*="enviar" i]'), confidence: 'MEDIUM' },
+        { strategy: `${name}:aria-label~send|enviar|submit|mandar`, locator: context.locator('[aria-label*="send" i], [aria-label*="enviar" i], [aria-label*="submit" i], [aria-label*="mandar" i]'), confidence: 'MEDIUM' },
+        { strategy: `${name}:title~send|enviar|submit|mandar`, locator: context.locator('[title*="send" i], [title*="enviar" i], [title*="submit" i], [title*="mandar" i]'), confidence: 'MEDIUM' },
+        { strategy: `${name}:type=submit`, locator: context.locator('button[type="submit"], input[type="submit"]'), confidence: 'MEDIUM' },
       );
     }
     return candidates;
@@ -330,23 +328,70 @@ export class PlaywrightChatDiscovery {
     return candidates;
   }
 
-  private buildReport(
-    status: ChatDiscoveryReport['status'],
-    candidates: readonly ChatDiscoveryCandidate[],
-    selected: ChatDiscoveryReport['selected'],
-    traversalPath: readonly ChatDiscoveryTraversalStep[],
-    error?: string,
-  ): ChatDiscoveryReport {
-    return {
-      schemaVersion: 'chat-discovery-0.1',
-      targetUrl: this.page.url(),
-      status,
-      discoveredAt: new Date().toISOString(),
-      candidates,
-      selected,
-      ...(traversalPath.length > 0 ? { traversalPath } : {}),
-      ...(error ? { error } : {}),
-    };
+  private async findFirstVisible(candidates: Locator[]): Promise<Locator | null> {
+    return this.findFirstVisibleExcluding(candidates, []);
+  }
+
+  private async findFirstVisibleExcluding(candidates: Locator[], excluded: Array<Locator | null>): Promise<Locator | null> {
+    for (const candidate of candidates) {
+      const items = await candidate.all();
+      for (const item of items) {
+        if (!await item.isVisible()) continue;
+        if (await this.isExcluded(item, excluded)) continue;
+        return item;
+      }
+    }
+    return null;
+  }
+
+  private async isExcluded(item: Locator, excluded: Array<Locator | null>): Promise<boolean> {
+    for (const excludedLocator of excluded) {
+      if (!excludedLocator) continue;
+      if (await this.sameElement(item, excludedLocator)) return true;
+    }
+    return false;
+  }
+
+  private async sameElement(left: Locator, right: Locator): Promise<boolean> {
+    const handle = await left.elementHandle({ timeout: 0 });
+    if (!handle) return false;
+    return right.evaluateAll((nodes, selected) => nodes.some((node) => node === selected), handle);
+  }
+
+  private async selection(
+    locator: Locator,
+    candidates: readonly ChatCandidateSpec[],
+    deferred = false,
+  ): Promise<{ strategy: string; confidence: 'HIGH' | 'MEDIUM' | 'LOW'; deferred?: boolean; evidence?: ChatDiscoveryCandidate['element'] }> {
+    if (deferred) {
+      const candidate = candidates.find((item) => item.locator === locator);
+      return candidate
+        ? { strategy: candidate.strategy, confidence: candidate.confidence, deferred: true }
+        : { strategy: 'runtime-locator', confidence: 'LOW', deferred: true };
+    }
+
+    for (const candidate of candidates) {
+      if (await this.sameElement(locator, candidate.locator)) {
+        return {
+          strategy: candidate.strategy,
+          confidence: candidate.confidence,
+          evidence: await this.elementEvidence(locator),
+        };
+      }
+    }
+    return { strategy: 'runtime-locator', confidence: 'LOW', evidence: await this.elementEvidence(locator) };
+  }
+
+  private async elementEvidence(locator: Locator): Promise<ChatDiscoveryCandidate['element']> {
+    return locator.evaluate((element) => ({
+      tagName: element.tagName.toLowerCase(),
+      role: element.getAttribute('role'),
+      ariaLabel: element.getAttribute('aria-label'),
+      testId: element.getAttribute('data-testid'),
+      placeholder: element.getAttribute('placeholder'),
+      text: (element.textContent ?? '').trim().slice(0, 300),
+      frameUrl: element.ownerDocument.defaultView?.location.href ?? '',
+    }));
   }
 
   private async recordCandidates(
@@ -390,87 +435,34 @@ export class PlaywrightChatDiscovery {
         matched: count > 0,
         count,
         selected: selectedMatch,
-        ...(deferred && selectedMatch ? { deferred: true } : {}),
+        ...(deferred ? { deferred: false } : {}),
         confidence: candidate.confidence,
         ...(element ? { element } : {}),
       });
     }
   }
 
-  private async selection(
-    locator: Locator,
-    candidates: readonly ChatCandidateSpec[],
-    deferred = false,
-  ): Promise<{ strategy: string; confidence: 'HIGH' | 'MEDIUM' | 'LOW'; deferred?: boolean; evidence?: ChatDiscoveryCandidate['element'] }> {
-    for (const candidate of candidates) {
-      if (deferred && locator === candidate.locator) {
-        return {
-          strategy: candidate.strategy,
-          confidence: candidate.confidence,
-          deferred: true,
-        };
-      }
-      if (await this.sameElement(locator, candidate.locator)) {
-        return {
-          strategy: candidate.strategy,
-          confidence: candidate.confidence,
-          ...(deferred ? { deferred: true } : {}),
-          evidence: deferred ? undefined : await this.elementEvidence(locator),
-        };
-      }
-    }
-    return {
-      strategy: 'runtime-locator',
-      confidence: 'LOW',
-      ...(deferred ? { deferred: true } : {}),
-      ...(deferred ? {} : { evidence: await this.elementEvidence(locator) }),
-    };
-  }
-
-  private async elementEvidence(locator: Locator): Promise<ChatDiscoveryCandidate['element']> {
-    return locator.evaluate((node) => ({
-      tagName: node.tagName.toLowerCase(),
-      role: node.getAttribute('role'),
-      ariaLabel: node.getAttribute('aria-label'),
-      placeholder: node.getAttribute('placeholder'),
-      testId: node.getAttribute('data-testid'),
-      text: (node.textContent ?? '').trim().slice(0, 160) || null,
-      frameUrl: window.location.href,
-    }));
-  }
-
-  private async sameElement(left: Locator, right: Locator): Promise<boolean> {
-    const handle = await left.elementHandle({ timeout: 0 });
-    if (!handle) return false;
-    return right.evaluateAll((nodes, selected) => nodes.some((node) => node === selected), handle);
-  }
-
-  private async findFirstVisible(candidates: Locator[]): Promise<Locator | null> {
-    return this.findFirstVisibleExcluding(candidates, []);
-  }
-
-  private async findFirstVisibleExcluding(candidates: Locator[], excluded: Array<Locator | null>): Promise<Locator | null> {
-    for (const candidate of candidates) {
-      const items = await candidate.all();
-      for (const item of items) {
-        if (!await item.isVisible()) continue;
-        if (await this.isExcluded(item, excluded)) continue;
-        return item;
-      }
-    }
-    return null;
-  }
-
-  private async isExcluded(candidate: Locator, excluded: Array<Locator | null>): Promise<boolean> {
-    for (const locator of excluded) {
-      if (!locator) continue;
-      if (await this.sameElement(candidate, locator)) return true;
-    }
-    return false;
-  }
-
   private toDefinition(locator: Locator): PlaywrightLocatorDefinition {
     return { kind: 'locator', value: locator };
+  }
+
+  private buildReport(
+    status: ChatDiscoveryReport['status'],
+    candidates: readonly ChatDiscoveryCandidate[],
+    selected: ChatDiscoveryReport['selected'],
+    traversalPath: readonly ChatDiscoveryTraversalStep[],
+    error?: string,
+  ): ChatDiscoveryReport {
+    return {
+      schemaVersion: 'chat-discovery-0.1',
+      targetUrl: this.page.url(),
+      status,
+      discoveredAt: new Date().toISOString(),
+      candidates: [...candidates],
+      selected: { ...selected },
+      ...(traversalPath.length ? { traversalPath: [...traversalPath] } : {}),
+      ...(error ? { error } : {}),
+    };
   }
 }
 
