@@ -187,7 +187,7 @@ jobs:
       - name: Prepare public discovery evidence directory
         run: mkdir -p artifacts/public-sut-discovery
       - name: Download public discovery evidence
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           pattern: public-sut-discovery-*-*
           path: artifacts/public-sut-discovery
