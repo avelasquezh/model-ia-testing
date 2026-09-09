@@ -1,0 +1,21 @@
+{
+  "target": {
+    "id": "sitemind-demo",
+    "name": "SiteMind public demo",
+    "url": "https://www.sitemind.tech/demo",
+    "status": "ACTIVE"
+  },
+  "scenario": {
+    "id": "DISCOVERY-SITEMIND",
+    "name": "Public chatbot discovery baseline",
+    "objective": "Discover a public chatbot interface and capture an observable response.",
+    "description": "Provider-neutral discovery against a live SiteMind demo.",
+    "inputs": [{ "id": "input-01", "value": "What can you help me with?" }],
+    "expectedBehavior": "The chat interface accepts the message and exposes an observable response.",
+    "finishConditions": [{ "type": "OBSERVATION_CAPTURED", "description": "A non-empty bot response is captured." }],
+    "version": 1
+  },
+  "expectedIntent": "Answer the user's support question using the chatbot's available knowledge.",
+  "expectedIntentVersion": "public-discovery-intent-0.1",
+  "repetition": 1
+}
