@@ -165,9 +165,9 @@ export class PlaywrightChatDiscovery {
       let clickedAtDepth = false;
 
       for (const spec of traversalSpecs) {
-        const count = await spec.locator.count();
-        for (let index = 0; index < count && clicks < MAX_TRAVERSAL_CLICKS; index += 1) {
-          const item = spec.locator.nth(index);
+        const items = await spec.locator.all();
+        for (let index = 0; index < items.length && clicks < MAX_TRAVERSAL_CLICKS; index += 1) {
+          const item = items[index];
           if (!await item.isVisible()) continue;
           if (!await item.isEnabled().catch(() => false)) continue;
 
@@ -293,9 +293,9 @@ export class PlaywrightChatDiscovery {
       candidates.push(
         { strategy: `${name}:role:textbox[name~message|mensaje|chat|escribe|type]`, locator: context.getByRole('textbox', { name: /message|mensaje|chat|escribe|type/i }), confidence: 'HIGH' },
         { strategy: `${name}:placeholder~message|mensaje|chat|escribe|type`, locator: context.getByPlaceholder(/message|mensaje|chat|escribe|type/i), confidence: 'HIGH' },
-        { strategy: `${name}:textarea`, locator: context.locator('textarea'), confidence: 'MEDIUM' },
-        { strategy: `${name}:input[type=text]`, locator: context.locator('input[type="text"]'), confidence: 'LOW' },
-        { strategy: `${name}:[contenteditable=true]`, locator: context.locator('[contenteditable="true"]'), confidence: 'MEDIUM' },
+        { strategy: `${name}:aria-label~message|mensaje|chat|escribe|type`, locator: context.locator('[aria-label*="message" i], [aria-label*="mensaje" i], [aria-label*="chat" i], [aria-label*="escribe" i], [aria-label*="type" i]'), confidence: 'MEDIUM' },
+        { strategy: `${name}:name~message|mensaje|chat|prompt|query`, locator: context.locator('[name*="message" i], [name*="mensaje" i], [name*="chat" i], [name*="prompt" i], [name*="query" i]'), confidence: 'MEDIUM' },
+        { strategy: `${name}:data-testid~composer|message-input|chat-input`, locator: context.locator('[data-testid*="composer" i], [data-testid*="message-input" i], [data-testid*="chat-input" i]'), confidence: 'MEDIUM' },
       );
     }
     return candidates;
@@ -357,15 +357,13 @@ export class PlaywrightChatDiscovery {
     deferred = false,
   ): Promise<void> {
     for (const candidate of candidates) {
-      const count = await candidate.locator.count();
+      const items = await candidate.locator.all();
+      const count = items.length;
       let element: ChatDiscoveryCandidate['element'];
-      if (count > 0) {
-        for (let index = 0; index < count; index += 1) {
-          const item = candidate.locator.nth(index);
-          if (await item.isVisible()) {
-            element = await this.elementEvidence(item);
-            break;
-          }
+      for (const item of items) {
+        if (await item.isVisible()) {
+          element = await this.elementEvidence(item);
+          break;
         }
       }
       const selectedMatch = selected
@@ -440,9 +438,8 @@ export class PlaywrightChatDiscovery {
 
   private async findFirstVisibleExcluding(candidates: Locator[], excluded: Array<Locator | null>): Promise<Locator | null> {
     for (const candidate of candidates) {
-      const count = await candidate.count();
-      for (let index = 0; index < count; index += 1) {
-        const item = candidate.nth(index);
+      const items = await candidate.all();
+      for (const item of items) {
         if (!await item.isVisible()) continue;
         if (await this.isExcluded(item, excluded)) continue;
         return item;
