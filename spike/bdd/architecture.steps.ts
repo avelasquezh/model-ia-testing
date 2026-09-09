@@ -1,5 +1,5 @@
 import { Given, Then, When } from '@cucumber/cucumber';
-import { expect } from 'vitest';
+import { strict as assert } from 'node:assert';
 import { Scenario } from '../../src/domain/scenario/Scenario.js';
 import { Target } from '../../src/domain/target/Target.js';
 import { ExecuteScenario } from '../../src/application/execution/ExecuteScenario.js';
@@ -77,14 +77,14 @@ When('the scenario is executed with a controlled runner', async () => {
 });
 
 Then('the execution finishes with the runner outcome', () => {
-  expect(executionStatus).toBe('PASSED');
+  assert.equal(executionStatus, 'PASSED');
 });
 
 Then('the execution preserves the scenario version', async () => {
   const execution = await executions.findById(executionId);
-  expect(execution?.props.scenarioVersion).toBe(scenarioVersion);
+  assert.equal(execution?.props.scenarioVersion, scenarioVersion);
 });
 
 Then('the execution identifier is available for traceability', () => {
-  expect(executionId).toBe('bdd-execution-1');
+  assert.equal(executionId, 'bdd-execution-1');
 });
