@@ -52,7 +52,7 @@ describe('PlaywrightChatDiscovery', () => {
     expect(result.report.schemaVersion).toBe('chat-discovery-0.1');
     expect(result.report.status).toBe('DISCOVERED');
     expect(result.report.targetUrl).toContain('about:blank');
-    expect(result.report.selected.composer?.strategy).toBe('placeholder~message|mensaje|chat|escribe|type');
+    expect(result.report.selected.composer?.strategy).toBe('role:textbox[name~message|mensaje|chat|escribe|type]');
     expect(result.report.selected.composer?.confidence).toBe('HIGH');
     expect(result.report.selected.composer?.evidence?.placeholder).toBe('Escribe un mensaje');
     expect(result.report.selected.sendButton?.strategy).toBe('role:button[name~send|enviar|submit|mandar]');
