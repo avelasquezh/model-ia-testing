@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "public-sut-discovery-corpus-0.1",
+  "targets": [
+    {
+      "id": "chatbot-sample-page",
+      "name": "ChatBot.com public sample page",
+      "url": "https://www.chatbot.com/help/chat-widget/sample-page/"
+    },
+    {
+      "id": "candordesk-demo",
+      "name": "CandorDesk public demo",
+      "url": "https://candordesk.com/demo"
+    },
+    {
+      "id": "sitemind-demo",
+      "name": "SiteMind public demo",
+      "url": "https://www.sitemind.tech/demo"
+    },
+    {
+      "id": "querywing-demo",
+      "name": "QueryWing public demo",
+      "url": "https://querywing.com/demo"
+    }
+  ],
+  "method": {
+    "strategy": "provider-neutral automatic discovery",
+    "roles": ["composer", "sendButton", "response"],
+    "confidenceLevels": ["HIGH", "MEDIUM", "LOW"]
+  }
+}
