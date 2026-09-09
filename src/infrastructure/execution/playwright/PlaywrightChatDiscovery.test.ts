@@ -62,6 +62,62 @@ describe('PlaywrightChatDiscovery', () => {
     await context.close();
   });
 
+  it('traverses a parent widget to reveal a nested chat composer', async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await page.setContent(`
+      <main>
+        <button aria-label="Abrir atención al cliente" id="outer-widget">Atención</button>
+        <section id="chat" style="display:none" aria-label="Chat">
+          <section role="log">Respuesta inicial</section>
+          <input id="composer" placeholder="Escribe un mensaje" />
+          <button aria-label="Enviar mensaje">Enviar</button>
+        </section>
+        <script>
+          document.getElementById('outer-widget').addEventListener('click', () => {
+            document.getElementById('chat').style.display = 'block';
+          });
+        </script>
+      </main>
+    `);
+
+    const result = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
+
+    expect(await locatorAttribute(result.config.composer, 'id')).toBe('composer');
+    expect(result.report.traversalPath?.length).toBeGreaterThan(0);
+    expect(result.report.traversalPath?.some((step) => step.evidence?.ariaLabel === 'Abrir atención al cliente')).toBe(true);
+
+    await context.close();
+  });
+
+  it('traverses a parent widget before discovering a chat inside an open shadow root', async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await page.setContent(`
+      <main>
+        <button aria-label="Abrir servicios" id="outer-widget">Servicios</button>
+        <chat-shell></chat-shell>
+        <script>
+          const host = document.querySelector('chat-shell');
+          const shadow = host.attachShadow({ mode: 'open' });
+          shadow.innerHTML = '<section style="display:none" id="chat"><section role="log">Respuesta inicial</section><input placeholder="Escribe un mensaje" /><button aria-label="Enviar mensaje">Enviar</button></section>';
+          document.getElementById('outer-widget').addEventListener('click', () => {
+            shadow.querySelector('#chat').style.display = 'block';
+          });
+        </script>
+      </main>
+    `);
+
+    const result = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
+
+    expect(await locatorAttribute(result.config.composer, 'placeholder')).toBe('Escribe un mensaje');
+    expect(result.report.traversalPath?.some((step) => step.evidence?.ariaLabel === 'Abrir servicios')).toBe(true);
+
+    await context.close();
+  });
+
   it('fails explicitly when no response container can be discovered', async () => {
     const context = await browser.newContext();
     const page = await context.newPage();
