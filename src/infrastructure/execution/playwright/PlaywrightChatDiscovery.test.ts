@@ -52,11 +52,11 @@ describe('PlaywrightChatDiscovery', () => {
     expect(result.report.schemaVersion).toBe('chat-discovery-0.1');
     expect(result.report.status).toBe('DISCOVERED');
     expect(result.report.targetUrl).toContain('about:blank');
-    expect(result.report.selected.composer?.strategy).toBe('role:textbox[name~message|mensaje|chat|escribe|type]');
+    expect(result.report.selected.composer?.strategy).toBe('main:role:textbox[name~message|mensaje|chat|escribe|type]');
     expect(result.report.selected.composer?.confidence).toBe('HIGH');
     expect(result.report.selected.composer?.evidence?.placeholder).toBe('Escribe un mensaje');
-    expect(result.report.selected.sendButton?.strategy).toBe('role:button[name~send|enviar|submit|mandar]');
-    expect(result.report.selected.response?.strategy).toBe('role:log');
+    expect(result.report.selected.sendButton?.strategy).toBe('main:role:button[name~send|enviar|submit|mandar]');
+    expect(result.report.selected.response?.strategy).toBe('main:role:log');
     expect(result.report.candidates.some((candidate) => candidate.selected)).toBe(true);
 
     await context.close();
