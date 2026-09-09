@@ -63,18 +63,29 @@ export class PlaywrightChatDiscovery {
           response: this.toDefinition(response),
           ...(sendButton ? { sendButton: this.toDefinition(sendButton) } : {}),
         },
-        report: {
-          schemaVersion: 'chat-discovery-0.1',
-          targetUrl: this.page.url(),
-          status: 'DISCOVERED',
-          discoveredAt: new Date().toISOString(),
-          candidates,
-          selected,
-        },
+        report: this.buildReport('DISCOVERED', candidates, selected),
       };
     } catch (error) {
-      throw error;
+      const message = error instanceof Error ? error.message : String(error);
+      throw new ChatDiscoveryError(message, this.buildReport('FAILED', candidates, selected, message));
     }
+  }
+
+  private buildReport(
+    status: ChatDiscoveryReport['status'],
+    candidates: readonly ChatDiscoveryCandidate[],
+    selected: ChatDiscoveryReport['selected'],
+    error?: string,
+  ): ChatDiscoveryReport {
+    return {
+      schemaVersion: 'chat-discovery-0.1',
+      targetUrl: this.page.url(),
+      status,
+      discoveredAt: new Date().toISOString(),
+      candidates,
+      selected,
+      ...(error ? { error } : {}),
+    };
   }
 
   private async recordCandidates<T extends { strategy: string; locator: Locator; confidence: 'HIGH' | 'MEDIUM' | 'LOW' }>(
@@ -171,5 +182,12 @@ export class PlaywrightChatDiscovery {
 
   private toDefinition(locator: Locator): PlaywrightLocatorDefinition {
     return { kind: 'locator', value: locator };
+  }
+}
+
+export class ChatDiscoveryError extends Error {
+  public constructor(message: string, public readonly report: ChatDiscoveryReport) {
+    super(message);
+    this.name = 'ChatDiscoveryError';
   }
 }
