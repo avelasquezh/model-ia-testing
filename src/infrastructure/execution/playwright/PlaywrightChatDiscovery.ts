@@ -166,8 +166,8 @@ export class PlaywrightChatDiscovery {
 
       for (const spec of traversalSpecs) {
         const items = await spec.locator.all();
-        for (let index = 0; index < items.length && clicks < MAX_TRAVERSAL_CLICKS; index += 1) {
-          const item = items[index];
+        for (const [index, item] of items.entries()) {
+          if (clicks >= MAX_TRAVERSAL_CLICKS) break;
           if (!await item.isVisible()) continue;
           if (!await item.isEnabled().catch(() => false)) continue;
 
