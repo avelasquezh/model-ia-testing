@@ -109,4 +109,75 @@ describe('PlaywrightConversationUi', () => {
 
     await context.close();
   });
+
+  it('detects a response appended after a user message inside the same response log', async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await page.setContent(`
+      <main>
+        <input aria-label="Mensaje" />
+        <button id="send">Enviar</button>
+        <div data-testid="chat-message">Bienvenido</div>
+        <script>
+          document.getElementById('send').addEventListener('click', () => {
+            const user = document.createElement('div');
+            user.dataset.testid = 'chat-message';
+            user.textContent = document.getElementById('composer')?.value || 'Hola';
+            document.querySelector('main').appendChild(user);
+            setTimeout(() => {
+              const response = document.createElement('div');
+              response.dataset.testid = 'chat-message';
+              response.textContent = 'Respuesta real';
+              document.querySelector('main').appendChild(response);
+            }, 50);
+          });
+        </script>
+      </main>
+    `);
+
+    const ui = new PlaywrightConversationUi(page, {
+      composer: { kind: 'role', role: 'textbox', name: 'Mensaje' },
+      sendButton: { kind: 'role', role: 'button', name: 'Enviar' },
+      response: { kind: 'testId', value: 'chat-message' },
+      responseTimeoutMs: 2_000,
+      pollIntervalMs: 10,
+    });
+
+    await expect(ui.sendMessage('Hola', 2_000)).resolves.toBe('Respuesta real');
+
+    await context.close();
+  });
+
+  it('detects a response when the same response node changes after send', async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await page.setContent(`
+      <main>
+        <input aria-label="Mensaje" />
+        <button id="send">Enviar</button>
+        <div data-testid="assistant-message">Bienvenido</div>
+        <script>
+          document.getElementById('send').addEventListener('click', () => {
+            const response = document.querySelector('[data-testid="assistant-message"]');
+            response.textContent = 'Escribiendo…';
+            setTimeout(() => { response.textContent = 'Respuesta final'; }, 50);
+          });
+        </script>
+      </main>
+    `);
+
+    const ui = new PlaywrightConversationUi(page, {
+      composer: { kind: 'role', role: 'textbox', name: 'Mensaje' },
+      sendButton: { kind: 'role', role: 'button', name: 'Enviar' },
+      response: { kind: 'testId', value: 'assistant-message' },
+      responseTimeoutMs: 2_000,
+      pollIntervalMs: 10,
+    });
+
+    await expect(ui.sendMessage('Hola', 2_000)).resolves.toBe('Escribiendo…');
+
+    await context.close();
+  });
 });
