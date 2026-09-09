@@ -168,6 +168,8 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
+      - name: Prepare public discovery evidence directory
+        run: mkdir -p artifacts/public-sut-discovery
       - name: Download public discovery evidence
         uses: actions/download-artifact@v5
         with:
