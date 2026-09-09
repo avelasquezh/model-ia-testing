@@ -114,45 +114,51 @@ describe('PlaywrightChatDiscovery', () => {
   it(
     'retains a deferred response locator when the response is mounted after send',
     async () => {
-      await page.locator('body').evaluate((body) => {
-        body.innerHTML = `
-          <main>
-            <label for="message">Mensaje</label>
-            <input id="message" placeholder="Escribe tu mensaje" />
-            <button aria-label="Enviar mensaje">Enviar</button>
-          </main>
-        `;
-      });
-
-      const sendButton = page.getByRole('button', { name: 'Enviar mensaje' });
-      await sendButton.evaluate((button) => {
-        button.addEventListener('click', () => {
-          const response = document.createElement('section');
-          response.setAttribute('aria-live', 'polite');
-          response.textContent = 'Respuesta montada después de enviar';
-          document.querySelector('main')?.appendChild(response);
+      const isolatedPage = await context.newPage();
+      try {
+        await isolatedPage.goto('about:blank');
+        await isolatedPage.locator('body').evaluate((body) => {
+          body.innerHTML = `
+            <main>
+              <label for="message">Mensaje</label>
+              <input id="message" placeholder="Escribe tu mensaje" />
+              <button aria-label="Enviar mensaje">Enviar</button>
+            </main>
+          `;
         });
-      });
 
-      const result = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
+        const sendButton = isolatedPage.getByRole('button', { name: 'Enviar mensaje' });
+        await sendButton.evaluate((button) => {
+          button.addEventListener('click', () => {
+            const response = document.createElement('section');
+            response.setAttribute('aria-live', 'polite');
+            response.textContent = 'Respuesta montada después de enviar';
+            document.querySelector('main')?.appendChild(response);
+          });
+        });
 
-      expect(result.report.status).toBe('DISCOVERED');
-      expect(result.report.selected.response?.strategy).toBe('main:[aria-live=polite]');
-      expect(result.report.selected.response?.deferred).toBe(true);
-      expect(result.report.selected.response?.evidence).toBeUndefined();
-      expect(result.config.response.kind).toBe('locator');
-      if (result.config.response.kind !== 'locator') throw new Error('Expected a live response locator');
-      expect(await result.config.response.value.count()).toBe(0);
+        const result = await new PlaywrightChatDiscovery(isolatedPage).discoverWithEvidence();
 
-      await sendButton.dispatchEvent('click');
-      expect(await result.config.response.value.count()).toBe(1);
-      expect(await result.config.response.value.textContent()).toBe('Respuesta montada después de enviar');
+        expect(result.report.status).toBe('DISCOVERED');
+        expect(result.report.selected.response?.strategy).toBe('main:[aria-live=polite]');
+        expect(result.report.selected.response?.deferred).toBe(true);
+        expect(result.report.selected.response?.evidence).toBeUndefined();
+        expect(result.config.response.kind).toBe('locator');
+        if (result.config.response.kind !== 'locator') throw new Error('Expected a live response locator');
+        expect(await result.config.response.value.count()).toBe(0);
 
-      const responseCandidate = result.report.candidates.find(
-        (candidate) => candidate.role === 'response' && candidate.selected,
-      );
-      expect(responseCandidate?.deferred).toBe(true);
-      expect(responseCandidate?.matched).toBe(false);
+        await sendButton.dispatchEvent('click');
+        expect(await result.config.response.value.count()).toBe(1);
+        expect(await result.config.response.value.textContent()).toBe('Respuesta montada después de enviar');
+
+        const responseCandidate = result.report.candidates.find(
+          (candidate) => candidate.role === 'response' && candidate.selected,
+        );
+        expect(responseCandidate?.deferred).toBe(true);
+        expect(responseCandidate?.matched).toBe(false);
+      } finally {
+        await isolatedPage.close();
+      }
     },
     15_000,
   );
