@@ -34,6 +34,22 @@ Esta tabla es administrativa y no cambia la identidad histórica de los archivos
 
 F2-35 formalizó la cobertura metodológica por criterio dentro de una ejecución. La cobertura distingue `APPLICABLE_EVALUATED`, `APPLICABLE_NOT_EVALUATED`, `NOT_APPLICABLE`, `INSUFFICIENT_EVIDENCE` e `INCONCLUSIVE`, sin introducir score ni decisión global.
 
+## Reconciliación D7 — extensión de canal web
+
+**Estado:** **CERRADO / VALIDADO para D7-C01…D7-C05**.
+
+D7 queda reconciliado como extensión de canal web, sin convertir Playwright en requisito del dominio. Los cinco criterios actualmente definidos en el catálogo fueron materializados mediante validaciones controladas y evidencia observable:
+
+- `D7-C01` — visibilidad del canal de conversación.
+- `D7-C02` — entrada de mensaje utilizable.
+- `D7-C03` — visibilidad de respuesta.
+- `D7-C04` — estado de interacción.
+- `D7-C05` — errores de interfaz observables.
+
+Las pruebas conservan evidencia primaria observable y no introducen `qualityScore`, score global, ponderaciones ni `globalDecision`. D7 no genera un nuevo incremento oficial de F2.
+
+Las validaciones CI y Architecture Spike de D7-C01…D7-C05 fueron exitosas. La implementación permanece limitada al borde observable del canal y no modifica el contrato conversacional central.
+
 ## Trabajo posterior reconciliado — F2-EXT-03 a F2-EXT-05
 
 ### `F2-EXT-03` — Comparabilidad metodológica entre ejecuciones
@@ -112,7 +128,7 @@ Validación CI asociada al incremento: `34248712103` — todos los jobs principa
 
 Se incorporó `docs/evaluation/F2-VAL-05-EXECUTION-PROTOCOL.md`, que define el entorno externo, la separación SUT/evaluador, la construcción de `BotObservation`, los parámetros operativos fuera del repositorio, los criterios de aceptación y la evidencia mínima requerida.
 
-Un entorno como el Testing Tool o Sample Page de ChatBot.com puede utilizarse como SUT para capturar respuestas observables; el repositorio permanece neutral respecto del proveedor y del canal. La validación todavía no se considera ejecutada hasta disponer de evidencia de un evaluador externo real y reproducible.
+Un entorno como el Testing Tool o Sample Page de ChatBot.com puede utilizarse como SUT para capturar respuestas observables; el repositorio permanece neutral respecto del proveedor y del canal. La validación todavía no se considera ejecutada hasta disponer de evidencia de un evaluador semántico externo real y reproducible.
 
 La ejecución deberá registrar identidad y versión del modelo, prompt y método versionados, parámetros relevantes, casos de prueba, repeticiones equivalentes, respuestas normalizadas, evidencia primaria y errores de transporte, límites o esquema.
 
@@ -130,7 +146,7 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 
 ## Frente 2 — Evaluación observable
 
-**Estado:** Frontera provider-neutral validada; `F2-VAL-05` preparado y pendiente de evidencia externa real.
+**Estado:** D7-C01…D7-C05 validados como extensión de canal; frontera provider-neutral validada; `F2-VAL-05` preparado y pendiente de evidencia externa real.
 
 La baseline oficial permanece cerrada en F2-35. El trabajo posterior se gestiona como extensiones y validaciones explícitamente clasificadas, sin alterar la secuencia original.
 
@@ -150,7 +166,7 @@ Las versiones metodológicas son independientes del producto y deben mantenerse 
 
 ## Próximo trabajo
 
-El siguiente paso es ejecutar `F2-VAL-05` contra un entorno externo controlado. Primero debe obtenerse una captura reproducible del SUT y transformarse en `BotObservation`; después se ejecuta `npm run evaluation:semantic:live` contra un evaluador externo real y se genera el reporte visual. El estado solo podrá pasar a `VALIDADO` cuando la evidencia cumpla el protocolo.
+El siguiente paso metodológico sigue siendo `F2-VAL-05`, pero su ejecución requiere evidencia externa real: primero obtener una captura reproducible del SUT y transformarla en `BotObservation`; después ejecutar `npm run evaluation:semantic:live` contra un evaluador externo real y generar el reporte visual. El estado solo podrá pasar a `VALIDADO` cuando la evidencia cumpla el protocolo.
 
 ## Regla de documentación
 
