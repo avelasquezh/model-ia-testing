@@ -64,22 +64,13 @@ export class AdaptiveDiscoveryExperimentRunner {
       experiments.push(result);
 
       if (result.classification === 'CHAT_SURFACE_CANDIDATE') {
-        return {
-          experiments,
-          selected: result,
-          candidatesConsidered: candidates.length,
-          clicksAttempted,
-        };
+        return { experiments, selected: result, candidatesConsidered: candidates.length, clicksAttempted };
       }
 
       await this.restoreAfterExperiment(beforeUrl);
     }
 
-    return {
-      experiments,
-      candidatesConsidered: candidates.length,
-      clicksAttempted,
-    };
+    return { experiments, candidatesConsidered: candidates.length, clicksAttempted };
   }
 
   private async collectCandidates(): Promise<CandidateHandle[]> {
@@ -127,7 +118,8 @@ export class AdaptiveDiscoveryExperimentRunner {
     if (!box) return null;
 
     const tagName = await locator.evaluate((element) => element.tagName.toLowerCase()).catch(() => 'unknown');
-    const role = await locator.getAttribute('role');
+    const explicitRole = await locator.getAttribute('role');
+    const role = explicitRole ?? (tagName === 'button' ? 'button' : undefined);
     const ariaLabel = await locator.getAttribute('aria-label');
     const text = (await locator.innerText().catch(() => '')).trim().slice(0, 160);
     const placeholder = await locator.getAttribute('placeholder');
@@ -203,9 +195,6 @@ export class AdaptiveDiscoveryExperimentRunner {
       };
     });
 
-    return {
-      domHash: createHash('sha256').update(html).digest('hex'),
-      ...counts,
-    };
+    return { domHash: createHash('sha256').update(html).digest('hex'), ...counts };
   }
 }
