@@ -20,6 +20,11 @@ export interface ConversationUi {
   sendMessage(input: string, timeoutMs: number): Promise<string>;
 }
 
+type ResponseState = {
+  readonly count: number;
+  readonly values: readonly string[];
+};
+
 export class PlaywrightConversationUi implements ConversationUi {
   private readonly responseTimeoutMs: number;
   private readonly pollIntervalMs: number;
@@ -44,7 +49,7 @@ export class PlaywrightConversationUi implements ConversationUi {
       await composer.press('Enter', { timeout: timeoutMs });
     }
 
-    return this.waitForResponse(responseLocator, previous, timeoutMs);
+    return this.waitForResponse(responseLocator, previous, input, timeoutMs);
   }
 
   private locate(definition: PlaywrightLocatorDefinition): Locator {
@@ -64,24 +69,56 @@ export class PlaywrightConversationUi implements ConversationUi {
     }
   }
 
-  private async readResponseState(locator: Locator): Promise<{ count: number; value: string | null }> {
+  private async readResponseState(locator: Locator): Promise<ResponseState> {
     const count = await locator.count();
-    if (count === 0) return { count: 0, value: null };
-    return { count, value: (await locator.last().textContent())?.trim() || null };
+    if (count === 0) return { count: 0, values: [] };
+
+    const values: string[] = [];
+    for (let index = 0; index < count; index += 1) {
+      const text = (await locator.nth(index).textContent())?.trim() || '';
+      values.push(text);
+    }
+    return { count, values };
   }
 
   private async waitForResponse(
     locator: Locator,
-    previous: { count: number; value: string | null },
+    previous: ResponseState,
+    input: string,
     timeoutMs: number,
   ): Promise<string> {
     const deadline = Date.now() + Math.min(timeoutMs, this.responseTimeoutMs);
     while (Date.now() < deadline) {
       const current = await this.readResponseState(locator);
-      if (current.count > previous.count && current.value) return current.value;
-      if (current.count === previous.count && current.value && current.value !== previous.value) return current.value;
+      const response = this.findNewResponse(previous, current, input);
+      if (response) return response;
       await this.page.waitForTimeout(this.pollIntervalMs);
     }
     throw new Error('Conversation response was not observed before timeout');
+  }
+
+  private findNewResponse(previous: ResponseState, current: ResponseState, input: string): string | null {
+    const previousValues = new Set(previous.values.filter(Boolean));
+    const normalizedInput = input.trim();
+
+    for (let index = 0; index < current.values.length; index += 1) {
+      const value = current.values[index]?.trim() ?? '';
+      if (!value || value === normalizedInput) continue;
+      if (!previousValues.has(value)) return value;
+
+      const previousAtIndex = previous.values[index]?.trim() ?? '';
+      if (current.count === previous.count && value !== previousAtIndex && value !== normalizedInput) {
+        return value;
+      }
+    }
+
+    if (current.count > previous.count) {
+      for (let index = previous.count; index < current.values.length; index += 1) {
+        const value = current.values[index]?.trim() ?? '';
+        if (value && value !== normalizedInput) return value;
+      }
+    }
+
+    return null;
   }
 }
