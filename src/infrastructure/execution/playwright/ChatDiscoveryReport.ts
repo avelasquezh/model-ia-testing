@@ -24,6 +24,13 @@ export type ChatDiscoveryTraversalStep = {
   readonly evidence?: ChatDiscoveryCandidate['element'];
 };
 
+export type ChatDiscoveryExecutionError = {
+  readonly code: string;
+  readonly message: string;
+  readonly operation: string;
+  readonly turnIndex?: number;
+};
+
 export type ChatDiscoveryReport = {
   readonly schemaVersion: 'chat-discovery-0.1';
   readonly targetUrl: string;
@@ -36,5 +43,17 @@ export type ChatDiscoveryReport = {
     readonly evidence?: ChatDiscoveryCandidate['element'];
   }>>;
   readonly traversalPath?: readonly ChatDiscoveryTraversalStep[];
+  readonly executionFailureReason?:
+    | 'CAPTCHA_GATE'
+    | 'NAVIGATION_FAILED'
+    | 'FRAME_BLOCKED'
+    | 'NO_LAUNCHER'
+    | 'NO_COMPOSER'
+    | 'NO_SEND'
+    | 'NO_RESPONSE'
+    | 'RESPONSE_TIMEOUT'
+    | 'INTERACTION_FAILED'
+    | 'EXECUTION_FAILED';
+  readonly executionError?: ChatDiscoveryExecutionError;
   readonly error?: string;
 };
