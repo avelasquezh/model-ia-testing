@@ -81,7 +81,7 @@ export class PlaywrightChatDiscovery {
       const responseSpecs = this.buildResponseCandidates(contexts);
       const responseResult = await this.findResponseLocator(responseSpecs, composer, sendButton);
       const response = responseResult.locator;
-      await this.recordCandidates(candidates, 'response', responseSpecs, response);
+      await this.recordCandidates(candidates, 'response', responseSpecs, response, responseResult.deferred);
       if (!response) throw new Error('Chat response could not be discovered on the public URL');
       selected.response = await this.selection(response, responseSpecs, responseResult.deferred);
 
@@ -297,7 +297,7 @@ export class PlaywrightChatDiscovery {
         { strategy: `${name}:button[aria-label*=send]`, locator: context.locator('button[aria-label*="send" i]'), confidence: 'HIGH' },
         { strategy: `${name}:button[title*=send]`, locator: context.locator('button[title*="send" i]'), confidence: 'MEDIUM' },
         { strategy: `${name}:button[aria-label*=enviar]`, locator: context.locator('button[aria-label*="enviar" i]'), confidence: 'HIGH' },
-        { strategy: `${name}:button[title*=enviar]`, locator: context.locator('button[title*="enviar" i]'), confidence: 'MEDIUM' },
+        { strategy: `${name}:button[title*=enviar]`, locator: context.locator('[title*="enviar" i]'), confidence: 'MEDIUM' },
       );
     }
     return candidates;
@@ -342,6 +342,7 @@ export class PlaywrightChatDiscovery {
     role: ChatDiscoveryCandidate['role'],
     candidates: readonly ChatCandidateSpec[],
     selected: Locator | null,
+    deferred = false,
   ): Promise<void> {
     for (const candidate of candidates) {
       const count = await candidate.locator.count();
@@ -355,13 +356,18 @@ export class PlaywrightChatDiscovery {
           }
         }
       }
-      const selectedMatch = selected && count > 0 ? await this.sameElement(selected, candidate.locator) : false;
+      const selectedMatch = selected
+        ? count > 0
+          ? await this.sameElement(selected, candidate.locator)
+          : deferred && selected === candidate.locator
+        : false;
       report.push({
         role,
         strategy: candidate.strategy,
         matched: count > 0,
         count,
         selected: selectedMatch,
+        ...(deferred && selectedMatch ? { deferred: true } : {}),
         confidence: candidate.confidence,
         ...(element ? { element } : {}),
       });
@@ -372,17 +378,23 @@ export class PlaywrightChatDiscovery {
     locator: Locator,
     candidates: readonly ChatCandidateSpec[],
     deferred = false,
-  ): Promise<{ strategy: string; confidence: 'HIGH' | 'MEDIUM' | 'LOW'; evidence?: ChatDiscoveryCandidate['element'] }> {
+  ): Promise<{ strategy: string; confidence: 'HIGH' | 'MEDIUM' | 'LOW'; deferred?: boolean; evidence?: ChatDiscoveryCandidate['element'] }> {
     for (const candidate of candidates) {
       if (await this.sameElement(locator, candidate.locator)) {
         return {
           strategy: candidate.strategy,
           confidence: candidate.confidence,
+          ...(deferred ? { deferred: true } : {}),
           evidence: deferred ? undefined : await this.elementEvidence(locator),
         };
       }
     }
-    return { strategy: 'runtime-locator', confidence: 'LOW', ...(deferred ? {} : { evidence: await this.elementEvidence(locator) }) };
+    return {
+      strategy: 'runtime-locator',
+      confidence: 'LOW',
+      ...(deferred ? { deferred: true } : {}),
+      ...(deferred ? {} : { evidence: await this.elementEvidence(locator) }),
+    };
   }
 
   private async elementEvidence(locator: Locator): Promise<ChatDiscoveryCandidate['element']> {
