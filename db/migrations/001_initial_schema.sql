@@ -1,5 +1,3 @@
-BEGIN;
-
 CREATE TABLE IF NOT EXISTS targets (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -43,5 +41,3 @@ CREATE INDEX IF NOT EXISTS idx_scenarios_target ON scenarios(target_id);
 CREATE INDEX IF NOT EXISTS idx_executions_scenario ON executions(scenario_id, scenario_version);
 CREATE INDEX IF NOT EXISTS idx_executions_target ON executions(target_id);
 CREATE INDEX IF NOT EXISTS idx_executions_status ON executions(status);
-
-COMMIT;
