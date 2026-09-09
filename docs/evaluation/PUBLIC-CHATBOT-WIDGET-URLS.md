@@ -14,6 +14,10 @@ These entries are discovery candidates, not proof of successful automation. A pu
 |---|---|---|
 | `hubspot-crm-chatbot-builder` | https://www.hubspot.es/products/crm/chatbot-builder | Public HubSpot page related to its chatbot builder; candidate for detecting an embedded/conversational widget if present at runtime. |
 | `intercom-home` | https://www.intercom.com/ | Public Intercom site; candidate for detecting an embedded chat/messaging widget if exposed in the current page state. |
+| `tagaval-baav` | https://tagaval.co/?source=BAAV | User-supplied public page candidate; query parameter retained because it may affect the rendered experience. |
+| `aws-what-is-chatbot` | https://aws.amazon.com/es/what-is/chatbot/ | Public AWS educational page about chatbots; registered as a candidate and must be verified for an actual interactive widget at runtime. |
+| `attio-crm-1707-25` | https://attio.com/p/crm-1707-25 | User-supplied Attio page; tracking parameters removed for reproducible testing. |
+| `deepai-chat` | https://deepai.org/chat | Public DeepAI chat application; search verification currently identifies it as an AI chatbot interface. |
 | `chatbot-sample-page` | https://www.chatbot.com/help/chat-widget/sample-page/ | Existing public ChatBot.com sample page in the discovery corpus. |
 | `candordesk-demo` | https://candordesk.com/demo | Existing public CandorDesk demo in the discovery corpus. |
 | `sitemind-demo` | https://www.sitemind.tech/demo | Existing public SiteMind demo in the discovery corpus. |
