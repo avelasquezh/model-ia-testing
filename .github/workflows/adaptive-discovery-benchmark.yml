@@ -32,7 +32,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: npm
 
       - name: Install dependencies
         run: npm install
@@ -42,8 +41,8 @@ jobs:
 
       - name: Run legacy vs adaptive benchmark
         env:
-          DISCOVERY_BENCHMARK_CORPUS: ${{ inputs.corpus }}
-          DISCOVERY_BENCHMARK_TIMEOUT_MS: ${{ inputs.timeout_ms }}
+          DISCOVERY_BENCHMARK_CORPUS: ${{ inputs.corpus || 'examples/public-sut-discovery-corpus.json' }}
+          DISCOVERY_BENCHMARK_TIMEOUT_MS: ${{ inputs.timeout_ms || '30000' }}
         run: npm run browser:discovery:benchmark
 
       - name: Upload benchmark evidence
