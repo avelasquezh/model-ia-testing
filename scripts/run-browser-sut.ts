@@ -5,11 +5,13 @@ import { PlaywrightConversationAdapter } from '../src/infrastructure/execution/p
 import { PlaywrightExecutionRunner } from '../src/infrastructure/execution/PlaywrightExecutionRunner.js';
 import { LiveExecutionEvidencePublisher } from '../src/infrastructure/execution/LiveExecutionEvidencePublisher.js';
 import { InMemoryConversationUiConfigRepository } from '../src/infrastructure/execution/playwright/InMemoryConversationUiConfigRepository.js';
+import { classifyPublicSutFailure, type PublicSutFailureReason } from '../src/infrastructure/execution/playwright/PublicSutFailureClassification.js';
 import { Execution } from '../src/domain/execution/Execution.js';
 import { Scenario } from '../src/domain/scenario/Scenario.js';
 import { Target } from '../src/domain/target/Target.js';
 import type { ConversationUiConfig } from '../src/application/ports/ConversationUiConfigRepository.js';
 import type { BotObservationSet } from '../src/domain/evaluation/BotObservation.js';
+import type { ChatDiscoveryReport } from '../src/infrastructure/execution/playwright/ChatDiscoveryReport.js';
 
 const CONFIG_FILE = process.env.BROWSER_SUT_CONFIG_FILE;
 const OUTPUT_FILE = process.env.BROWSER_SUT_OUTPUT_FILE ?? 'artifacts/browser-sut/observations.json';
@@ -47,7 +49,7 @@ const result = await runner.execute({ execution, scenario, target }, { timeoutMs
 
 const discoveryReport = conversation.getDiscoveryReport();
 if (discoveryReport) {
-  await writeFile(DISCOVERY_REPORT_FILE, JSON.stringify(discoveryReport, null, 2));
+  await writeFile(DISCOVERY_REPORT_FILE, JSON.stringify(withExecutionFailure(discoveryReport, result.errors ?? []), null, 2));
 }
 
 const observations: BotObservationSet = {
@@ -80,6 +82,22 @@ console.log(JSON.stringify({
   observationCount: observations.observations.length,
   errors: result.errors ?? [],
 }, null, 2));
+
+function withExecutionFailure(report: ChatDiscoveryReport, errors: readonly { code: string; message: string; operation: string; turnIndex?: number }[]): ChatDiscoveryReport {
+  const error = errors[0];
+  if (!error) return report;
+  const reason: PublicSutFailureReason = classifyPublicSutFailure(error);
+  return {
+    ...report,
+    executionFailureReason: reason,
+    executionError: {
+      code: error.code,
+      message: error.message,
+      operation: error.operation,
+      ...(error.turnIndex !== undefined ? { turnIndex: error.turnIndex } : {}),
+    },
+  };
+}
 
 function parseConfig(value: unknown): {
   target: { id: string; name: string; url: string; status: 'ACTIVE' | 'INACTIVE' };
