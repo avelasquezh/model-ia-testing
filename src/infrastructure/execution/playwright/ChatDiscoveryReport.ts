@@ -18,6 +18,12 @@ export type ChatDiscoveryCandidate = {
   };
 };
 
+export type ChatDiscoveryTraversalStep = {
+  readonly depth: number;
+  readonly strategy: string;
+  readonly evidence?: ChatDiscoveryCandidate['element'];
+};
+
 export type ChatDiscoveryReport = {
   readonly schemaVersion: 'chat-discovery-0.1';
   readonly targetUrl: string;
@@ -29,5 +35,6 @@ export type ChatDiscoveryReport = {
     readonly confidence: 'HIGH' | 'MEDIUM' | 'LOW';
     readonly evidence?: ChatDiscoveryCandidate['element'];
   }>>;
+  readonly traversalPath?: readonly ChatDiscoveryTraversalStep[];
   readonly error?: string;
 };
