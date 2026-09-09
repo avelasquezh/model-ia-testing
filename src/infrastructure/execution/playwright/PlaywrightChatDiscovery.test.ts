@@ -139,10 +139,14 @@ describe('PlaywrightChatDiscovery', () => {
     expect(await result.config.response.value.count()).toBe(0);
 
     const sendButton = page.getByRole('button', { name: 'Enviar mensaje' });
-    await expect(sendButton).toBeVisible();
+    await sendButton.waitFor({ state: 'visible' });
     await sendButton.click();
 
-    await expect(result.config.response.value).toHaveText('Respuesta montada después de enviar', { timeout: 5_000 });
+    await expect
+      .poll(() => result.config.response.kind === 'locator' ? result.config.response.value.textContent() : null, {
+        timeout: 5_000,
+      })
+      .toBe('Respuesta montada después de enviar');
 
     const responseCandidate = result.report.candidates.find(
       (candidate) => candidate.role === 'response' && candidate.selected,
