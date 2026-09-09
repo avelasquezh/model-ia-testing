@@ -19,6 +19,7 @@ type Report = {
   readonly candidates: readonly Candidate[];
   readonly selected: Record<string, unknown>;
   readonly error?: string;
+  readonly failureReason?: string;
 };
 
 const inputDirectory = resolve(process.argv[2] ?? 'artifacts/public-sut-discovery');
@@ -58,6 +59,7 @@ const registry = {
     status: report.status,
     discoveredAt: report.discoveredAt,
     selected: report.selected,
+    ...(report.failureReason ? { failureReason: report.failureReason } : {}),
     ...(report.error ? { error: report.error } : {}),
   })),
   candidates,
