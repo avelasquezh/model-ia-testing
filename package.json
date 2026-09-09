@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc --noEmit",
     "test": "vitest run",
-    "test:bdd": "cucumber-js",
+    "test:bdd": "tsx scripts/test-bdd.ts",
     "test:browser": "playwright test",
     "evidence:viewer": "tsx src/infrastructure/evidence/serve-live-evidence.ts",
     "db:migrate": "tsx scripts/migrate.ts",
