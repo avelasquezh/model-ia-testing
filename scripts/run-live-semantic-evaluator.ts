@@ -34,6 +34,25 @@ const parseObservationFile = (raw: string) => {
 const observationSet = parseObservationFile(await readFile(observationsFile, 'utf8'));
 const observations = observationSet.observations;
 
+const requiredCaseIds = ['ALIGNED', 'NOT_ALIGNED', 'AMBIGUOUS'] as const;
+const observedCaseIds = new Set(observations.map((observation) => observation.caseId));
+const missingCaseIds = requiredCaseIds.filter((caseId) => !observedCaseIds.has(caseId));
+if (missingCaseIds.length > 0) {
+  throw new Error(`F2-VAL-05 requires caseIds: ALIGNED, NOT_ALIGNED, AMBIGUOUS; missing: ${missingCaseIds.join(', ')}`);
+}
+
+const caseGroups = requiredCaseIds.map((caseId) => ({
+  caseId,
+  observations: observations.filter((observation) => observation.caseId === caseId),
+}));
+
+for (const group of caseGroups) {
+  const repetitions = new Set(group.observations.map((observation) => observation.repetition));
+  if (repetitions.size < 2) {
+    throw new Error(`F2-VAL-05 requires at least two independent repetitions for ${group.caseId}`);
+  }
+}
+
 const mapResponse = (request: SemanticEvaluationInput, payload: unknown): SemanticEvaluationOutput => {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
     throw new Error('Semantic evaluator response must be a JSON object');
@@ -151,8 +170,7 @@ for (const observation of observations) {
   });
 }
 
-const caseIds = [...new Set(observations.map((observation) => observation.caseId))];
-const byCase = caseIds.map((caseId) => results.filter((result) => result.caseId === caseId));
+const byCase = requiredCaseIds.map((caseId) => results.filter((result) => result.caseId === caseId));
 const repeatable = byCase.every((caseResults) => {
   const ordered = [...caseResults].sort((a, b) => a.repetition - b.repetition || a.turn - b.turn);
   return new Set(ordered.map((result) => result.outcome)).size === 1;
@@ -160,6 +178,15 @@ const repeatable = byCase.every((caseResults) => {
 
 console.log(JSON.stringify({
   status: repeatable ? 'VALIDATED_REPEATABILITY' : 'NON_REPEATABLE_OBSERVATION',
+  protocol: {
+    classification: 'F2-VAL-05',
+    requiredCases: requiredCaseIds,
+    minimumRepetitionsPerCase: 2,
+    coverage: caseGroups.map((group) => ({
+      caseId: group.caseId,
+      repetitions: [...new Set(group.observations.map((observation) => observation.repetition))].sort((a, b) => a - b),
+    })),
+  },
   observationSchemaVersion: observationSet.schemaVersion,
   observationsFile,
   evaluator: {
