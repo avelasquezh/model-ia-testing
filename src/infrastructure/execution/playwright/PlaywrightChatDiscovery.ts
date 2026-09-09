@@ -30,6 +30,9 @@ export class PlaywrightChatDiscovery {
 
     try {
       await this.dismissConsentBanners();
+      const captcha = await this.findVisibleCaptchaGate();
+      if (captcha) throw new Error(`CAPTCHA access gate detected (${captcha.strategy})`);
+
       let contexts = this.searchContexts();
       let composerSpecs = this.buildComposerCandidates(contexts);
       let composer = await this.findFirstVisible(composerSpecs.map((candidate) => candidate.locator));
@@ -45,6 +48,9 @@ export class PlaywrightChatDiscovery {
           await this.page.waitForTimeout(750);
 
           contexts = this.searchContexts();
+          const postOpenCaptcha = await this.findVisibleCaptchaGate();
+          if (postOpenCaptcha) throw new Error(`CAPTCHA access gate detected (${postOpenCaptcha.strategy})`);
+
           composerSpecs = this.buildComposerCandidates(contexts);
           composer = await this.findFirstVisible(composerSpecs.map((candidate) => candidate.locator));
           await this.recordCandidates(candidates, 'composer', composerSpecs, composer);
@@ -114,6 +120,25 @@ export class PlaywrightChatDiscovery {
         }
       }
     }
+  }
+
+  private async findVisibleCaptchaGate(): Promise<ChatCandidateSpec | null> {
+    const contexts = this.searchContexts();
+    for (const { name, context } of contexts) {
+      const specs: ChatCandidateSpec[] = [
+        { strategy: `${name}:iframe[src*=recaptcha]`, locator: context.locator('iframe[src*="recaptcha" i]'), confidence: 'HIGH' },
+        { strategy: `${name}:iframe[title*=captcha]`, locator: context.locator('iframe[title*="captcha" i]'), confidence: 'HIGH' },
+        { strategy: `${name}:[class*=g-recaptcha]`, locator: context.locator('[class*="g-recaptcha" i]'), confidence: 'HIGH' },
+        { strategy: `${name}:[id*=captcha]`, locator: context.locator('[id*="captcha" i]'), confidence: 'HIGH' },
+        { strategy: `${name}:[class*=captcha]`, locator: context.locator('[class*="captcha" i]'), confidence: 'MEDIUM' },
+        { strategy: `${name}:[name*=captcha]`, locator: context.locator('[name*="captcha" i]'), confidence: 'MEDIUM' },
+      ];
+      for (const spec of specs) {
+        const visible = await this.findFirstVisible([spec.locator]);
+        if (visible) return { ...spec, locator: visible };
+      }
+    }
+    return null;
   }
 
   private buildLauncherCandidates(contexts: readonly SearchContext[]): ChatCandidateSpec[] {
