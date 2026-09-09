@@ -29,29 +29,40 @@ export class PlaywrightConversationAdapter implements ConversationPort {
 
   public async open(targetUrl: string, timeoutMs: number): Promise<ConversationSession> {
     const browserSession = (await this.browser.open()) as PlaywrightBrowserSession;
-    await browserSession.navigate(targetUrl, timeoutMs);
 
-    const config = await this.uiConfigs.findByTargetUrl(targetUrl);
-    if (!config && !browserSession.page) {
-      return new PlaywrightConversationSession(
-        browserSession,
-        new UnconfiguredConversationUi(),
-        timeoutMs,
-      );
+    try {
+      await browserSession.navigate(targetUrl, timeoutMs);
+
+      const config = await this.uiConfigs.findByTargetUrl(targetUrl);
+      if (!config && !browserSession.page) {
+        return new PlaywrightConversationSession(
+          browserSession,
+          new UnconfiguredConversationUi(),
+          timeoutMs,
+        );
+      }
+
+      let uiConfig: PlaywrightConversationUiConfig;
+      if (config) {
+        uiConfig = this.toPlaywrightConfig(config);
+      } else {
+        const discovery = new PlaywrightChatDiscovery(browserSession.page);
+        const result = await discovery.discoverWithEvidence();
+        this.lastDiscoveryReport = result.report;
+        uiConfig = result.config;
+      }
+
+      const ui = new PlaywrightConversationUi(browserSession.page, uiConfig);
+      return new PlaywrightConversationSession(browserSession, ui, timeoutMs);
+    } catch (error) {
+      this.lastDiscoveryReport = this.lastDiscoveryReport ?? null;
+      try {
+        await browserSession.close();
+      } catch {
+        // Preserve the original discovery/navigation failure.
+      }
+      throw error;
     }
-
-    let uiConfig: PlaywrightConversationUiConfig;
-    if (config) {
-      uiConfig = this.toPlaywrightConfig(config);
-    } else {
-      const discovery = new PlaywrightChatDiscovery(browserSession.page);
-      const result = await discovery.discoverWithEvidence();
-      this.lastDiscoveryReport = result.report;
-      uiConfig = result.config;
-    }
-
-    const ui = new PlaywrightConversationUi(browserSession.page, uiConfig);
-    return new PlaywrightConversationSession(browserSession, ui, timeoutMs);
   }
 
   private toPlaywrightConfig(config: ConversationUiConfig): PlaywrightConversationUiConfig {
