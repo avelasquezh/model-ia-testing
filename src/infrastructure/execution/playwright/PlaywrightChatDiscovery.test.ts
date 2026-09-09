@@ -112,21 +112,25 @@ describe('PlaywrightChatDiscovery', () => {
   });
 
   it('retains a deferred response locator when the response is mounted after send', async () => {
-    await page.setContent(`
-      <main>
-        <label for="message">Mensaje</label>
-        <input id="message" placeholder="Escribe tu mensaje" />
-        <button aria-label="Enviar mensaje">Enviar</button>
-        <script>
-          document.querySelector('button').addEventListener('click', () => {
-            const response = document.createElement('section');
-            response.setAttribute('aria-live', 'polite');
-            response.textContent = 'Respuesta montada después de enviar';
-            document.querySelector('main').appendChild(response);
-          });
-        </script>
-      </main>
-    `);
+    await page.locator('body').evaluate((body) => {
+      body.innerHTML = `
+        <main>
+          <label for="message">Mensaje</label>
+          <input id="message" placeholder="Escribe tu mensaje" />
+          <button aria-label="Enviar mensaje">Enviar</button>
+        </main>
+      `;
+    });
+
+    const sendButton = page.getByRole('button', { name: 'Enviar mensaje' });
+    await sendButton.evaluate((button) => {
+      button.addEventListener('click', () => {
+        const response = document.createElement('section');
+        response.setAttribute('aria-live', 'polite');
+        response.textContent = 'Respuesta montada después de enviar';
+        document.querySelector('main')?.appendChild(response);
+      });
+    });
 
     const result = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
 
@@ -138,7 +142,7 @@ describe('PlaywrightChatDiscovery', () => {
     if (result.config.response.kind !== 'locator') throw new Error('Expected a live response locator');
     expect(await result.config.response.value.count()).toBe(0);
 
-    await page.getByRole('button', { name: 'Enviar mensaje' }).click();
+    await sendButton.click();
     expect(await result.config.response.value.textContent()).toBe('Respuesta montada después de enviar');
 
     const responseCandidate = result.report.candidates.find(
