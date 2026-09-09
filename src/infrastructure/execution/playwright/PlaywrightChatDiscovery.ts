@@ -79,13 +79,11 @@ export class PlaywrightChatDiscovery {
       if (sendButton) selected.sendButton = await this.selection(sendButton, sendSpecs);
 
       const responseSpecs = this.buildResponseCandidates(contexts);
-      const response = await this.findFirstVisibleExcluding(
-        responseSpecs.map((candidate) => candidate.locator),
-        [composer, sendButton],
-      );
+      const responseResult = await this.findResponseLocator(responseSpecs, composer, sendButton);
+      const response = responseResult.locator;
       await this.recordCandidates(candidates, 'response', responseSpecs, response);
       if (!response) throw new Error('Chat response could not be discovered on the public URL');
-      selected.response = await this.selection(response, responseSpecs);
+      selected.response = await this.selection(response, responseSpecs, responseResult.deferred);
 
       return {
         config: {
@@ -99,6 +97,32 @@ export class PlaywrightChatDiscovery {
       const message = error instanceof Error ? error.message : String(error);
       throw new ChatDiscoveryError(message, this.buildReport('FAILED', candidates, selected, traversalPath, message));
     }
+  }
+
+  private async findResponseLocator(
+    candidates: readonly ChatCandidateSpec[],
+    composer: Locator,
+    sendButton: Locator | null,
+  ): Promise<{ readonly locator: Locator | null; readonly deferred: boolean }> {
+    const existing = await this.findFirstVisibleExcluding(
+      candidates.map((candidate) => candidate.locator),
+      [composer, sendButton],
+    );
+    if (existing) return { locator: existing, deferred: false };
+
+    for (const candidate of candidates) {
+      const count = await candidate.locator.count();
+      if (count > 0) continue;
+      if (this.isSupportedDeferredResponseStrategy(candidate.strategy)) {
+        return { locator: candidate.locator, deferred: true };
+      }
+    }
+
+    return { locator: null, deferred: false };
+  }
+
+  private isSupportedDeferredResponseStrategy(strategy: string): boolean {
+    return /\[(data-testid|aria-live|class).*\]|role=log/.test(strategy);
   }
 
   private async traverseNestedWidgets(
@@ -347,17 +371,18 @@ export class PlaywrightChatDiscovery {
   private async selection(
     locator: Locator,
     candidates: readonly ChatCandidateSpec[],
+    deferred = false,
   ): Promise<{ strategy: string; confidence: 'HIGH' | 'MEDIUM' | 'LOW'; evidence?: ChatDiscoveryCandidate['element'] }> {
     for (const candidate of candidates) {
       if (await this.sameElement(locator, candidate.locator)) {
         return {
           strategy: candidate.strategy,
           confidence: candidate.confidence,
-          evidence: await this.elementEvidence(locator),
+          evidence: deferred ? undefined : await this.elementEvidence(locator),
         };
       }
     }
-    return { strategy: 'runtime-locator', confidence: 'LOW', evidence: await this.elementEvidence(locator) };
+    return { strategy: 'runtime-locator', confidence: 'LOW', ...(deferred ? {} : { evidence: await this.elementEvidence(locator) }) };
   }
 
   private async elementEvidence(locator: Locator): Promise<ChatDiscoveryCandidate['element']> {
