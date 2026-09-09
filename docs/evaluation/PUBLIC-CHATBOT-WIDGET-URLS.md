@@ -18,6 +18,7 @@ These entries are discovery candidates, not proof of successful automation. A pu
 | `aws-what-is-chatbot` | https://aws.amazon.com/es/what-is/chatbot/ | Public AWS educational page about chatbots; registered as a candidate and must be verified for an actual interactive widget at runtime. |
 | `attio-crm-1707-25` | https://attio.com/p/crm-1707-25 | User-supplied Attio page; tracking parameters removed for reproducible testing. |
 | `deepai-chat` | https://deepai.org/chat | Public DeepAI chat application; search verification currently identifies it as an AI chatbot interface. |
+| `minciencias-chat-minciencias` | http://minciencias.gov.co/atencion-al-ciudadano/chat-minciencias | User-supplied public MinCiencias page for Chat MinCiencias; HTTP scheme retained exactly as supplied and requires runtime verification. |
 | `chatbot-sample-page` | https://www.chatbot.com/help/chat-widget/sample-page/ | Existing public ChatBot.com sample page in the discovery corpus. |
 | `candordesk-demo` | https://candordesk.com/demo | Existing public CandorDesk demo in the discovery corpus. |
 | `sitemind-demo` | https://www.sitemind.tech/demo | Existing public SiteMind demo in the discovery corpus. |
