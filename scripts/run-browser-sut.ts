@@ -13,6 +13,7 @@ import type { BotObservationSet } from '../src/domain/evaluation/BotObservation.
 
 const CONFIG_FILE = process.env.BROWSER_SUT_CONFIG_FILE;
 const OUTPUT_FILE = process.env.BROWSER_SUT_OUTPUT_FILE ?? 'artifacts/browser-sut/observations.json';
+const DISCOVERY_REPORT_FILE = process.env.BROWSER_SUT_DISCOVERY_REPORT_FILE ?? 'artifacts/browser-sut/discovery.json';
 const EVIDENCE_DIRECTORY = process.env.BROWSER_SUT_EVIDENCE_DIRECTORY ?? 'artifacts/browser-sut/evidence';
 const TIMEOUT_MS = parsePositiveInteger(process.env.BROWSER_SUT_TIMEOUT_MS, 30_000, 'BROWSER_SUT_TIMEOUT_MS');
 
@@ -44,6 +45,11 @@ const conversation = new PlaywrightConversationAdapter(browser, uiConfigs);
 const runner = new PlaywrightExecutionRunner(conversation, evidence);
 const result = await runner.execute({ execution, scenario, target }, { timeoutMs: TIMEOUT_MS });
 
+const discoveryReport = conversation.getDiscoveryReport();
+if (discoveryReport) {
+  await writeFile(DISCOVERY_REPORT_FILE, JSON.stringify(discoveryReport, null, 2));
+}
+
 const observations: BotObservationSet = {
   schemaVersion: 'bot-observation-0.1',
   observations: (result.observations ?? []).map((observation, index) => ({
@@ -68,6 +74,7 @@ console.log(JSON.stringify({
   executionId: execution.props.id,
   targetUrl: target.props.url,
   locatorMode: config.ui ? 'configured' : 'automatic-discovery',
+  discoveryReportFile: discoveryReport ? DISCOVERY_REPORT_FILE : null,
   outputFile: OUTPUT_FILE,
   evidenceDirectory: EVIDENCE_DIRECTORY,
   observationCount: observations.observations.length,
