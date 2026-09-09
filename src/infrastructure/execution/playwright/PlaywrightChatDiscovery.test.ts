@@ -138,8 +138,11 @@ describe('PlaywrightChatDiscovery', () => {
     if (result.config.response.kind !== 'locator') throw new Error('Expected a live response locator');
     expect(await result.config.response.value.count()).toBe(0);
 
-    await page.getByRole('button', { name: 'Enviar mensaje' }).click();
-    expect(await result.config.response.value.textContent()).toBe('Respuesta montada después de enviar');
+    const sendButton = page.getByRole('button', { name: 'Enviar mensaje' });
+    await expect(sendButton).toBeVisible();
+    await sendButton.click();
+
+    await expect(result.config.response.value).toHaveText('Respuesta montada después de enviar', { timeout: 5_000 });
 
     const responseCandidate = result.report.candidates.find(
       (candidate) => candidate.role === 'response' && candidate.selected,
