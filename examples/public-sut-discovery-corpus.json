@@ -143,6 +143,13 @@
       "url": "https://www.tullaveplus.gov.co/servicio-al-ciudadano/canales-de-comunicacion",
       "status": "CANDIDATE",
       "notes": "User-supplied public URL. Runtime discovery must verify the current chat entry point and any consent or form gate."
+    },
+    {
+      "id": "olimpica-home",
+      "name": "Olímpica public site",
+      "url": "https://www.olimpica.com/",
+      "status": "CANDIDATE",
+      "notes": "User-supplied public URL. Runtime discovery should inspect nested widgets, iframes and Shadow DOM where accessible, in addition to visible top-level chat controls."
     }
   ],
   "method": {
