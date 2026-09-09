@@ -1,5 +1,6 @@
 import type { Browser, Page } from '@playwright/test';
 import { PlaywrightChatDiscovery } from '../PlaywrightChatDiscovery.js';
+import { classifyPublicSutFailure, type PublicSutFailureReason } from '../PublicSutFailureClassification.js';
 import { AdaptiveDiscoveryExperimentRunner, type AdaptiveDiscoveryRun, type AdaptiveDiscoveryRunnerOptions } from './AdaptiveDiscoveryExperimentRunner.js';
 import type { BenchmarkModel, BenchmarkObservation } from './AdaptiveDiscoveryBenchmark.js';
 import type { DiscoveryAttemptOutcome } from './DiscoveryComparison.js';
@@ -31,6 +32,14 @@ export function classifyAdaptiveDiscoveryOutcome(run: Pick<AdaptiveDiscoveryRun,
   return 'NOT_FOUND';
 }
 
+function failureReason(error: unknown, operation?: string): PublicSutFailureReason {
+  return classifyPublicSutFailure({
+    code: error instanceof Error ? error.name : undefined,
+    message: error instanceof Error ? error.message : String(error),
+    operation,
+  });
+}
+
 export class ParallelDiscoveryBenchmarkRunner {
   public constructor(
     private readonly browser: Browser,
@@ -54,8 +63,8 @@ export class ParallelDiscoveryBenchmarkRunner {
           });
 
           const observation = model === 'LEGACY'
-            ? await this.runLegacy(page, target.url, startedAt)
-            : await this.runAdaptive(page, target.url, startedAt);
+            ? await this.runLegacy(page, target, startedAt)
+            : await this.runAdaptive(page, target, startedAt);
           observations.push(observation);
           await context.close();
         } catch (error) {
@@ -63,10 +72,12 @@ export class ParallelDiscoveryBenchmarkRunner {
           errors.push({ model, targetId: target.id, message });
           observations.push({
             model,
+            targetId: target.id,
             targetUrl: target.url,
             outcome: 'NOT_FOUND',
             attempts: 0,
             durationMs: Date.now() - startedAt,
+            failureReason: failureReason(error),
           });
           if (page) await page.context().close().catch(() => undefined);
         }
@@ -78,46 +89,63 @@ export class ParallelDiscoveryBenchmarkRunner {
 
   private async runLegacy(
     page: Page,
-    targetUrl: string,
+    target: DiscoveryBenchmarkTarget,
     startedAt: number,
   ): Promise<BenchmarkObservation> {
     try {
       const result = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
       return {
         model: 'LEGACY',
-        targetUrl,
+        targetId: target.id,
+        targetUrl: target.url,
         outcome: 'CHAT_SURFACE_FOUND',
         attempts: result.report.candidates.length,
         durationMs: Date.now() - startedAt,
       };
     } catch (error) {
       const report = error instanceof Error && 'report' in error
-        ? (error as Error & { report?: { candidates?: readonly unknown[]; selected?: Record<string, unknown> } }).report
+        ? (error as Error & { report?: { candidates?: readonly unknown[]; selected?: Record<string, unknown>; errors?: readonly { operation?: string; message?: string }[] } }).report
         : undefined;
       const hasCandidate = Boolean(report?.selected && Object.keys(report.selected).length > 0);
+      const lastError = report?.errors?.at(-1);
       return {
         model: 'LEGACY',
-        targetUrl,
+        targetId: target.id,
+        targetUrl: target.url,
         outcome: hasCandidate ? 'CANDIDATE_FOUND' : 'NOT_FOUND',
         attempts: report?.candidates?.length ?? 0,
         durationMs: Date.now() - startedAt,
+        failureReason: failureReason(error, lastError?.operation),
       };
     }
   }
 
   private async runAdaptive(
     page: Page,
-    targetUrl: string,
+    target: DiscoveryBenchmarkTarget,
     startedAt: number,
   ): Promise<BenchmarkObservation> {
-    const run: AdaptiveDiscoveryRun = await new AdaptiveDiscoveryExperimentRunner(page, this.options.adaptive).run();
-    return {
-      model: 'ADAPTIVE',
-      targetUrl,
-      outcome: classifyAdaptiveDiscoveryOutcome(run),
-      attempts: run.clicksAttempted,
-      durationMs: Date.now() - startedAt,
-      adaptive: run,
-    };
+    try {
+      const run: AdaptiveDiscoveryRun = await new AdaptiveDiscoveryExperimentRunner(page, this.options.adaptive).run();
+      return {
+        model: 'ADAPTIVE',
+        targetId: target.id,
+        targetUrl: target.url,
+        outcome: classifyAdaptiveDiscoveryOutcome(run),
+        attempts: run.clicksAttempted,
+        durationMs: Date.now() - startedAt,
+        adaptive: run,
+      };
+    } catch (error) {
+      return {
+        model: 'ADAPTIVE',
+        targetId: target.id,
+        targetUrl: target.url,
+        outcome: 'NOT_FOUND',
+        attempts: 0,
+        durationMs: Date.now() - startedAt,
+        failureReason: failureReason(error),
+      };
+    }
   }
 }
