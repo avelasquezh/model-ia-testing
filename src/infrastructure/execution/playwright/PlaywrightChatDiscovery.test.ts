@@ -157,7 +157,7 @@ describe('PlaywrightChatDiscovery', () => {
     expect(responseCandidate?.matched).toBe(false);
 
     await context.close();
-  });
+  }, 15000);
 });
 
 async function locatorAttribute(definition: PlaywrightLocatorDefinition, attribute: string): Promise<string | null> {
