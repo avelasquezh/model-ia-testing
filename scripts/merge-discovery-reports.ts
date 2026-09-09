@@ -18,6 +18,9 @@ type Report = {
   readonly discoveredAt: string;
   readonly candidates: readonly Candidate[];
   readonly selected: Record<string, unknown>;
+  readonly traversalPath?: readonly Record<string, unknown>[];
+  readonly executionFailureReason?: string;
+  readonly executionError?: Record<string, unknown>;
   readonly error?: string;
   readonly failureReason?: string;
 };
@@ -59,7 +62,10 @@ const registry = {
     status: report.status,
     discoveredAt: report.discoveredAt,
     selected: report.selected,
+    ...(report.traversalPath ? { traversalPath: report.traversalPath } : {}),
     ...(report.failureReason ? { failureReason: report.failureReason } : {}),
+    ...(report.executionFailureReason ? { executionFailureReason: report.executionFailureReason } : {}),
+    ...(report.executionError ? { executionError: report.executionError } : {}),
     ...(report.error ? { error: report.error } : {}),
   })),
   candidates,
@@ -67,9 +73,12 @@ const registry = {
     sites: reports.length,
     discoveredSites: reports.filter((report) => report.status === 'DISCOVERED').length,
     failedSites: reports.filter((report) => report.status === 'FAILED').length,
+    executionFailedSites: reports.filter((report) => report.executionFailureReason).length,
+    responseTimeoutSites: reports.filter((report) => report.executionFailureReason === 'RESPONSE_TIMEOUT').length,
     totalCandidates: candidates.length,
     matchedCandidates: candidates.filter((candidate) => candidate.matched).length,
     selectedCandidates: candidates.filter((candidate) => candidate.selected).length,
+    traversalSites: reports.filter((report) => (report.traversalPath?.length ?? 0) > 0).length,
   },
 };
 
