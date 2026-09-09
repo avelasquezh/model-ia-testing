@@ -1,6 +1,6 @@
 import { chromium } from '@playwright/test';
 import { afterAll, describe, expect, it } from 'vitest';
-import { PlaywrightConversationUi, ConversationResponseTimeoutError } from './PlaywrightConversationUi.js';
+import { ConversationResponseTimeoutError, PlaywrightConversationUi } from './PlaywrightConversationUi.js';
 
 const browser = await chromium.launch({ headless: true });
 
@@ -201,8 +201,9 @@ describe('PlaywrightConversationUi', () => {
       pollIntervalMs: 10,
     });
 
-    await expect(ui.sendMessage('Hola', 100)).rejects.toBeInstanceOf(ConversationResponseTimeoutError);
-    await expect(ui.sendMessage.bind(ui, 'Hola', 100)).rejects.toMatchObject({
+    const error = await ui.sendMessage('Hola', 100).catch((value: unknown) => value);
+    expect(error).toBeInstanceOf(ConversationResponseTimeoutError);
+    expect(error).toMatchObject({
       name: 'RESPONSE_TIMEOUT',
       message: 'Conversation response was not observed before timeout',
     });
