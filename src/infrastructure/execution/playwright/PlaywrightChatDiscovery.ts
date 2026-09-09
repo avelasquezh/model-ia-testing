@@ -83,7 +83,16 @@ export class PlaywrightChatDiscovery {
       const response = responseResult.locator;
       await this.recordCandidates(candidates, 'response', responseSpecs, response, responseResult.deferred);
       if (!response) throw new Error('Chat response could not be discovered on the public URL');
-      selected.response = await this.selection(response, responseSpecs, responseResult.deferred);
+
+      if (responseResult.deferred && responseResult.strategy) {
+        selected.response = {
+          strategy: responseResult.strategy,
+          confidence: responseResult.confidence ?? 'LOW',
+          deferred: true,
+        };
+      } else {
+        selected.response = await this.selection(response, responseSpecs);
+      }
 
       return {
         config: {
@@ -103,7 +112,7 @@ export class PlaywrightChatDiscovery {
     candidates: readonly ChatCandidateSpec[],
     composer: Locator,
     sendButton: Locator | null,
-  ): Promise<{ readonly locator: Locator | null; readonly deferred: boolean }> {
+  ): Promise<{ readonly locator: Locator | null; readonly deferred: boolean; readonly strategy?: string; readonly confidence?: 'HIGH' | 'MEDIUM' | 'LOW' }> {
     const existing = await this.findFirstVisibleExcluding(
       candidates.map((candidate) => candidate.locator),
       [composer, sendButton],
@@ -120,7 +129,14 @@ export class PlaywrightChatDiscovery {
     });
 
     for (const { candidate } of ranked) {
-      if (await candidate.locator.count() === 0) return { locator: candidate.locator, deferred: true };
+      if (await candidate.locator.count() === 0) {
+        return {
+          locator: candidate.locator,
+          deferred: true,
+          strategy: candidate.strategy,
+          confidence: candidate.confidence,
+        };
+      }
     }
 
     return { locator: null, deferred: false };
