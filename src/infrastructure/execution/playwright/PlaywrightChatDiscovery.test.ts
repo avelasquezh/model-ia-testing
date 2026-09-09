@@ -141,7 +141,40 @@ describe('PlaywrightChatDiscovery', () => {
         });
         console.log('[deferred] listener attached');
 
-        const result = await new PlaywrightChatDiscovery(isolatedPage).discoverWithEvidence();
+        const discovery = new PlaywrightChatDiscovery(isolatedPage);
+        const tracedMethods = new Set([
+          'dismissConsentBanners',
+          'findVisibleCaptchaGate',
+          'searchContexts',
+          'findFirstVisible',
+          'recordCandidates',
+          'findResponseLocator',
+          'selection',
+          'sameElement',
+          'elementEvidence',
+          'toDefinition',
+        ]);
+        const tracedDiscovery = new Proxy(discovery, {
+          get(target, property, receiver) {
+            const value = Reflect.get(target, property, receiver);
+            if (typeof property !== 'string' || !tracedMethods.has(property) || typeof value !== 'function') {
+              return value;
+            }
+            return async (...args: unknown[]) => {
+              console.log(`[deferred-stage] enter ${property}`);
+              try {
+                const result = await value.apply(receiver, args);
+                console.log(`[deferred-stage] exit ${property}`);
+                return result;
+              } catch (error) {
+                console.log(`[deferred-stage] error ${property}: ${error instanceof Error ? error.message : String(error)}`);
+                throw error;
+              }
+            };
+          },
+        });
+
+        const result = await tracedDiscovery.discoverWithEvidence();
         console.log('[deferred] discovery completed');
 
         expect(result.report.status).toBe('DISCOVERED');
