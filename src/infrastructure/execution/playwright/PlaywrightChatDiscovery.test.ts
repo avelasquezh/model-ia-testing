@@ -35,6 +35,33 @@ describe('PlaywrightChatDiscovery', () => {
     await context.close();
   });
 
+  it('emits serializable evidence showing selected strategies and element attributes', async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await page.setContent(`
+      <main>
+        <section role="log" aria-label="Conversation">Respuesta inicial</section>
+        <input placeholder="Escribe un mensaje" data-testid="composer" />
+        <button aria-label="Enviar mensaje">Enviar</button>
+      </main>
+    `);
+
+    const result = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
+
+    expect(result.report.schemaVersion).toBe('chat-discovery-0.1');
+    expect(result.report.status).toBe('DISCOVERED');
+    expect(result.report.targetUrl).toContain('about:blank');
+    expect(result.report.selected.composer?.strategy).toBe('placeholder~message|mensaje|chat|escribe|type');
+    expect(result.report.selected.composer?.confidence).toBe('HIGH');
+    expect(result.report.selected.composer?.evidence?.placeholder).toBe('Escribe un mensaje');
+    expect(result.report.selected.sendButton?.strategy).toBe('role:button[name~send|enviar|submit|mandar]');
+    expect(result.report.selected.response?.strategy).toBe('role:log');
+    expect(result.report.candidates.some((candidate) => candidate.selected)).toBe(true);
+
+    await context.close();
+  });
+
   it('fails explicitly when no response container can be discovered', async () => {
     const context = await browser.newContext();
     const page = await context.newPage();
