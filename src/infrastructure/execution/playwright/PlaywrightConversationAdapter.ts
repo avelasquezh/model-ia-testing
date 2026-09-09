@@ -10,7 +10,7 @@ import type {
   ConversationUiLocator,
 } from '../../../application/ports/ConversationUiConfigRepository.js';
 import type { BrowserAutomationPort } from '../../../application/ports/BrowserAutomationPort.js';
-import { PlaywrightChatDiscovery } from './PlaywrightChatDiscovery.js';
+import { ChatDiscoveryError, PlaywrightChatDiscovery } from './PlaywrightChatDiscovery.js';
 import { PlaywrightConversationUi, type PlaywrightConversationUiConfig } from './PlaywrightConversationUi.js';
 import type { ChatDiscoveryReport } from './ChatDiscoveryReport.js';
 import { type PlaywrightBrowserSession } from './PlaywrightBrowserAdapter.js';
@@ -55,7 +55,9 @@ export class PlaywrightConversationAdapter implements ConversationPort {
       const ui = new PlaywrightConversationUi(browserSession.page, uiConfig);
       return new PlaywrightConversationSession(browserSession, ui, timeoutMs);
     } catch (error) {
-      this.lastDiscoveryReport = this.lastDiscoveryReport ?? null;
+      if (error instanceof ChatDiscoveryError) {
+        this.lastDiscoveryReport = error.report;
+      }
       try {
         await browserSession.close();
       } catch {
