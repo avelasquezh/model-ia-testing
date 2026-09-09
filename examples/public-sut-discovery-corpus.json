@@ -20,11 +20,36 @@
       "id": "querywing-demo",
       "name": "QueryWing public demo",
       "url": "https://querywing.com/demo"
+    },
+    {
+      "id": "tagaval-baav",
+      "name": "Tagaval public page",
+      "url": "https://tagaval.co/?source=BAAV",
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "aws-what-is-chatbot",
+      "name": "AWS What is a chatbot",
+      "url": "https://aws.amazon.com/es/what-is/chatbot/",
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "attio-crm-1707-25",
+      "name": "Attio CRM public page",
+      "url": "https://attio.com/p/crm-1707-25",
+      "status": "CANDIDATE",
+      "notes": "Canonical URL stored without tracking query parameters from the supplied URL."
+    },
+    {
+      "id": "deepai-chat",
+      "name": "DeepAI public chat",
+      "url": "https://deepai.org/chat",
+      "status": "CANDIDATE"
     }
   ],
   "method": {
     "strategy": "provider-neutral automatic discovery",
-    "roles": ["composer", "sendButton", "response"],
+    "roles": ["launcher", "composer", "sendButton", "response"],
     "confidenceLevels": ["HIGH", "MEDIUM", "LOW"]
   }
 }
