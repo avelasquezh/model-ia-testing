@@ -297,7 +297,7 @@ export class PlaywrightChatDiscovery {
         { strategy: `${name}:button[aria-label*=send]`, locator: context.locator('button[aria-label*="send" i]'), confidence: 'HIGH' },
         { strategy: `${name}:button[title*=send]`, locator: context.locator('button[title*="send" i]'), confidence: 'MEDIUM' },
         { strategy: `${name}:button[aria-label*=enviar]`, locator: context.locator('button[aria-label*="enviar" i]'), confidence: 'HIGH' },
-        { strategy: `${name}:button[title*=enviar]`, locator: context.locator('[title*="enviar" i]'), confidence: 'MEDIUM' },
+        { strategy: `${name}:button[title*=enviar]`, locator: context.locator('button[title*="enviar" i]'), confidence: 'MEDIUM' },
       );
     }
     return candidates;
@@ -380,6 +380,13 @@ export class PlaywrightChatDiscovery {
     deferred = false,
   ): Promise<{ strategy: string; confidence: 'HIGH' | 'MEDIUM' | 'LOW'; deferred?: boolean; evidence?: ChatDiscoveryCandidate['element'] }> {
     for (const candidate of candidates) {
+      if (deferred && locator === candidate.locator) {
+        return {
+          strategy: candidate.strategy,
+          confidence: candidate.confidence,
+          deferred: true,
+        };
+      }
       if (await this.sameElement(locator, candidate.locator)) {
         return {
           strategy: candidate.strategy,
