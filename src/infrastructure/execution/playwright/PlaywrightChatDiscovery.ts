@@ -357,6 +357,19 @@ export class PlaywrightChatDiscovery {
     deferred = false,
   ): Promise<void> {
     for (const candidate of candidates) {
+      if (deferred && selected === candidate.locator) {
+        report.push({
+          role,
+          strategy: candidate.strategy,
+          matched: false,
+          count: 0,
+          selected: true,
+          deferred: true,
+          confidence: candidate.confidence,
+        });
+        continue;
+      }
+
       const items = await candidate.locator.all();
       const count = items.length;
       let element: ChatDiscoveryCandidate['element'];
@@ -369,7 +382,7 @@ export class PlaywrightChatDiscovery {
       const selectedMatch = selected
         ? count > 0
           ? await this.sameElement(selected, candidate.locator)
-          : deferred && selected === candidate.locator
+          : false
         : false;
       report.push({
         role,
