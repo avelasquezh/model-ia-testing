@@ -73,6 +73,76 @@
       "url": "https://www.chevrolet.com.co/chevyplan",
       "status": "CANDIDATE",
       "notes": "Canonical URL stored without advertising/tracking query parameters from the supplied URL. Runtime discovery must account for consent banners or pre-chat form gates if present."
+    },
+    {
+      "id": "nequi-chat",
+      "name": "Nequi - Cómo chatear con Nequi",
+      "url": "https://ayuda.nequi.com.co/hc/es/articles/35183204377229--C%C3%B3mo-chatear-con-Nequi",
+      "status": "CANDIDATE",
+      "notes": "User-supplied public URL. Runtime discovery must verify the current chat entry point and any consent or pre-chat gate."
+    },
+    {
+      "id": "compensar-asesorvirtual",
+      "name": "Compensar - Asesor Virtual",
+      "url": "https://corporativo.compensar.com/asesorvirtual",
+      "status": "CANDIDATE",
+      "notes": "User-supplied public URL. Runtime discovery must verify the current chat entry point and any consent or pre-chat gate."
+    },
+    {
+      "id": "enel-chat-atencion",
+      "name": "Enel Colombia - Chat de atención",
+      "url": "https://www.enel.com.co/es/personas/chat-de-atencion.html",
+      "status": "CANDIDATE",
+      "notes": "User-supplied public URL. Runtime discovery must verify cookies, form gates and the active chat interface."
+    },
+    {
+      "id": "nuevaeps-canales-atencion",
+      "name": "Nueva EPS - Canales de atención",
+      "url": "https://nuevaeps.com.co/coronavirus-atencion/canales-de-atencion",
+      "status": "CANDIDATE",
+      "notes": "User-supplied public URL. Runtime discovery must verify the current channel/chat entry point and any access gate."
+    },
+    {
+      "id": "skandia-chat-servicio",
+      "name": "Skandia - Chat de servicio",
+      "url": "https://www.skandia.co/chat-de-servicio",
+      "status": "CANDIDATE",
+      "notes": "User-supplied public URL. Runtime discovery must verify cookies, form gates and the active chat interface."
+    },
+    {
+      "id": "epssanitas-contactanos",
+      "name": "EPS Sanitas - Contáctanos",
+      "url": "https://www.epssanitas.com/usuarios/web/nuevo-portal-eps/contactanos",
+      "status": "CANDIDATE",
+      "notes": "User-supplied public URL. Captcha may gate the interactive flow; runtime must classify it as an access blocker and must not attempt to bypass it."
+    },
+    {
+      "id": "ucontactcloud-sdm-webchat",
+      "name": "uContactCloud - SDM WebChat form",
+      "url": "https://movilidad.ucontactcloud.com/WebChat/SdmForms/?form=wc",
+      "status": "CANDIDATE",
+      "notes": "User-supplied public webchat entry point. Runtime discovery must verify form fields and any anti-automation gate."
+    },
+    {
+      "id": "mintransporte-chat-virtual",
+      "name": "MinTransporte - Chat virtual",
+      "url": "https://mintransporte.gov.co/publicaciones/8095/chat-virtual/",
+      "status": "CANDIDATE",
+      "notes": "User-supplied public URL. Runtime discovery must verify the current chat widget and any consent or form gate."
+    },
+    {
+      "id": "renault-formularios",
+      "name": "Renault Colombia - Formularios",
+      "url": "https://www.renault.com.co/formularios.html",
+      "status": "CANDIDATE",
+      "notes": "User-supplied public URL. This candidate may expose a pre-chat/form flow rather than a directly available composer."
+    },
+    {
+      "id": "tullave-canales-comunicacion",
+      "name": "TuLlave Plus - Canales de comunicación",
+      "url": "https://www.tullaveplus.gov.co/servicio-al-ciudadano/canales-de-comunicacion",
+      "status": "CANDIDATE",
+      "notes": "User-supplied public URL. Runtime discovery must verify the current chat entry point and any consent or form gate."
     }
   ],
   "method": {
