@@ -8,23 +8,27 @@ The browser execution layer treats the system under test (SUT) as a public HTTP(
 
 The operational flow is:
 
-`public URL → Playwright opens page → chat interface discovery or configured locators → sends scenario inputs → waits for observable response → captures screenshot/evidence → emits BotObservationSet`
+`public URL → Playwright opens page → launcher discovery/opening → composer discovery → send control discovery → response discovery → sends scenario inputs → waits for observable response → captures screenshot/evidence → emits BotObservationSet`
 
 The controlled local chatbot used by the browser spikes remains a deterministic test fixture. It is not the production SUT contract.
 
 ## Locator discovery
 
-UI configuration is now optional. When `ui` is omitted from the browser SUT configuration, `PlaywrightConversationAdapter` invokes `PlaywrightChatDiscovery` after opening the public URL.
+UI configuration is optional. When `ui` is omitted from the browser SUT configuration, `PlaywrightConversationAdapter` invokes `PlaywrightChatDiscovery` after opening the public URL.
 
-Automatic discovery currently searches provider-neutral browser signals for:
+Automatic discovery is provider-neutral and staged:
 
-- message composer: accessible textbox/placeholder, textarea, text input and contenteditable elements;
-- send action: accessible button names and send/enviar aria-label or title attributes;
-- response area: message test ids, live regions, role `log`, response/message class names.
+1. Search the main document and currently loaded iframes for a chat launcher using accessible names, aria-label/title and common test-id signals.
+2. When no composer is already visible, click the first visible launcher candidate and refresh the search contexts.
+3. Search the main document and loaded iframes for a message composer using accessible textbox/placeholder, textarea, text input and contenteditable elements.
+4. Search for a send action using accessible button names and send/enviar aria-label or title attributes.
+5. Search for an observable response area using message test ids, live regions, role `log`, response/message class names and the same frame contexts used by the selected composer.
+
+Discovered controls are returned as live Playwright locators, so a control found inside an iframe remains bound to that frame for the current execution. Evidence records include the originating frame URL when available.
 
 The discovery result is used directly by the Playwright conversation layer and is not committed as a provider-specific selector. If a required element cannot be discovered, execution fails explicitly instead of guessing.
 
-This is heuristic discovery, not a claim that every arbitrary chat can be automated. Future increments may add iframe traversal, launcher detection, candidate scoring and post-send response verification.
+This remains heuristic discovery, not a claim that every arbitrary chat can be automated. Future increments should strengthen candidate scoring, shadow-DOM traversal and post-send response verification based on external evidence.
 
 ## Configuration
 
@@ -61,21 +65,27 @@ Optional environment variables:
 
 ```text
 BROWSER_SUT_OUTPUT_FILE
+BROWSER_SUT_DISCOVERY_REPORT_FILE
 BROWSER_SUT_EVIDENCE_DIRECTORY
 BROWSER_SUT_TIMEOUT_MS
 ```
 
-The runner writes a `BotObservationSet` with schema version `bot-observation-0.1`. Screenshots and turn metadata are written under the evidence directory.
+The runner writes a `BotObservationSet` with schema version `bot-observation-0.1`. Discovery evidence, screenshots and turn metadata are written under the evidence directory.
 
-## Controlled live candidate
+## External corpus
 
-For the first external discovery experiment, the project will use the public CandorDesk demo page:
+The current discovery corpus contains four public candidates:
 
-`https://candordesk.com/demo`
+- ChatBot sample page: `https://www.chatbot.com/help/chat-widget/sample-page/`
+- CandorDesk demo: `https://candordesk.com/demo`
+- SiteMind demo: `https://www.sitemind.tech/demo`
+- QueryWing demo: `https://querywing.com/demo`
 
-The page presents an inline live assistant with a visible composer and send control, making it a useful provider-neutral discovery candidate. The page itself states that the assistant is a live sample workspace and that messages are sent to the demo workspace. Do not submit private or sensitive information.
+The corpus workflow is intentionally provider-neutral and preserves `DISCOVERED`/`FAILED` reports plus locator evidence for subsequent heuristic improvements. External pages can change without notice, so a site failure is not automatically interpreted as an infrastructure failure.
 
-This URL is an external test candidate, not evidence of F2-VAL-05 validation. A live run must still produce reproducible observations and the required external semantic evaluator evidence.
+## Controlled discovery coverage
+
+`spike/browser/chat-discovery-launcher-frame.spec.ts` validates the generic discovery path against a controlled page where the chat launcher dynamically injects an iframe. The test verifies that the launcher is detected and opened and that composer, send and response locators are subsequently discovered inside the iframe.
 
 ## Boundary rules
 
