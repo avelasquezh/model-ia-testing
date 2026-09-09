@@ -118,7 +118,7 @@ describe('PlaywrightChatDiscovery', () => {
     await context.close();
   });
 
-  it('keeps the discovered response locator live when the widget mounts response content after send', async () => {
+  it('retains a deferred response locator when the response is mounted after send', async () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.setContent(`
@@ -126,11 +126,12 @@ describe('PlaywrightChatDiscovery', () => {
         <label for="message">Mensaje</label>
         <input id="message" placeholder="Escribe tu mensaje" />
         <button aria-label="Enviar mensaje">Enviar</button>
-        <section aria-live="polite"></section>
         <script>
           document.querySelector('button').addEventListener('click', () => {
-            const response = document.querySelector('section[aria-live="polite"]');
+            const response = document.createElement('section');
+            response.setAttribute('aria-live', 'polite');
             response.textContent = 'Respuesta montada después de enviar';
+            document.querySelector('main').appendChild(response);
           });
         </script>
       </main>
@@ -140,13 +141,20 @@ describe('PlaywrightChatDiscovery', () => {
 
     expect(result.report.status).toBe('DISCOVERED');
     expect(result.report.selected.response?.strategy).toBe('main:[aria-live=polite]');
-    expect(result.report.selected.response?.deferred).toBeUndefined();
+    expect(result.report.selected.response?.deferred).toBe(true);
+    expect(result.report.selected.response?.evidence).toBeUndefined();
     expect(result.config.response.kind).toBe('locator');
     if (result.config.response.kind !== 'locator') throw new Error('Expected a live response locator');
-    expect(await result.config.response.value.count()).toBe(1);
+    expect(await result.config.response.value.count()).toBe(0);
 
     await page.getByRole('button', { name: 'Enviar mensaje' }).click();
     expect(await result.config.response.value.textContent()).toBe('Respuesta montada después de enviar');
+
+    const responseCandidate = result.report.candidates.find(
+      (candidate) => candidate.role === 'response' && candidate.selected,
+    );
+    expect(responseCandidate?.deferred).toBe(true);
+    expect(responseCandidate?.matched).toBe(false);
 
     await context.close();
   });
