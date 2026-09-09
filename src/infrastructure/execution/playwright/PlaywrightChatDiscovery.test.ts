@@ -10,27 +10,110 @@ afterAll(async () => {
 });
 
 describe('PlaywrightChatDiscovery', () => {
-  it('discovers composer, send button and response with provider-neutral strategies', async () => {
+  it('discovers a composer, send button and response container without provider-specific selectors', async () => {
     const context = await browser.newContext();
     const page = await context.newPage();
+
     await page.setContent(`
       <main>
-        <label for="message">Mensaje</label>
-        <input id="message" placeholder="Escribe tu mensaje" />
+        <section role="log" aria-label="Conversation" style="display:block;width:300px;height:100px;">Respuesta inicial</section>
+        <input placeholder="Escribe un mensaje" />
         <button aria-label="Enviar mensaje">Enviar</button>
-        <section aria-live="polite">Respuesta inicial</section>
+      </main>
+    `);
+
+    const discovered = await new PlaywrightChatDiscovery(page).discover();
+
+    expect(discovered.composer.kind).toBe('locator');
+    expect(discovered.sendButton?.kind).toBe('locator');
+    expect(discovered.response.kind).toBe('locator');
+
+    expect(await locatorAttribute(discovered.composer, 'placeholder')).toBe('Escribe un mensaje');
+    expect(await locatorAttribute(discovered.sendButton!, 'aria-label')).toBe('Enviar mensaje');
+    expect(await locatorAttribute(discovered.response, 'role')).toBe('log');
+
+    await context.close();
+  });
+
+  it('emits serializable evidence showing selected strategies and element attributes', async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await page.setContent(`
+      <main>
+        <section role="log" aria-label="Conversation">Respuesta inicial</section>
+        <input placeholder="Escribe un mensaje" data-testid="composer" />
+        <button aria-label="Enviar mensaje">Enviar</button>
       </main>
     `);
 
     const result = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
 
+    expect(result.report.schemaVersion).toBe('chat-discovery-0.1');
     expect(result.report.status).toBe('DISCOVERED');
-    expect(result.report.selected.composer?.strategy).toContain('textbox');
-    expect(result.report.selected.sendButton?.strategy).toContain('aria-label*=enviar');
-    expect(result.report.selected.response?.strategy).toBe('main:[aria-live=polite]');
-    expect(result.report.candidates.some((candidate) => candidate.role === 'composer' && candidate.selected)).toBe(true);
-    expect(result.report.candidates.some((candidate) => candidate.role === 'sendButton' && candidate.selected)).toBe(true);
-    expect(result.report.candidates.some((candidate) => candidate.role === 'response' && candidate.selected)).toBe(true);
+    expect(result.report.targetUrl).toContain('about:blank');
+    expect(result.report.selected.composer?.strategy).toBe('main:role:textbox[name~message|mensaje|chat|escribe|type]');
+    expect(result.report.selected.composer?.confidence).toBe('HIGH');
+    expect(result.report.selected.composer?.evidence?.placeholder).toBe('Escribe un mensaje');
+    expect(result.report.selected.sendButton?.strategy).toBe('main:role:button[name~send|enviar|submit|mandar]');
+    expect(result.report.selected.response?.strategy).toBe('main:role=log');
+    expect(result.report.candidates.some((candidate) => candidate.selected)).toBe(true);
+
+    await context.close();
+  });
+
+  it('traverses a parent widget to reveal a nested chat composer', async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await page.setContent(`
+      <main>
+        <button aria-label="Abrir atención al cliente" id="outer-widget">Atención</button>
+        <section id="chat" style="display:none" aria-label="Chat">
+          <section role="log">Respuesta inicial</section>
+          <input id="composer" placeholder="Escribe un mensaje" />
+          <button aria-label="Enviar mensaje">Enviar</button>
+        </section>
+        <script>
+          document.getElementById('outer-widget').addEventListener('click', () => {
+            document.getElementById('chat').style.display = 'block';
+          });
+        </script>
+      </main>
+    `);
+
+    const result = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
+
+    expect(await locatorAttribute(result.config.composer, 'id')).toBe('composer');
+    expect(result.report.traversalPath?.length).toBeGreaterThan(0);
+    expect(result.report.traversalPath?.some((step) => step.evidence?.ariaLabel === 'Abrir atención al cliente')).toBe(true);
+
+    await context.close();
+  });
+
+  it('traverses a parent widget before discovering a chat inside an open shadow root', async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await page.setContent(`
+      <main>
+        <button aria-label="Abrir servicios" id="outer-widget">Servicios</button>
+        <chat-shell></chat-shell>
+        <script>
+          const host = document.querySelector('chat-shell');
+          const shadow = host.attachShadow({ mode: 'open' });
+          shadow.innerHTML = '<section style="display:none" id="chat"><section role="log">Respuesta inicial</section><input placeholder="Escribe un mensaje" /><button aria-label="Enviar mensaje">Enviar</button></section>';
+          document.getElementById('outer-widget').addEventListener('click', () => {
+            shadow.querySelector('#chat').style.display = 'block';
+          });
+        </script>
+      </main>
+    `);
+
+    const result = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
+
+    expect(await locatorAttribute(result.config.composer, 'placeholder')).toBe('Escribe un mensaje');
+    expect(result.report.traversalPath?.some((step) => step.evidence?.ariaLabel === 'Abrir servicios')).toBe(true);
 
     await context.close();
   });
@@ -75,54 +158,11 @@ describe('PlaywrightChatDiscovery', () => {
 
     await context.close();
   });
-
-  it('records nested-widget traversal path before finding the child composer', async () => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await page.setContent(`
-      <main>
-        <button aria-label="Abrir asistente">Ayuda</button>
-        <script>
-          document.querySelector('button').addEventListener('click', () => {
-            const chat = document.createElement('div');
-            chat.innerHTML = '<input aria-label="Escribe tu mensaje" /><button aria-label="Enviar">Enviar</button><section aria-live="polite">Respuesta</section>';
-            document.querySelector('main').appendChild(chat);
-          });
-        </script>
-      </main>
-    `);
-
-    const result = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
-
-    expect(result.report.status).toBe('DISCOVERED');
-    expect(result.report.traversalPath.length).toBeGreaterThan(0);
-    expect(result.report.traversalPath[0]?.strategy).toContain('role=button');
-    expect(result.report.traversalPath[0]?.evidence.ariaLabel).toBe('Abrir asistente');
-    expect(result.report.selected.composer?.strategy).toContain('aria-label=');
-
-    await context.close();
-  });
-
-  it('discovers chat controls inside an open shadow root', async () => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await page.setContent(`
-      <main>
-        <chat-shell></chat-shell>
-        <script>
-          const host = document.querySelector('chat-shell');
-          const root = host.attachShadow({ mode: 'open' });
-          root.innerHTML = '<input aria-label="Mensaje" /><button aria-label="Enviar">Enviar</button><section aria-live="polite">Respuesta</section>';
-        </script>
-      </main>
-    `);
-
-    const result = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
-
-    expect(result.report.status).toBe('DISCOVERED');
-    expect(result.report.selected.composer?.strategy).toContain('aria-label=');
-    expect(result.report.selected.response?.strategy).toContain('aria-live=polite');
-
-    await context.close();
-  });
 });
+
+async function locatorAttribute(definition: PlaywrightLocatorDefinition, attribute: string): Promise<string | null> {
+  if (definition.kind !== 'locator') {
+    throw new Error(`Expected a discovered locator definition, received ${definition.kind}`);
+  }
+  return definition.value.getAttribute(attribute);
+}
