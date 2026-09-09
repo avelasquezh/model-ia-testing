@@ -1,14 +1,18 @@
 import type { AdaptiveDiscoveryRun } from './AdaptiveDiscoveryExperimentRunner.js';
+import type { PublicSutFailureReason } from '../PublicSutFailureClassification.js';
 import type { DiscoveryAttemptOutcome, DiscoveryComparisonRecord, DiscoveryComparisonSummary } from './DiscoveryComparison.js';
 
 export type BenchmarkModel = 'LEGACY' | 'ADAPTIVE';
 
 export type BenchmarkObservation = {
   readonly model: BenchmarkModel;
+  readonly targetId: string;
   readonly targetUrl: string;
   readonly outcome: DiscoveryAttemptOutcome;
   readonly attempts: number;
   readonly durationMs: number;
+  /** Operational failure classification; discovery success has no failure reason. */
+  readonly failureReason?: PublicSutFailureReason;
   readonly adaptive?: AdaptiveDiscoveryRun;
 };
 
