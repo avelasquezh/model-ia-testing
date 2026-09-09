@@ -73,6 +73,24 @@ describe('PlaywrightChatDiscovery', () => {
 
     await context.close();
   });
+
+  it('fails explicitly when a visible CAPTCHA blocks the public chat flow', async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.setContent(`
+      <main>
+        <div class="g-recaptcha" style="display:block;width:300px;height:100px;">CAPTCHA</div>
+        <input placeholder="Escribe un mensaje" />
+        <button aria-label="Enviar mensaje">Enviar</button>
+        <section role="log">Respuesta inicial</section>
+      </main>
+    `);
+
+    const discovery = new PlaywrightChatDiscovery(page);
+    await expect(discovery.discover()).rejects.toThrow(/CAPTCHA access gate detected/);
+
+    await context.close();
+  });
 });
 
 async function locatorAttribute(definition: PlaywrightLocatorDefinition, attribute: string): Promise<string | null> {
