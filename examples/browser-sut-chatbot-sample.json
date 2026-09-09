@@ -1,0 +1,21 @@
+{
+  "target": {
+    "id": "chatbot-sample-page",
+    "name": "ChatBot.com public sample page",
+    "url": "https://www.chatbot.com/help/chat-widget/sample-page/",
+    "status": "ACTIVE"
+  },
+  "scenario": {
+    "id": "DISCOVERY-SAMPLE",
+    "name": "Public chatbot discovery baseline",
+    "objective": "Discover a public chatbot interface and capture an observable response.",
+    "description": "Provider-neutral discovery against a public ChatBot.com sample page.",
+    "inputs": [{ "id": "input-01", "value": "What can you help me with?" }],
+    "expectedBehavior": "The chat interface accepts the message and exposes an observable response.",
+    "finishConditions": [{ "type": "OBSERVATION_CAPTURED", "description": "A non-empty bot response is captured." }],
+    "version": 1
+  },
+  "expectedIntent": "Answer the user's support question using the chatbot's available knowledge.",
+  "expectedIntentVersion": "public-discovery-intent-0.1",
+  "repetition": 1
+}
