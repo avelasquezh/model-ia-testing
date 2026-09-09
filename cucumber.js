@@ -4,6 +4,6 @@ export default {
     import: ['spike/bdd/**/*.steps.ts'],
     requireModule: ['tsx/esm'],
     format: ['progress'],
-    publishQuiet: true
-  }
+    publishQuiet: true,
+  },
 };
