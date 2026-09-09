@@ -37,9 +37,9 @@ const execution = new Execution({
 
 const evidence = new LiveExecutionEvidencePublisher(EVIDENCE_DIRECTORY);
 const browser = new PlaywrightBrowserAdapter();
-const uiConfigs = new InMemoryConversationUiConfigRepository([
-  { targetUrl: target.props.url, config: config.ui },
-]);
+const uiConfigs = config.ui
+  ? new InMemoryConversationUiConfigRepository([{ targetUrl: target.props.url, config: config.ui }])
+  : new InMemoryConversationUiConfigRepository();
 const conversation = new PlaywrightConversationAdapter(browser, uiConfigs);
 const runner = new PlaywrightExecutionRunner(conversation, evidence);
 const result = await runner.execute({ execution, scenario, target }, { timeoutMs: TIMEOUT_MS });
@@ -67,6 +67,7 @@ console.log(JSON.stringify({
   status: result.status,
   executionId: execution.props.id,
   targetUrl: target.props.url,
+  locatorMode: config.ui ? 'configured' : 'automatic-discovery',
   outputFile: OUTPUT_FILE,
   evidenceDirectory: EVIDENCE_DIRECTORY,
   observationCount: observations.observations.length,
@@ -76,7 +77,7 @@ console.log(JSON.stringify({
 function parseConfig(value: unknown): {
   target: { id: string; name: string; url: string; status: 'ACTIVE' | 'INACTIVE' };
   scenario: Omit<ConstructorParameters<typeof Scenario>[0], 'targetId'> & { targetId?: string };
-  ui: ConversationUiConfig;
+  ui?: ConversationUiConfig;
   expectedIntent: string;
   expectedIntentVersion: string;
   repetition: number;
@@ -87,8 +88,8 @@ function parseConfig(value: unknown): {
   const target = value.target;
   const scenario = value.scenario;
   const ui = value.ui;
-  if (!isRecord(target) || !isRecord(scenario) || !isRecord(ui)) {
-    throw new Error('Browser SUT config requires target, scenario and ui objects');
+  if (!isRecord(target) || !isRecord(scenario)) {
+    throw new Error('Browser SUT config requires target and scenario objects');
   }
 
   if (typeof target.id !== 'string' || typeof target.name !== 'string' || typeof target.url !== 'string') {
@@ -125,7 +126,10 @@ function parseConfig(value: unknown): {
     throw new Error('Browser SUT repetition must be a positive integer');
   }
 
-  validateUiConfig(ui);
+  if (ui !== undefined) {
+    if (!isRecord(ui)) throw new Error('Browser SUT ui must be an object when supplied');
+    validateUiConfig(ui);
+  }
 
   return {
     target: {
@@ -135,7 +139,7 @@ function parseConfig(value: unknown): {
       status: (target.status as 'ACTIVE' | 'INACTIVE' | undefined) ?? 'ACTIVE',
     },
     scenario: scenario as Omit<ConstructorParameters<typeof Scenario>[0], 'targetId'> & { targetId?: string },
-    ui: ui as ConversationUiConfig,
+    ...(ui ? { ui: ui as ConversationUiConfig } : {}),
     expectedIntent: value.expectedIntent,
     expectedIntentVersion: value.expectedIntentVersion,
     repetition,
