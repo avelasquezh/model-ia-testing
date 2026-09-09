@@ -10,16 +10,5 @@ export default tseslint.config(
       'playwright-report/**',
     ],
   },
-  {
-    rules: {
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-        },
-      ],
-    },
-  },
   ...tseslint.configs.recommended,
 );
