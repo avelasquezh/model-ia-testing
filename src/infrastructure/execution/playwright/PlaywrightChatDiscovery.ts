@@ -427,7 +427,7 @@ export class PlaywrightChatDiscovery {
   }
 
   private async sameElement(left: Locator, right: Locator): Promise<boolean> {
-    const handle = await left.elementHandle();
+    const handle = await left.elementHandle({ timeout: 0 });
     if (!handle) return false;
     return right.evaluateAll((nodes, selected) => nodes.some((node) => node === selected), handle);
   }
