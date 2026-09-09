@@ -28,7 +28,7 @@ export class PlaywrightChatDiscovery {
       const composer = await this.findFirstVisible(composerCandidates.map((candidate) => candidate.locator));
       await this.recordCandidates(candidates, 'composer', composerCandidates, composer);
       if (!composer) throw new Error('Chat composer could not be discovered on the public URL');
-      selected.composer = await this.selection('composer', composer, composerCandidates);
+      selected.composer = await this.selection(composer, composerCandidates);
 
       const sendCandidates = [
         { strategy: 'role:button[name~send|enviar|submit|mandar]', locator: this.page.getByRole('button', { name: /send|enviar|submit|mandar/i }), confidence: 'HIGH' as const },
@@ -39,7 +39,7 @@ export class PlaywrightChatDiscovery {
       ];
       const sendButton = await this.findFirstVisible(sendCandidates.map((candidate) => candidate.locator));
       await this.recordCandidates(candidates, 'sendButton', sendCandidates, sendButton);
-      if (sendButton) selected.sendButton = await this.selection('sendButton', sendButton, sendCandidates);
+      if (sendButton) selected.sendButton = await this.selection(sendButton, sendCandidates);
 
       const responseCandidates = [
         { strategy: '[data-testid*=message]', locator: this.page.locator('[data-testid*="message" i]'), confidence: 'HIGH' as const },
@@ -55,7 +55,7 @@ export class PlaywrightChatDiscovery {
       );
       await this.recordCandidates(candidates, 'response', responseCandidates, response);
       if (!response) throw new Error('Chat response could not be discovered on the public URL');
-      selected.response = await this.selection('response', response, responseCandidates);
+      selected.response = await this.selection(response, responseCandidates);
 
       return {
         config: {
@@ -73,18 +73,7 @@ export class PlaywrightChatDiscovery {
         },
       };
     } catch (error) {
-      return {
-        config: await Promise.reject(error),
-        report: {
-          schemaVersion: 'chat-discovery-0.1',
-          targetUrl: this.page.url(),
-          status: 'FAILED',
-          discoveredAt: new Date().toISOString(),
-          candidates,
-          selected,
-          error: error instanceof Error ? error.message : String(error),
-        },
-      };
+      throw error;
     }
   }
 
@@ -108,9 +97,7 @@ export class PlaywrightChatDiscovery {
           }
         }
       }
-      const selectedMatch = selected && count > 0
-        ? await this.sameElement(selected, candidate.locator)
-        : false;
+      const selectedMatch = selected && count > 0 ? await this.sameElement(selected, candidate.locator) : false;
       report.push({
         role,
         strategy: candidate.strategy,
@@ -120,18 +107,24 @@ export class PlaywrightChatDiscovery {
         confidence: candidate.confidence,
         ...(element ? { element } : {}),
       });
+      void visible;
     }
   }
 
-  private async selection<T extends { strategy: string; confidence: 'HIGH' | 'MEDIUM' | 'LOW' }>(
-    _role: ChatDiscoveryCandidate['role'],
+  private async selection<T extends { strategy: string; locator: Locator; confidence: 'HIGH' | 'MEDIUM' | 'LOW' }>(
     locator: Locator,
     candidates: readonly T[],
-  ): Promise<NonNullable<ChatDiscoveryReport['selected']['composer']>> {
-    const selectedCandidate = candidates.find(async (candidate) => await this.sameElement(locator, candidate.locator));
-    const strategy = selectedCandidate?.strategy ?? 'runtime-locator';
-    const confidence = selectedCandidate?.confidence ?? 'LOW';
-    return { strategy, confidence, evidence: await this.elementEvidence(locator) };
+  ): Promise<{ strategy: string; confidence: 'HIGH' | 'MEDIUM' | 'LOW'; evidence?: ChatDiscoveryCandidate['element'] }> {
+    for (const candidate of candidates) {
+      if (await this.sameElement(locator, candidate.locator)) {
+        return {
+          strategy: candidate.strategy,
+          confidence: candidate.confidence,
+          evidence: await this.elementEvidence(locator),
+        };
+      }
+    }
+    return { strategy: 'runtime-locator', confidence: 'LOW', evidence: await this.elementEvidence(locator) };
   }
 
   private async elementEvidence(locator: Locator): Promise<ChatDiscoveryCandidate['element']> {
