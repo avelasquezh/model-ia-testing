@@ -52,6 +52,27 @@
       "url": "http://minciencias.gov.co/atencion-al-ciudadano/chat-minciencias",
       "status": "CANDIDATE",
       "notes": "User-supplied public URL. HTTP scheme retained exactly as supplied; requires runtime discovery verification."
+    },
+    {
+      "id": "universidadean-home",
+      "name": "Universidad EAN public site",
+      "url": "https://universidadean.edu.co/",
+      "status": "CANDIDATE",
+      "notes": "User-supplied public URL. Runtime discovery must account for consent banners or pre-chat form gates if present."
+    },
+    {
+      "id": "unisabana-psicologia",
+      "name": "Universidad de La Sabana - Psicología",
+      "url": "https://www.unisabana.edu.co/programas/pregrados/psicologia",
+      "status": "CANDIDATE",
+      "notes": "Canonical URL stored without tracking query parameters from the supplied URL. Runtime discovery must account for consent banners or pre-chat form gates if present."
+    },
+    {
+      "id": "chevrolet-chevyplan",
+      "name": "Chevrolet Colombia - ChevyPlan",
+      "url": "https://www.chevrolet.com.co/chevyplan",
+      "status": "CANDIDATE",
+      "notes": "Canonical URL stored without advertising/tracking query parameters from the supplied URL. Runtime discovery must account for consent banners or pre-chat form gates if present."
     }
   ],
   "method": {
