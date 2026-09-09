@@ -1,0 +1,91 @@
+name: Public SUT discovery corpus
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/infrastructure/execution/playwright/**'
+      - 'scripts/run-browser-sut.ts'
+      - 'scripts/run-public-sut-discovery.ts'
+      - 'scripts/merge-discovery-reports.ts'
+      - 'examples/browser-sut-*.json'
+      - 'examples/public-sut-discovery-corpus.json'
+      - '.github/workflows/public-sut-discovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    name: Discover ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: chatbot-sample-page
+            config: examples/browser-sut-chatbot-sample.json
+          - target: candordesk-demo
+            config: examples/browser-sut-candordesk.json
+          - target: sitemind-demo
+            config: examples/browser-sut-sitemind.json
+          - target: querywing-demo
+            config: examples/browser-sut-querywing.json
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run provider-neutral discovery
+        env:
+          BROWSER_SUT_CONFIG_FILE: ${{ matrix.config }}
+          BROWSER_SUT_DISCOVERY_REPORT_FILE: artifacts/public-sut-discovery/${{ matrix.target }}.json
+          BROWSER_SUT_OUTPUT_FILE: artifacts/public-sut-discovery/${{ matrix.target }}-observations.json
+          BROWSER_SUT_EVIDENCE_DIRECTORY: artifacts/public-sut-discovery/${{ matrix.target }}-evidence
+          BROWSER_SUT_TIMEOUT_MS: 30000
+        run: npm run browser:discovery:run
+      - name: Publish site discovery evidence
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: public-sut-discovery-${{ matrix.target }}-${{ github.sha }}
+          path: artifacts/public-sut-discovery/
+          if-no-files-found: warn
+
+  aggregate:
+    name: Aggregate locator candidate registry
+    needs: discover
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Download discovery evidence
+        uses: actions/download-artifact@v5
+        with:
+          pattern: public-sut-discovery-*-*
+          path: artifacts/public-sut-discovery
+          merge-multiple: true
+      - name: Build cumulative locator candidate registry
+        run: npm run browser:discovery:merge -- artifacts/public-sut-discovery artifacts/public-sut-discovery/locator-candidate-registry.json
+      - name: Publish cumulative registry
+        uses: actions/upload-artifact@v5
+        with:
+          name: public-sut-locator-candidate-registry-${{ github.sha }}
+          path: artifacts/public-sut-discovery/locator-candidate-registry.json
+          if-no-files-found: error
