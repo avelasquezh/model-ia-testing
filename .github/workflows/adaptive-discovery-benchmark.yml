@@ -1,6 +1,9 @@
 name: Adaptive Discovery Benchmark
 
 on:
+  push:
+    branches:
+      - feat/adaptive-discovery-parallel
   workflow_dispatch:
     inputs:
       corpus:
