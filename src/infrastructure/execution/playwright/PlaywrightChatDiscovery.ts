@@ -29,6 +29,7 @@ export class PlaywrightChatDiscovery {
     const selected: ChatDiscoveryReport['selected'] = {};
 
     try {
+      await this.dismissConsentBanners();
       let contexts = this.searchContexts();
       let composerSpecs = this.buildComposerCandidates(contexts);
       let composer = await this.findFirstVisible(composerSpecs.map((candidate) => candidate.locator));
@@ -90,6 +91,29 @@ export class PlaywrightChatDiscovery {
         context: frame,
       })),
     ];
+  }
+
+  private async dismissConsentBanners(): Promise<void> {
+    const contexts = this.searchContexts();
+    const consentNames = /^(accept|accept all|allow|allow all|agree|got it|aceptar|aceptar todo|aceptar todas|permitir|permitir todas|de acuerdo|entendido)(\s+(cookies?|all|todas?|todo))?$/i;
+
+    for (const { context } of contexts) {
+      const candidates = [
+        context.getByRole('button', { name: consentNames }),
+        context.locator('[aria-label*="accept" i], [aria-label*="cookie" i], [aria-label*="aceptar" i], [data-testid*="cookie" i] button'),
+      ];
+      for (const candidate of candidates) {
+        const visible = await this.findFirstVisible([candidate]);
+        if (!visible) continue;
+        try {
+          await visible.click({ timeout: 2_000 });
+          await this.page.waitForTimeout(250);
+          return;
+        } catch {
+          // Ignore a consent control that becomes detached while the page updates.
+        }
+      }
+    }
   }
 
   private buildLauncherCandidates(contexts: readonly SearchContext[]): ChatCandidateSpec[] {
