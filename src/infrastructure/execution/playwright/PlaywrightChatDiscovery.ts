@@ -110,15 +110,28 @@ export class PlaywrightChatDiscovery {
     );
     if (existing) return { locator: existing, deferred: false };
 
-    for (const candidate of candidates) {
-      const count = await candidate.locator.count();
-      if (count > 0) continue;
-      if (this.isSupportedDeferredResponseStrategy(candidate.strategy)) {
-        return { locator: candidate.locator, deferred: true };
-      }
+    const deferredCandidates = candidates
+      .filter((candidate) => this.isSupportedDeferredResponseStrategy(candidate.strategy))
+      .map((candidate, index) => ({ candidate, index }));
+
+    const ranked = deferredCandidates.sort((left, right) => {
+      const priorityDifference = this.deferredResponsePriority(right.candidate.strategy) - this.deferredResponsePriority(left.candidate.strategy);
+      return priorityDifference !== 0 ? priorityDifference : left.index - right.index;
+    });
+
+    for (const { candidate } of ranked) {
+      if (await candidate.locator.count() === 0) return { locator: candidate.locator, deferred: true };
     }
 
     return { locator: null, deferred: false };
+  }
+
+  private deferredResponsePriority(strategy: string): number {
+    if (/\[aria-live=/.test(strategy)) return 400;
+    if (/role=log/.test(strategy)) return 300;
+    if (/\[data-testid\*=message\]/.test(strategy)) return 200;
+    if (/\[class\*=response\]/.test(strategy)) return 100;
+    return 0;
   }
 
   private isSupportedDeferredResponseStrategy(strategy: string): boolean {
