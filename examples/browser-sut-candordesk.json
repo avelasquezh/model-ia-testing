@@ -1,0 +1,32 @@
+{
+  "target": {
+    "id": "candordesk-demo",
+    "name": "CandorDesk public demo",
+    "url": "https://candordesk.com/demo",
+    "status": "ACTIVE"
+  },
+  "scenario": {
+    "id": "CASE-ALIGNED",
+    "name": "Public chatbot discovery baseline",
+    "objective": "Send a harmless support question through a publicly accessible chatbot and capture the observable response",
+    "description": "The browser layer must discover the chat interface without provider-specific locators.",
+    "inputs": [
+      {
+        "id": "input-01",
+        "value": "What is your return window?"
+      }
+    ],
+    "expectedBehavior": "The public chat accepts the question and produces an observable response.",
+    "finishConditions": [
+      {
+        "type": "OBSERVATION_CAPTURED",
+        "description": "A non-empty bot response is captured after the message is submitted."
+      }
+    ],
+    "version": 1
+  },
+  "expectedIntent": "Answer the user's support question using the chatbot's available knowledge.",
+  "expectedIntentVersion": "candordesk-demo-intent-0.1",
+  "repetition": 1,
+  "executionId": "candordesk-discovery-001"
+}
