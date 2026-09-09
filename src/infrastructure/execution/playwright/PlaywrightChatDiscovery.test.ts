@@ -116,9 +116,7 @@ describe('PlaywrightChatDiscovery', () => {
     async () => {
       const isolatedPage = await context.newPage();
       try {
-        console.log('[deferred] page created');
         await isolatedPage.goto('about:blank');
-        console.log('[deferred] blank loaded');
         await isolatedPage.locator('body').evaluate((body) => {
           body.innerHTML = `
             <main>
@@ -128,7 +126,6 @@ describe('PlaywrightChatDiscovery', () => {
             </main>
           `;
         });
-        console.log('[deferred] dom mounted');
 
         const sendButton = isolatedPage.getByRole('button', { name: 'Enviar mensaje' });
         await sendButton.evaluate((button) => {
@@ -139,55 +136,8 @@ describe('PlaywrightChatDiscovery', () => {
             document.querySelector('main')?.appendChild(response);
           });
         });
-        console.log('[deferred] listener attached');
 
-        const discovery = new PlaywrightChatDiscovery(isolatedPage);
-        const tracedMethods = new Set([
-          'dismissConsentBanners',
-          'findVisibleCaptchaGate',
-          'searchContexts',
-          'findFirstVisible',
-          'recordCandidates',
-          'findResponseLocator',
-          'selection',
-          'sameElement',
-          'elementEvidence',
-          'toDefinition',
-        ]);
-        const tracedDiscovery = new Proxy(discovery, {
-          get(target, property, receiver) {
-            const value = Reflect.get(target, property, receiver);
-            if (typeof property !== 'string' || !tracedMethods.has(property) || typeof value !== 'function') {
-              return value;
-            }
-            return (...args: unknown[]) => {
-              console.log(`[deferred-stage] enter ${property}`);
-              try {
-                const result = value.apply(receiver, args);
-                if (result && typeof result === 'object' && 'then' in result && typeof result.then === 'function') {
-                  return result.then(
-                    (resolved: unknown) => {
-                      console.log(`[deferred-stage] exit ${property}`);
-                      return resolved;
-                    },
-                    (error: unknown) => {
-                      console.log(`[deferred-stage] error ${property}: ${error instanceof Error ? error.message : String(error)}`);
-                      throw error;
-                    },
-                  );
-                }
-                console.log(`[deferred-stage] exit ${property}`);
-                return result;
-              } catch (error) {
-                console.log(`[deferred-stage] error ${property}: ${error instanceof Error ? error.message : String(error)}`);
-                throw error;
-              }
-            };
-          },
-        });
-
-        const result = await tracedDiscovery.discoverWithEvidence();
-        console.log('[deferred] discovery completed');
+        const result = await new PlaywrightChatDiscovery(isolatedPage).discoverWithEvidence();
 
         expect(result.report.status).toBe('DISCOVERED');
         expect(result.report.selected.response?.strategy).toBe('main:[aria-live=polite]');
@@ -196,13 +146,10 @@ describe('PlaywrightChatDiscovery', () => {
         expect(result.config.response.kind).toBe('locator');
         if (result.config.response.kind !== 'locator') throw new Error('Expected a live response locator');
         expect(await result.config.response.value.count()).toBe(0);
-        console.log('[deferred] pre-send assertions completed');
 
         await sendButton.dispatchEvent('click');
-        console.log('[deferred] click dispatched');
         expect(await result.config.response.value.count()).toBe(1);
         expect(await result.config.response.value.textContent()).toBe('Respuesta montada después de enviar');
-        console.log('[deferred] response assertions completed');
 
         const responseCandidate = result.report.candidates.find(
           (candidate) => candidate.role === 'response' && candidate.selected,
@@ -210,7 +157,6 @@ describe('PlaywrightChatDiscovery', () => {
         expect(responseCandidate?.deferred).toBe(true);
         expect(responseCandidate?.matched).toBe(false);
       } finally {
-        console.log('[deferred] closing page');
         await isolatedPage.close();
       }
     },
