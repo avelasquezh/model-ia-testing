@@ -86,7 +86,10 @@ export class AdaptiveDiscoveryExperimentRunner {
         for (const locator of locators) {
           if (!await this.isSafeCandidate(locator)) continue;
           const candidate = await this.buildCandidate(locator);
-          if (!candidate || (!candidate.navigationSignal && candidate.tagName !== 'a' && !candidate.ariaControls && candidate.ariaExpanded === undefined)) continue;
+          if (!candidate) continue;
+          const traditionalSignal = candidate.tagName === 'a' || Boolean(candidate.ariaControls) || candidate.ariaExpanded !== undefined || candidate.navigationSignal;
+          const semanticLauncher = candidate.tagName === 'button' || candidate.role === 'button';
+          if (!traditionalSignal && !semanticLauncher) continue;
           const key = this.candidateKey(candidate);
           if (seen.has(key)) continue;
           seen.add(key);
