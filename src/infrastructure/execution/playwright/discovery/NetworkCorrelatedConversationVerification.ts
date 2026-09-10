@@ -94,8 +94,9 @@ export class NetworkConversationEvidence {
 
   private readonly onWebSocket = (webSocket: WebSocket): void => {
     if (isIgnoredUrl(webSocket.url())) return;
-    webSocket.on('framesent', (payload) => {
-      if (!this.input || !payload.toLowerCase().includes(this.input.toLowerCase())) return;
+    webSocket.on('framesent', ({ payload }) => {
+      const frame = typeof payload === 'string' ? payload : payload.toString();
+      if (!this.input || !frame.toLowerCase().includes(this.input.toLowerCase())) return;
       this.events.push({ kind: 'NETWORK_OUTBOUND_MESSAGE_CANDIDATE', transport: 'WEBSOCKET', url: webSocket.url(), timestamp: Date.now(), matchedInput: true });
     });
     webSocket.on('framereceived', () => {
