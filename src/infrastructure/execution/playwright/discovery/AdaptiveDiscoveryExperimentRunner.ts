@@ -169,29 +169,46 @@ export class AdaptiveDiscoveryExperimentRunner {
     let visibleElementCount = 0; let dialogCount = 0; let textboxCount = 0; let formCount = 0; let iframeCount = 0;
     for (const context of contexts) {
       try {
-        const html = await context.locator('html').evaluate((element) => {
+        const html = await context.locator('html').evaluate(function (element) {
           const clone = element.cloneNode(true) as HTMLElement;
-          clone.querySelectorAll('[id], [class], [style], [data-reactroot], [data-testid]').forEach((node) => {
-            node.removeAttribute('id'); node.removeAttribute('class'); node.removeAttribute('style'); node.removeAttribute('data-reactroot'); node.removeAttribute('data-testid');
-          });
+          const dynamicAttributes = ['id', 'class', 'style', 'data-reactroot', 'data-testid'];
+          const nodes = clone.querySelectorAll('[id], [class], [style], [data-reactroot], [data-testid]');
+          for (let index = 0; index < nodes.length; index += 1) {
+            const node = nodes[index];
+            for (let attributeIndex = 0; attributeIndex < dynamicAttributes.length; attributeIndex += 1) {
+              node?.removeAttribute(dynamicAttributes[attributeIndex] as string);
+            }
+          }
           return clone.outerHTML;
         });
         parts.push(`${context.url()}|${html}`);
-        const counts = await context.locator('body').evaluate((body) => {
-          const visible = (element: Element): boolean => {
-            const style = window.getComputedStyle(element); const rect = element.getBoundingClientRect();
-            return style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0;
-          };
+        const counts = await context.locator('body').evaluate(function (body) {
           const elements = Array.from(body.querySelectorAll('*'));
-          return {
-            visibleElementCount: elements.filter(visible).length,
-            dialogCount: elements.filter((element) => element.matches('[role="dialog"], dialog')).filter(visible).length,
-            textboxCount: elements.filter((element) => element.matches('textarea, input:not([type="hidden"]), [contenteditable="true"], [role="textbox"]')).filter(visible).length,
-            formCount: elements.filter((element) => element.matches('form')).filter(visible).length,
-            iframeCount: elements.filter((element) => element.matches('iframe')).filter(visible).length,
-          };
+          let visibleElementCount = 0;
+          let dialogCount = 0;
+          let textboxCount = 0;
+          let formCount = 0;
+          let iframeCount = 0;
+          for (let index = 0; index < elements.length; index += 1) {
+            const element = elements[index];
+            if (!element) continue;
+            const style = window.getComputedStyle(element);
+            const rect = element.getBoundingClientRect();
+            const visible = style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0;
+            if (!visible) continue;
+            visibleElementCount += 1;
+            if (element.matches('[role="dialog"], dialog')) dialogCount += 1;
+            if (element.matches('textarea, input:not([type="hidden"]), [contenteditable="true"], [role="textbox"]')) textboxCount += 1;
+            if (element.matches('form')) formCount += 1;
+            if (element.matches('iframe')) iframeCount += 1;
+          }
+          return { visibleElementCount, dialogCount, textboxCount, formCount, iframeCount };
         });
-        visibleElementCount += counts.visibleElementCount; dialogCount += counts.dialogCount; textboxCount += counts.textboxCount; formCount += counts.formCount; iframeCount += counts.iframeCount;
+        visibleElementCount += counts.visibleElementCount;
+        dialogCount += counts.dialogCount;
+        textboxCount += counts.textboxCount;
+        formCount += counts.formCount;
+        iframeCount += counts.iframeCount;
       } catch (error) {
         debug.push({ candidateId: `context:${context.url()}`, score: 0, frameUrl: context.url(), stage, action: 'INSPECT', ok: false, error: this.errorMessage(error) });
       }
