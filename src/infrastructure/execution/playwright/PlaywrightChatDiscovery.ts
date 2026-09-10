@@ -16,6 +16,7 @@ type SearchContext = {
 const MAX_TRAVERSAL_DEPTH = 2;
 const MAX_TRAVERSAL_CLICKS = 6;
 const TRANSITION_WAIT_MS = 500;
+const ELEMENT_PROBE_TIMEOUT_MS = 250;
 
 export class PlaywrightChatDiscovery {
   public constructor(private readonly page: Page) {}
@@ -446,11 +447,13 @@ export class PlaywrightChatDiscovery {
   }
 
   private async sameElement(left: Locator, right: Locator): Promise<boolean> {
-    const handle = await left.elementHandle({ timeout: 0 }).catch(() => null);
+    const handle = await left.elementHandle({ timeout: ELEMENT_PROBE_TIMEOUT_MS }).catch(() => null);
     if (!handle) return false;
 
     try {
-      return await right.evaluateAll((nodes, selected) => nodes.some((node) => node === selected), handle);
+      return await right.evaluateAll((nodes, selected) => nodes.some((node) => node === selected), handle, {
+        timeout: ELEMENT_PROBE_TIMEOUT_MS,
+      });
     } catch {
       // A candidate can detach during a reactive re-render; it is not a match anymore.
       return false;
@@ -480,15 +483,19 @@ export class PlaywrightChatDiscovery {
   }
 
   private async isEditable(locator: Locator): Promise<boolean> {
-    return locator.evaluate((node) => {
-      if (node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement) {
-        return !node.disabled && !node.readOnly;
-      }
-      if (node instanceof HTMLElement && node.isContentEditable) {
-        return true;
-      }
+    try {
+      return await locator.evaluate((node) => {
+        if (node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement) {
+          return !node.disabled && !node.readOnly;
+        }
+        if (node instanceof HTMLElement && node.isContentEditable) {
+          return true;
+        }
+        return false;
+      }, undefined, { timeout: ELEMENT_PROBE_TIMEOUT_MS });
+    } catch {
       return false;
-    });
+    }
   }
 
   private async findFirstVisibleExcluding(candidates: Locator[], excluded: Array<Locator | null>): Promise<Locator | null> {
