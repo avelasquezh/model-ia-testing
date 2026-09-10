@@ -446,9 +446,15 @@ export class PlaywrightChatDiscovery {
   }
 
   private async sameElement(left: Locator, right: Locator): Promise<boolean> {
-    const handle = await left.elementHandle();
+    const handle = await left.elementHandle({ timeout: 0 }).catch(() => null);
     if (!handle) return false;
-    return right.evaluateAll((nodes, selected) => nodes.some((node) => node === selected), handle);
+
+    try {
+      return await right.evaluateAll((nodes, selected) => nodes.some((node) => node === selected), handle);
+    } catch {
+      // A candidate can detach during a reactive re-render; it is not a match anymore.
+      return false;
+    }
   }
 
   private async findFirstVisible(candidates: Locator[]): Promise<Locator | null> {
