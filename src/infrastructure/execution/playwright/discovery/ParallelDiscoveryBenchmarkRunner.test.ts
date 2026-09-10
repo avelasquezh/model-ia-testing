@@ -3,8 +3,8 @@ import { classifyAdaptiveDiscoveryOutcome } from './ParallelDiscoveryBenchmarkRu
 
 describe('classifyAdaptiveDiscoveryOutcome', () => {
   it('requires a selected behavioral result for a chat surface', () => {
-    expect(classifyAdaptiveDiscoveryOutcome({ selected: undefined, experiments: [] })).toBe('NOT_FOUND');
-    expect(classifyAdaptiveDiscoveryOutcome({ selected: undefined, experiments: [{} as never] })).toBe('CANDIDATE_FOUND');
+    expect(classifyAdaptiveDiscoveryOutcome({ experiments: [] })).toBe('NOT_FOUND');
+    expect(classifyAdaptiveDiscoveryOutcome({ experiments: [{} as never] })).toBe('CANDIDATE_FOUND');
     expect(classifyAdaptiveDiscoveryOutcome({ selected: {} as never, experiments: [{} as never] })).toBe('CHAT_SURFACE_FOUND');
   });
 });
