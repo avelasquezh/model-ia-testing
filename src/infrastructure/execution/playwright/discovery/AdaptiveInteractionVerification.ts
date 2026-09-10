@@ -24,11 +24,6 @@ export async function verifyAdaptiveInteraction(
   const screenshotPaths: string[] = [];
 
   try {
-    // Adaptive discovery may have clicked a launcher or caused iframe navigation.
-    // Start verification from a clean document so no Locator crosses documents.
-    await page.reload({ waitUntil: 'domcontentloaded', timeout: timeoutMs });
-    await page.waitForTimeout(350);
-
     const discovery = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
     const ui = new PlaywrightConversationUi(page, discovery.config);
 
