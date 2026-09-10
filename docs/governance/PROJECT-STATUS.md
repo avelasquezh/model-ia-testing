@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-09-10  
 **Versión de producto declarada:** `0.1.0`  
-**Rama de trabajo activa:** `feat/adaptive-discovery-parallel`  
+**Rama de trabajo activa:** `qa`  
 **Estado global:** MVP en implementación incremental. F1 ampliamente materializado, F2 en consolidación metodológica ejecutable y F3 validado. El frente funcional prioritario del MVP es ahora **Adaptive Discovery + interacción conversacional verificable sobre URLs públicas**.
 
 ## Gobierno de Frente 2
@@ -64,6 +64,20 @@ Por tanto, **Adaptive continúa en desarrollo y no ha alcanzado todavía la acep
 El benchmark ha evidenciado rutas en las que la detección Adaptive llega a formularios de registro/contacto o superficies que aparentan ser chat pero no permiten una conversación real. Estas rutas deben tratarse como señales intermedias, no como éxito.
 
 Aumentar timeouts sin evidencia causal no constituye una solución aceptable. La respuesta debe validarse como **nueva evidencia posterior al envío**, no como texto estático ya presente en la página.
+
+## Reconciliación de ramas
+
+`qa` es la única rama activa de trabajo, integración y validación. `feat/adaptive-discovery-parallel` queda como referencia histórica reconciliada: `qa` contiene su mismo estado funcional más el commit de gobernanza de continuidad y los ajustes de calidad posteriores. No debe recibir trabajo nuevo.
+
+La comparación actual entre ambas ramas confirma que `qa` está únicamente **1 commit por delante y 0 por detrás**, y ese commit corresponde exclusivamente a `docs/governance/AGENT-HANDOFF.md`. No existe actualmente una divergencia funcional pendiente entre ambas líneas.
+
+Las demás ramas `feat/*`, `fix/*`, `qa-*`, `tmp-*` y respaldos son históricas, experimentales o de recuperación. No constituyen frentes activos. No se debe iniciar trabajo nuevo en ellas mientras exista una tarea abierta en `qa`.
+
+## Calidad y CI
+
+El script `lint` fue incorporado al `package.json`, pero la primera ejecución sobre `qa` falló antes de completar la batería porque el commit que añadió el script no contenía `eslint.config.mjs`. Esa inconsistencia fue corregida agregando la configuración Flat de ESLint a `qa`.
+
+La ejecución `Architecture Spike` `34498990987` sobre `580cdb1a09c1619c68b5a3f2747dd0ce20447bbd` terminó en `failure`; el paso que falló fue `SPIKE-002/003/006/010/011/012 Unit and architecture tests`. Los pasos de instalación, Playwright, PostgreSQL readiness y TypeScript completaron correctamente. Por ello, no se debe declarar que el CI está verde hasta ejecutar nuevamente la batería sobre el commit corregido y revisar la causa concreta de cualquier fallo restante.
 
 ## Evidencia de F2-35
 
@@ -189,9 +203,9 @@ Las versiones metodológicas son independientes del producto y deben mantenerse 
 
 ## Próximo trabajo
 
-El siguiente incremento debe estar directamente vinculado a P0/P1 del frente Adaptive: conseguir una ruta pública que complete `send + receive` y estudiar la causa de las rutas no verificadas. Una vez exista una ruta `VERIFIED`, se ampliará el corpus y se compararán Legacy y Adaptive bajo el mismo criterio funcional.
+La tarea activa en `qa` continúa siendo P0/P1 Adaptive: primero ejecutar nuevamente CI después de la corrección de ESLint y aislar cualquier fallo restante; después continuar con el fallo E2E de interacción pública, priorizando una ruta que complete `send + receive` y estudiando la causa de las rutas no verificadas. Una vez exista una ruta `VERIFIED`, se ampliará el corpus y se compararán Legacy y Adaptive bajo el mismo criterio funcional.
 
-El trabajo debe permanecer en la rama de iniciativa hasta cumplir los quality gates y disponer de evidencia suficiente; no se debe declarar cierre funcional por compilación, discovery aislado o CI verde.
+El trabajo debe permanecer en `qa` hasta cumplir los quality gates y disponer de evidencia suficiente; no se debe declarar cierre funcional por compilación, discovery aislado o CI verde.
 
 ## Regla de documentación
 
