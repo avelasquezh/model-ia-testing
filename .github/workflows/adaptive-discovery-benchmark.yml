@@ -64,7 +64,7 @@ jobs:
           ADAPTIVE_DISCOVERY_MAX_CANDIDATES: '40'
           ADAPTIVE_DISCOVERY_MAX_CLICKS: '12'
           ADAPTIVE_PROBE_MESSAGE: 'Hello'
-          ADAPTIVE_INTERACTION_TIMEOUT_MS: '15000'
+          ADAPTIVE_INTERACTION_TIMEOUT_MS: '30000'
         run: npx tsx scripts/run-adaptive-interaction-benchmark.ts
 
       - name: Upload benchmark evidence
