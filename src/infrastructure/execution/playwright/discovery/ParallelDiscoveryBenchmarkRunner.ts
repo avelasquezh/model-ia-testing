@@ -20,9 +20,11 @@ export function classifyAdaptiveDiscoveryOutcome(run: Pick<AdaptiveDiscoveryRun,
 }
 
 function failureReason(error: unknown, operation?: string): PublicSutFailureReason {
-  const input: PublicSutFailureInput = { message: error instanceof Error ? error.message : String(error) };
-  if (error instanceof Error) input.code = error.name;
-  if (operation) input.operation = operation;
+  const input: PublicSutFailureInput = {
+    message: error instanceof Error ? error.message : String(error),
+    ...(error instanceof Error ? { code: error.name } : {}),
+    ...(operation ? { operation } : {}),
+  };
   return classifyPublicSutFailure(input);
 }
 
@@ -40,16 +42,24 @@ export class ParallelDiscoveryBenchmarkRunner {
           const context = await this.browser.newContext();
           page = await context.newPage();
           await page.goto(target.url, { waitUntil: 'domcontentloaded', timeout: this.options.navigationTimeoutMs ?? 30_000 });
-          observations.push(model === 'LEGACY' ? await this.runLegacy(page, target, startedAt) : await this.runAdaptive(page, target, startedAt));
+          const observation = model === 'LEGACY'
+            ? await this.runLegacy(page, target, startedAt)
+            : await this.runAdaptive(page, target, startedAt);
+          observations.push(observation);
           await context.close();
         } catch (error) {
           const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
           errors.push({ model, targetId: target.id, message });
           const observation: BenchmarkObservation = {
-            model, targetId: target.id, targetUrl: target.url, outcome: 'NOT_FOUND', attempts: 0,
-            durationMs: Date.now() - startedAt, failureReason: failureReason(error),
+            model,
+            targetId: target.id,
+            targetUrl: target.url,
+            outcome: 'NOT_FOUND',
+            attempts: 0,
+            durationMs: Date.now() - startedAt,
+            failureReason: failureReason(error),
+            ...(model === 'ADAPTIVE' ? { adaptive: failedAdaptiveRun(error) } : {}),
           };
-          if (model === 'ADAPTIVE') observation.adaptive = failedAdaptiveRun(error);
           observations.push(observation);
           if (page) await page.context().close().catch(() => undefined);
         }
