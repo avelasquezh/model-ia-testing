@@ -33,6 +33,11 @@ type ResponseState = {
   readonly values: readonly string[];
 };
 
+type ResponseProbe = {
+  readonly locator: Locator;
+  readonly previous: ResponseState;
+};
+
 export class PlaywrightConversationUi implements ConversationUi {
   private readonly responseTimeoutMs: number;
   private readonly pollIntervalMs: number;
@@ -47,7 +52,13 @@ export class PlaywrightConversationUi implements ConversationUi {
 
   public async sendMessage(input: string, timeoutMs: number): Promise<string> {
     const responseLocator = this.locate(this.config.response);
-    const previous = await this.readResponseState(responseLocator);
+    const responseLocators = this.buildResponseLocators(responseLocator);
+    const probes: ResponseProbe[] = [];
+
+    for (const locator of responseLocators) {
+      probes.push({ locator, previous: await this.readResponseState(locator) });
+    }
+
     const composer = this.locate(this.config.composer);
     await composer.fill(input, { timeout: timeoutMs });
 
@@ -57,7 +68,7 @@ export class PlaywrightConversationUi implements ConversationUi {
       await composer.press('Enter', { timeout: timeoutMs });
     }
 
-    return this.waitForResponse(responseLocator, previous, input, timeoutMs);
+    return this.waitForResponse(probes, input, timeoutMs);
   }
 
   private locate(definition: PlaywrightLocatorDefinition): Locator {
@@ -77,6 +88,18 @@ export class PlaywrightConversationUi implements ConversationUi {
     }
   }
 
+  private buildResponseLocators(primary: Locator): Locator[] {
+    return [
+      primary,
+      this.page.locator('[aria-live="polite"]'),
+      this.page.locator('[aria-live="assertive"]'),
+      this.page.getByRole('log'),
+      this.page.locator('[data-testid*="message" i]'),
+      this.page.locator('[class*="response" i]'),
+      this.page.locator('[class*="message" i]'),
+    ];
+  }
+
   private async readResponseState(locator: Locator): Promise<ResponseState> {
     const count = await locator.count();
     if (count === 0) return { count: 0, values: [] };
@@ -90,27 +113,25 @@ export class PlaywrightConversationUi implements ConversationUi {
   }
 
   private async waitForResponse(
-    locator: Locator,
-    previous: ResponseState,
+    probes: readonly ResponseProbe[],
     input: string,
     timeoutMs: number,
   ): Promise<string> {
     const deadline = Date.now() + Math.min(timeoutMs, this.responseTimeoutMs);
-    let candidate: string | null = null;
-    let stablePolls = 0;
+    const candidates = new Map<Locator, { response: string; polls: number }>();
 
     while (Date.now() < deadline) {
-      const current = await this.readResponseState(locator);
-      const response = this.findNewResponse(previous, current, input);
-      if (response && !this.isTransientResponse(response)) {
-        if (response === candidate) {
-          stablePolls += 1;
-        } else {
-          candidate = response;
-          stablePolls = 1;
-        }
-        if (stablePolls >= 2) return response;
+      for (const probe of probes) {
+        const current = await this.readResponseState(probe.locator);
+        const response = this.findNewResponse(probe.previous, current, input);
+        if (!response || this.isTransientResponse(response)) continue;
+
+        const previousCandidate = candidates.get(probe.locator);
+        const polls = previousCandidate?.response === response ? previousCandidate.polls + 1 : 1;
+        candidates.set(probe.locator, { response, polls });
+        if (polls >= 2) return response;
       }
+
       await this.page.waitForTimeout(this.pollIntervalMs);
     }
     throw new ConversationResponseTimeoutError();
