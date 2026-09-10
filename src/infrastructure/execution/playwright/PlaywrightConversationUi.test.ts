@@ -149,6 +149,36 @@ describe('PlaywrightConversationUi', () => {
     await context.close();
   });
 
+  it('falls back from an empty deferred locator to an observable live response surface', async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await page.setContent(`
+      <main>
+        <input aria-label="Mensaje" />
+        <button id="send">Enviar</button>
+        <div aria-live="polite"></div>
+        <script>
+          document.getElementById('send').addEventListener('click', () => {
+            document.querySelector('[aria-live="polite"]').textContent = 'Respuesta nueva';
+          });
+        </script>
+      </main>
+    `);
+
+    const ui = new PlaywrightConversationUi(page, {
+      composer: { kind: 'role', role: 'textbox', name: 'Mensaje' },
+      sendButton: { kind: 'role', role: 'button', name: 'Enviar' },
+      response: { kind: 'css', value: '[data-testid*="message" i]' },
+      responseTimeoutMs: 2_000,
+      pollIntervalMs: 10,
+    });
+
+    await expect(ui.sendMessage('Hello', 2_000)).resolves.toBe('Respuesta nueva');
+
+    await context.close();
+  });
+
   it('waits through a transient response state before returning the stable response', async () => {
     const context = await browser.newContext();
     const page = await context.newPage();
