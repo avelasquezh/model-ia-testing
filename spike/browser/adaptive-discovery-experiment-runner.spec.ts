@@ -3,10 +3,7 @@ import { AdaptiveDiscoveryExperimentRunner } from '../../src/infrastructure/exec
 
 test('adaptive discovery identifies a launcher by behavioral DOM evidence', async ({ page }) => {
   await page.setContent(`
-    <style>
-      body { margin: 0; }
-      #launcher { position: fixed; right: 16px; bottom: 16px; width: 56px; height: 56px; }
-    </style>
+    <style>body { margin: 0; } #launcher { position: fixed; right: 16px; bottom: 16px; width: 56px; height: 56px; }</style>
     <button id="launcher" aria-label="Open assistant">?</button>
     <button aria-label="Share">Share</button>
     <script>
@@ -41,13 +38,14 @@ test('adaptive discovery does not experiment with unsafe controls', async ({ pag
 test('snapshot normalization ignores dynamic class, id and style changes', async ({ page }) => {
   await page.setContent('<div id="one" class="a" style="color:red">Hello</div>');
   const runner = new AdaptiveDiscoveryExperimentRunner(page);
-  const before = await runner.snapshot([]);
+  const debug = [];
+  const before = await runner.snapshot(debug, 'SNAPSHOT_BEFORE');
   await page.evaluate(() => {
     const element = document.querySelector('div')!;
     element.id = 'two';
     element.className = 'b';
     element.setAttribute('style', 'color:blue');
   });
-  const after = await runner.snapshot([]);
+  const after = await runner.snapshot(debug, 'SNAPSHOT_AFTER');
   expect(after.domHash).toBe(before.domHash);
 });
