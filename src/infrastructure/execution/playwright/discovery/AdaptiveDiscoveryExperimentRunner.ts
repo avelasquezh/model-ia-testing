@@ -31,6 +31,7 @@ type CandidateHandle = {
 };
 
 const UNSAFE_TERMS = /delete|remove|logout|log out|sign out|purchase|buy|checkout|pay|payment|subscribe|unsubscribe|cancel|confirm|submit order|eliminar|borrar|cerrar sesión|comprar|pagar|suscribir|cancelar/i;
+const TRADITIONAL_NAVIGATION_SELECTOR = 'a[href], a[role="button"], [aria-controls], [aria-expanded], [onmousedown], [onmouseup], [ontouchstart], [onkeydown]';
 
 export class AdaptiveDiscoveryExperimentRunner {
   public constructor(private readonly page: Page, private readonly options: AdaptiveDiscoveryRunnerOptions = {}) {}
@@ -67,28 +68,35 @@ export class AdaptiveDiscoveryExperimentRunner {
     const maxCandidates = this.options.maxCandidates ?? DEFAULT_MAX_CANDIDATES;
     for (const context of contexts) {
       const interactive = context.locator('button, [role="button"], [tabindex="0"], [onclick]');
+      const traditional = context.locator(TRADITIONAL_NAVIGATION_SELECTOR);
       let rawCount = 0;
       try { rawCount = await interactive.count(); }
       catch (error) {
         debug.push({ candidateId: `context:${context.url()}`, score: 0, frameUrl: context.url(), stage: 'COLLECT', action: 'INSPECT', ok: false, error: this.errorMessage(error) });
         continue;
       }
-      const count = Math.min(rawCount, Math.max(0, maxCandidates * 3));
+      let traditionalCount = 0;
+      try { traditionalCount = await traditional.count(); }
+      catch (error) {
+        debug.push({ candidateId: `context:${context.url()}`, score: 0, frameUrl: context.url(), stage: 'COLLECT', action: 'INSPECT', ok: false, error: this.errorMessage(error) });
+      }
+      const count = Math.min(Math.max(rawCount, traditionalCount), Math.max(0, maxCandidates * 3));
       for (let index = 0; index < count; index += 1) {
-        const locator = interactive.nth(index);
-        if (!await this.isSafeCandidate(locator)) continue;
-        const candidate = await this.buildCandidate(locator);
-        if (!candidate) continue;
-        const key = this.candidateKey(candidate);
-        if (seen.has(key)) continue;
-        seen.add(key);
-        const scored = scoreDiscoveryCandidate(candidate);
-        handles.push({ locator, context, candidate: scored, key });
-        debug.push({ candidateId: scored.candidateId, score: scored.score, frameUrl: context.url(), stage: 'COLLECT', action: 'INSPECT', ok: true });
-        if (handles.length >= maxCandidates) return this.rankCandidates(handles);
+        const locators = [interactive.nth(index), traditional.nth(index)];
+        for (const locator of locators) {
+          if (!await this.isSafeCandidate(locator)) continue;
+          const candidate = await this.buildCandidate(locator);
+          if (!candidate || (!candidate.navigationSignal && candidate.tagName !== 'a' && !candidate.ariaControls && candidate.ariaExpanded === undefined)) continue;
+          const key = this.candidateKey(candidate);
+          if (seen.has(key)) continue;
+          seen.add(key);
+          const scored = scoreDiscoveryCandidate(candidate);
+          handles.push({ locator, context, candidate: scored, key });
+          debug.push({ candidateId: scored.candidateId, score: scored.score, frameUrl: context.url(), stage: 'COLLECT', action: 'INSPECT', ok: true });
+        }
       }
     }
-    return this.rankCandidates(handles);
+    return this.rankCandidates(handles).slice(0, maxCandidates);
   }
 
   private rankCandidates(handles: CandidateHandle[]): CandidateHandle[] {
@@ -115,6 +123,10 @@ export class AdaptiveDiscoveryExperimentRunner {
     const ariaLabel = await locator.getAttribute('aria-label').catch(() => null) ?? undefined;
     const text = (await locator.innerText().catch(() => '')).trim().slice(0, 160);
     const placeholder = await locator.getAttribute('placeholder').catch(() => null) ?? undefined;
+    const href = await locator.getAttribute('href').catch(() => null) ?? undefined;
+    const ariaControls = await locator.getAttribute('aria-controls').catch(() => null) ?? undefined;
+    const ariaExpanded = await locator.getAttribute('aria-expanded').catch(() => null) ?? undefined;
+    const navigationSignal = await locator.evaluate((element) => ['onmousedown', 'onmouseup', 'ontouchstart', 'onkeydown'].some((name) => element.hasAttribute(name))).catch(() => false);
     const readonly = (await locator.getAttribute('readonly')) !== null;
     const disabled = (await locator.getAttribute('disabled')) !== null;
     const viewport = this.page.viewportSize();
@@ -126,6 +138,10 @@ export class AdaptiveDiscoveryExperimentRunner {
       ...(ariaLabel ? { ariaLabel } : {}),
       text,
       ...(placeholder ? { placeholder } : {}),
+      ...(href ? { href } : {}),
+      ...(ariaControls ? { ariaControls } : {}),
+      ...(ariaExpanded !== undefined ? { ariaExpanded } : {}),
+      ...(navigationSignal ? { navigationSignal } : {}),
       readonly,
       disabled,
       fixed,
@@ -133,7 +149,7 @@ export class AdaptiveDiscoveryExperimentRunner {
     };
   }
 
-  private candidateKey(candidate: DiscoveryCandidate): string { return `${candidate.tagName}|${candidate.role ?? ''}|${candidate.ariaLabel ?? ''}|${candidate.text ?? ''}|${candidate.id}`; }
+  private candidateKey(candidate: DiscoveryCandidate): string { return `${candidate.tagName}|${candidate.role ?? ''}|${candidate.ariaLabel ?? ''}|${candidate.text ?? ''}|${candidate.href ?? ''}|${candidate.ariaControls ?? ''}|${candidate.ariaExpanded ?? ''}|${candidate.navigationSignal ?? false}|${candidate.id}`; }
 
   private async safeClick(handle: CandidateHandle, debug: AdaptiveDiscoveryDebugAttempt[]): Promise<{ ok: boolean }> {
     const frameUrl = handle.context.url();
