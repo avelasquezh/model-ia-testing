@@ -1,5 +1,5 @@
 import type { Frame, Locator, Page } from '@playwright/test';
-import type { PlaywrightConversationUiConfig, PlaywrightLocatorDefinition } from './PlaywrightConversationUi.js';
+import type { PlaywrightConversationUiConfig, PlaywrightLocatorDefinition } from '../PlaywrightConversationUi.js';
 import type { ChatDiscoveryCandidate, ChatDiscoveryReport, ChatDiscoveryTraversalStep } from './ChatDiscoveryReport.js';
 
 type ChatCandidateSpec = {
@@ -74,13 +74,14 @@ export class PlaywrightChatDiscovery {
       if (!composer) throw new Error('Chat composer could not be discovered on the public URL');
       selected.composer = await this.selection(composer, composerSpecs);
 
+      const composerFrame = await this.ownerFrame(composer);
       const sendSpecs = this.buildSendCandidates(contexts);
-      const sendButton = await this.findFirstVisible(sendSpecs.map((candidate) => candidate.locator));
+      const sendButton = await this.findFirstVisibleInFrame(sendSpecs, composerFrame);
       await this.recordCandidates(candidates, 'sendButton', sendSpecs, sendButton);
       if (sendButton) selected.sendButton = await this.selection(sendButton, sendSpecs);
 
       const responseSpecs = this.buildResponseCandidates(contexts);
-      const responseResult = await this.findResponseLocator(responseSpecs, composer, sendButton);
+      const responseResult = await this.findResponseLocator(responseSpecs, composer, sendButton, composerFrame);
       const response = responseResult.locator;
       await this.recordCandidates(candidates, 'response', responseSpecs, response, responseResult.deferred);
       if (!response) throw new Error('Chat response could not be discovered on the public URL');
@@ -113,14 +114,16 @@ export class PlaywrightChatDiscovery {
     candidates: readonly ChatCandidateSpec[],
     composer: Locator,
     sendButton: Locator | null,
+    composerFrame: Frame | null,
   ): Promise<{ readonly locator: Locator | null; readonly deferred: boolean; readonly strategy?: string; readonly confidence?: 'HIGH' | 'MEDIUM' | 'LOW' }> {
+    const matchingCandidates = await this.filterByFrame(candidates, composerFrame);
     const existing = await this.findFirstVisibleExcluding(
-      candidates.map((candidate) => candidate.locator),
+      matchingCandidates.map((candidate) => candidate.locator),
       [composer, sendButton],
     );
     if (existing) return { locator: existing, deferred: false };
 
-    const deferredCandidates = candidates
+    const deferredCandidates = matchingCandidates
       .filter((candidate) => this.isSupportedDeferredResponseStrategy(candidate.strategy))
       .map((candidate, index) => ({ candidate, index }));
 
@@ -129,15 +132,14 @@ export class PlaywrightChatDiscovery {
       return priorityDifference !== 0 ? priorityDifference : left.index - right.index;
     });
 
-    for (const { candidate } of ranked) {
-      if (await candidate.locator.count() === 0) {
-        return {
-          locator: candidate.locator,
-          deferred: true,
-          strategy: candidate.strategy,
-          confidence: candidate.confidence,
-        };
-      }
+    const deferred = ranked[0]?.candidate;
+    if (deferred) {
+      return {
+        locator: deferred.locator,
+        deferred: true,
+        strategy: deferred.strategy,
+        confidence: deferred.confidence,
+      };
     }
 
     return { locator: null, deferred: false };
@@ -183,10 +185,10 @@ export class PlaywrightChatDiscovery {
       let clickedAtDepth = false;
 
       for (const spec of traversalSpecs) {
-        const count = await spec.locator.count();
+        const count = await this.safeCount(spec.locator);
         for (let index = 0; index < count && clicks < MAX_TRAVERSAL_CLICKS; index += 1) {
           const item = spec.locator.nth(index);
-          if (!await item.isVisible()) continue;
+          if (!await this.safeVisible(item)) continue;
           if (!await item.isEnabled().catch(() => false)) continue;
 
           const evidence = await this.elementEvidence(item).catch(() => null);
@@ -375,13 +377,13 @@ export class PlaywrightChatDiscovery {
     deferred = false,
   ): Promise<void> {
     for (const candidate of candidates) {
-      const count = await candidate.locator.count();
+      const count = await this.safeCount(candidate.locator);
       let element: ChatDiscoveryCandidate['element'];
       if (count > 0) {
         for (let index = 0; index < count; index += 1) {
           const item = candidate.locator.nth(index);
-          if (await item.isVisible()) {
-            element = await this.elementEvidence(item);
+          if (await this.safeVisible(item)) {
+            element = await this.elementEvidence(item).catch(() => undefined);
             break;
           }
         }
@@ -447,13 +449,68 @@ export class PlaywrightChatDiscovery {
   }
 
   private async sameElement(left: Locator, right: Locator): Promise<boolean> {
-    const handle = await left.elementHandle({ timeout: ELEMENT_PROBE_TIMEOUT_MS }).catch(() => null);
-    if (!handle) return false;
+    const leftHandle = await left.elementHandle({ timeout: ELEMENT_PROBE_TIMEOUT_MS }).catch(() => null);
+    if (!leftHandle) return false;
 
     try {
-      return await right.evaluateAll((nodes, selected) => nodes.some((node) => node === selected), handle);
+      const leftFrame = this.normalizeFrame(await leftHandle.ownerFrame());
+      const rightHandle = await right.elementHandle({ timeout: ELEMENT_PROBE_TIMEOUT_MS }).catch(() => null);
+      if (!rightHandle) return false;
+      try {
+        const rightFrame = this.normalizeFrame(await rightHandle.ownerFrame());
+        if (leftFrame !== rightFrame) return false;
+        return await right.evaluateAll((nodes, selected) => nodes.some((node) => node === selected), leftHandle);
+      } finally {
+        await rightHandle.dispose();
+      }
     } catch {
-      // A candidate can detach during a reactive re-render; it is not a match anymore.
+      return false;
+    } finally {
+      await leftHandle.dispose();
+    }
+  }
+
+  private async ownerFrame(locator: Locator): Promise<Frame | null> {
+    const handle = await locator.elementHandle({ timeout: ELEMENT_PROBE_TIMEOUT_MS }).catch(() => null);
+    if (!handle) return null;
+    try {
+      return this.normalizeFrame(await handle.ownerFrame());
+    } finally {
+      await handle.dispose();
+    }
+  }
+
+  private normalizeFrame(frame: Frame | null): Frame {
+    return frame ?? this.page.mainFrame();
+  }
+
+  private async filterByFrame(candidates: readonly ChatCandidateSpec[], frame: Frame | null): Promise<ChatCandidateSpec[]> {
+    const targetFrame = frame ?? this.page.mainFrame();
+    const matching: ChatCandidateSpec[] = [];
+    for (const candidate of candidates) {
+      const candidateFrame = this.normalizeFrame(await this.ownerFrame(candidate.locator));
+      if (candidateFrame === targetFrame) matching.push(candidate);
+    }
+    return matching;
+  }
+
+  private async findFirstVisibleInFrame(candidates: readonly ChatCandidateSpec[], frame: Frame | null): Promise<Locator | null> {
+    const matching = await this.filterByFrame(candidates, frame);
+    return this.findFirstVisible(matching.map((candidate) => candidate.locator));
+  }
+
+  private async safeCount(locator: Locator): Promise<number> {
+    try {
+      return await locator.count();
+    } catch {
+      return 0;
+    }
+  }
+
+  private async safeVisible(locator: Locator): Promise<boolean> {
+    try {
+      return await locator.isVisible();
+    } catch {
       return false;
     }
   }
@@ -468,10 +525,10 @@ export class PlaywrightChatDiscovery {
 
   private async findFirstEditableVisibleExcluding(candidates: Locator[], excluded: Array<Locator | null>): Promise<Locator | null> {
     for (const candidate of candidates) {
-      const count = await candidate.count();
+      const count = await this.safeCount(candidate);
       for (let index = 0; index < count; index += 1) {
         const item = candidate.nth(index);
-        if (!await item.isVisible()) continue;
+        if (!await this.safeVisible(item)) continue;
         if (await this.isExcluded(item, excluded)) continue;
         if (!await this.isEditable(item)) continue;
         return item;
@@ -498,10 +555,10 @@ export class PlaywrightChatDiscovery {
 
   private async findFirstVisibleExcluding(candidates: Locator[], excluded: Array<Locator | null>): Promise<Locator | null> {
     for (const candidate of candidates) {
-      const count = await candidate.count();
+      const count = await this.safeCount(candidate);
       for (let index = 0; index < count; index += 1) {
         const item = candidate.nth(index);
-        if (!await item.isVisible()) continue;
+        if (!await this.safeVisible(item)) continue;
         if (await this.isExcluded(item, excluded)) continue;
         return item;
       }

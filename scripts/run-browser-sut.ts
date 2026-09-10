@@ -11,7 +11,7 @@ import { Scenario } from '../src/domain/scenario/Scenario.js';
 import { Target } from '../src/domain/target/Target.js';
 import type { ConversationUiConfig } from '../src/application/ports/ConversationUiConfigRepository.js';
 import type { BotObservationSet } from '../src/domain/evaluation/BotObservation.js';
-import type { ChatDiscoveryReport } from '../src/infrastructure/execution/playwright/ChatDiscoveryReport.js';
+import type { ChatDiscoveryReport, ChatExecutionVerification } from '../src/infrastructure/execution/playwright/ChatDiscoveryReport.js';
 
 const CONFIG_FILE = process.env.BROWSER_SUT_CONFIG_FILE;
 const OUTPUT_FILE = process.env.BROWSER_SUT_OUTPUT_FILE ?? 'artifacts/browser-sut/observations.json';
@@ -47,11 +47,6 @@ const conversation = new PlaywrightConversationAdapter(browser, uiConfigs);
 const runner = new PlaywrightExecutionRunner(conversation, evidence);
 const result = await runner.execute({ execution, scenario, target }, { timeoutMs: TIMEOUT_MS });
 
-const discoveryReport = conversation.getDiscoveryReport();
-if (discoveryReport) {
-  await writeFile(DISCOVERY_REPORT_FILE, JSON.stringify(withExecutionFailure(discoveryReport, result.errors ?? []), null, 2));
-}
-
 const observations: BotObservationSet = {
   schemaVersion: 'bot-observation-0.1',
   observations: (result.observations ?? []).map((observation, index) => ({
@@ -70,6 +65,20 @@ const observations: BotObservationSet = {
   })),
 };
 
+const verification = deriveExecutionVerification(
+  observations.observations.length,
+  scenario.props.inputs.length,
+  result.errors ?? [],
+);
+
+const discoveryReport = conversation.getDiscoveryReport();
+if (discoveryReport) {
+  await writeFile(
+    DISCOVERY_REPORT_FILE,
+    JSON.stringify(withExecutionOutcome(discoveryReport, verification, result.errors ?? []), null, 2),
+  );
+}
+
 await writeFile(OUTPUT_FILE, JSON.stringify(observations, null, 2));
 console.log(JSON.stringify({
   status: result.status,
@@ -80,15 +89,22 @@ console.log(JSON.stringify({
   outputFile: OUTPUT_FILE,
   evidenceDirectory: EVIDENCE_DIRECTORY,
   observationCount: observations.observations.length,
+  verification,
   errors: result.errors ?? [],
 }, null, 2));
 
-function withExecutionFailure(report: ChatDiscoveryReport, errors: readonly { code: string; message: string; operation: string; turnIndex?: number }[]): ChatDiscoveryReport {
+function withExecutionOutcome(
+  report: ChatDiscoveryReport,
+  verification: ChatExecutionVerification,
+  errors: readonly { code: string; message: string; operation: string; turnIndex?: number }[],
+): ChatDiscoveryReport {
   const error = errors[0];
-  if (!error) return report;
+  if (!error) return { ...report, execution: verification };
+
   const reason: PublicSutFailureReason = classifyPublicSutFailure(error);
   return {
     ...report,
+    execution: verification,
     executionFailureReason: reason,
     executionError: {
       code: error.code,
@@ -96,6 +112,22 @@ function withExecutionFailure(report: ChatDiscoveryReport, errors: readonly { co
       operation: error.operation,
       ...(error.turnIndex !== undefined ? { turnIndex: error.turnIndex } : {}),
     },
+  };
+}
+
+function deriveExecutionVerification(
+  observationCount: number,
+  expectedTurns: number,
+  errors: readonly { operation: string }[],
+): ChatExecutionVerification {
+  const sendError = errors.some((error) => error.operation === 'SEND');
+  const hasObservations = observationCount > 0;
+  const complete = expectedTurns > 0 && observationCount === expectedTurns && !sendError;
+
+  return {
+    send: hasObservations ? 'CONFIRMED' : sendError ? 'ATTEMPTED' : 'NOT_ATTEMPTED',
+    receive: hasObservations ? 'CONFIRMED' : sendError ? 'FAILED' : 'NOT_ATTEMPTED',
+    conversation: complete ? 'VERIFIED' : observationCount > 0 || sendError ? 'FAILED' : 'NOT_STARTED',
   };
 }
 

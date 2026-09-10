@@ -1,10 +1,9 @@
 # Estado actual del proyecto — model-ia-testing
 
-**Fecha:** 2026-09-08  
+**Fecha:** 2026-09-10  
 **Versión de producto declarada:** `0.1.0`  
-**Rama:** `main`  
-**Avance estimado del MVP:** **89%**  
-**Estado global:** MVP en implementación incremental; F1 ampliamente materializado, F2 en consolidación metodológica ejecutable y F3 **VALIDADO**.
+**Rama de trabajo activa:** `qa`  
+**Estado global:** MVP en implementación incremental. F1 ampliamente materializado, F2 en consolidación metodológica ejecutable y F3 validado. El frente funcional prioritario del MVP es ahora **Adaptive Discovery + interacción conversacional verificable sobre URLs públicas**.
 
 ## Gobierno de Frente 2
 
@@ -30,6 +29,56 @@ No se utilizarán identificadores `F2-36`, `F2-37` ni superiores para ampliar re
 
 Esta tabla es administrativa y no cambia la identidad histórica de los archivos. La secuencia oficial continúa siendo F2-01…F2-35.
 
+## Frente activo — Adaptive Discovery e interacción pública
+
+### Objetivo funcional
+
+El objetivo operativo vigente es:
+
+`URL pública arbitraria → descubrir chat → abrir chat → localizar composer → enviar "Hello" → confirmar envío → observar nueva respuesta → confirmar recepción → VERIFIED`
+
+El sistema debe resolver el flujo sin depender de locators específicos, nombres de clases, IDs o reglas particulares de un sitio concreto. Adaptive puede utilizar señales semánticas y estructurales, pero debe reevaluar la superficie después de cada acción y conservar la ruta que condujo a la evidencia.
+
+### Estado actual
+
+La batería Adaptive, el fixture controlado de interacción y el benchmark público están operativos en CI. La última ejecución pública confirmada antes de este documento produjo:
+
+- Legacy: 23 objetivos; discovery rate 21.7%.
+- Adaptive: 23 objetivos; discovery rate 17.4%.
+- Adaptive interaction benchmark: 5 candidatos seleccionados; `verifiedCount = 0`; 3 capturas obtenidas.
+
+Por tanto, **Adaptive continúa en desarrollo y no ha alcanzado todavía la aceptación funcional del MVP**. Los estados `CHAT_SURFACE_FOUND` y `CANDIDATE_FOUND` son únicamente resultados de discovery.
+
+### Prioridades de implementación
+
+**P0 — Conversación verificable:** alcanzar al menos una ejecución pública reproducible en estado `VERIFIED`.
+
+**P1 — Robustez generalizable:** distinguir chat real de falsos positivos y soportar Page/Frame/widgets anidados; detectar correctamente composer, envío y respuesta nueva posterior al mensaje.
+
+**P2 — Comparación Legacy vs Adaptive:** comparar ambas estrategias bajo el mismo criterio funcional y sobre el mismo corpus.
+
+**P3 — Evoluciones metodológicas:** mejoras que no sean necesarias para P0/P1 no desplazan este frente.
+
+### Falsos positivos conocidos
+
+El benchmark ha evidenciado rutas en las que la detección Adaptive llega a formularios de registro/contacto o superficies que aparentan ser chat pero no permiten una conversación real. Estas rutas deben tratarse como señales intermedias, no como éxito.
+
+Aumentar timeouts sin evidencia causal no constituye una solución aceptable. La respuesta debe validarse como **nueva evidencia posterior al envío**, no como texto estático ya presente en la página.
+
+## Reconciliación de ramas
+
+`qa` es la única rama activa de trabajo, integración y validación. `feat/adaptive-discovery-parallel` queda como referencia histórica reconciliada: `qa` contiene su mismo estado funcional más el commit de gobernanza de continuidad y los ajustes de calidad posteriores. No debe recibir trabajo nuevo.
+
+La comparación actual entre ambas ramas confirma que `qa` está únicamente **1 commit por delante y 0 por detrás**, y ese commit corresponde exclusivamente a `docs/governance/AGENT-HANDOFF.md`. No existe actualmente una divergencia funcional pendiente entre ambas líneas.
+
+Las demás ramas `feat/*`, `fix/*`, `qa-*`, `tmp-*` y respaldos son históricas, experimentales o de recuperación. No constituyen frentes activos. No se debe iniciar trabajo nuevo en ellas mientras exista una tarea abierta en `qa`.
+
+## Calidad y CI
+
+El script `lint` fue incorporado al `package.json`, pero la primera ejecución sobre `qa` falló antes de completar la batería porque el commit que añadió el script no contenía `eslint.config.mjs`. Esa inconsistencia fue corregida agregando la configuración Flat de ESLint a `qa`.
+
+La ejecución `Architecture Spike` `34498990987` sobre `580cdb1a09c1619c68b5a3f2747dd0ce20447bbd` terminó en `failure`; el paso que falló fue `SPIKE-002/003/006/010/011/012 Unit and architecture tests`. Los pasos de instalación, Playwright, PostgreSQL readiness y TypeScript completaron correctamente. Por ello, no se debe declarar que el CI está verde hasta ejecutar nuevamente la batería sobre el commit corregido y revisar la causa concreta de cualquier fallo restante.
+
 ## Evidencia de F2-35
 
 F2-35 formalizó la cobertura metodológica por criterio dentro de una ejecución. La cobertura distingue `APPLICABLE_EVALUATED`, `APPLICABLE_NOT_EVALUATED`, `NOT_APPLICABLE`, `INSUFFICIENT_EVIDENCE` e `INCONCLUSIVE`, sin introducir score ni decisión global.
@@ -47,8 +96,6 @@ D7 queda reconciliado como extensión de canal web, sin convertir Playwright en 
 - `D7-C05` — errores de interfaz observables.
 
 Las pruebas conservan evidencia primaria observable y no introducen `qualityScore`, score global, ponderaciones ni `globalDecision`. D7 no genera un nuevo incremento oficial de F2.
-
-Las validaciones CI y Architecture Spike de D7-C01…D7-C05 fueron exitosas. La implementación permanece limitada al borde observable del canal y no modifica el contrato conversacional central.
 
 ## Trabajo posterior reconciliado — F2-EXT-03 a F2-EXT-05
 
@@ -98,7 +145,7 @@ Validación final registrada en CI `34171940346` y Architecture Spike `341719403
 
 **Estado:** **CERRADO / VALIDADO**.
 
-Se validó D3-C01 mediante tres sesiones independientes con un turno de establecimiento y un turno de verificación. La segunda respuesta recuperó de forma reproducible el contexto establecido y se conservaron dos observaciones por ejecución.
+Se validó D3-C01 mediante tres sesiones independientes con un turno de establecimiento y un turno de verificación. La segunda resposta recuperó de forma reproducible el contexto establecido y se conservaron dos observaciones por ejecución.
 
 Validación final registrada en CI `34172666958` y Architecture Spike `34172666905`, ambos exitosos.
 
@@ -118,21 +165,13 @@ Validación final registrada en CI `34173406820` y Architecture Spike `341734068
 
 Se materializó `SemanticEvaluatorPort` con entrada y salida normalizadas, preservando evidencia primaria, intención esperada, respuesta observable y procedencia de modelo, prompt, método, criterio y evidencia.
 
-La infraestructura incorpora una frontera HTTP y un arnés live opt-in. El dominio permanece independiente del transporte, SDK, proveedor y credenciales. El arnés valida la forma y procedencia de una respuesta normalizada, pero su existencia no constituye evidencia de comportamiento de un evaluador externo real.
-
-Validación CI asociada al incremento: `34248712103` — todos los jobs principales exitosos. Architecture Spike asociado: `34248712303` — exitoso.
+La infraestructura incorpora una frontera HTTP y un arnés live opt-in. El dominio permanece independiente del transporte, SDK, proveedor y credenciales.
 
 ### `F2-VAL-05` — Validación controlada de comportamiento semántico externo
 
 **Estado:** **PREPARADO / PENDIENTE DE EJECUCIÓN REAL**.
 
-Se incorporó `docs/evaluation/F2-VAL-05-EXECUTION-PROTOCOL.md`, que define el entorno externo, la separación SUT/evaluador, la construcción de `BotObservation`, los parámetros operativos fuera del repositorio, los criterios de aceptación y la evidencia mínima requerida.
-
-Un entorno como el Testing Tool o Sample Page de ChatBot.com puede utilizarse como SUT para capturar respuestas observables; el repositorio permanece neutral respecto del proveedor y del canal. La validación todavía no se considera ejecutada hasta disponer de evidencia de un evaluador semántico externo real y reproducible.
-
-La ejecución deberá registrar identidad y versión del modelo, prompt y método versionados, parámetros relevantes, casos de prueba, repeticiones equivalentes, respuestas normalizadas, evidencia primaria y errores de transporte, límites o esquema.
-
-No se introducirá scoring global ni se transformará la salida semántica en un veredicto global del producto.
+Este trabajo permanece fuera del frente P0/P1 mientras no sea necesario para validar la interacción conversacional pública del MVP.
 
 ## Persistencia y versionado
 
@@ -148,9 +187,7 @@ El valor `legacy-unknown` se utiliza únicamente para información histórica re
 
 **Estado:** D7-C01…D7-C05 validados como extensión de canal; frontera provider-neutral validada; `F2-VAL-05` preparado y pendiente de evidencia externa real.
 
-La baseline oficial permanece cerrada en F2-35. El trabajo posterior se gestiona como extensiones y validaciones explícitamente clasificadas, sin alterar la secuencia original.
-
-El scoring global, ponderaciones y aceptación/rechazo global continúan bloqueados hasta que exista una decisión metodológica específica.
+La baseline oficial permanece cerrada en F2-35. El scoring global, ponderaciones y aceptación/rechazo global continúan bloqueados hasta que exista una decisión metodológica específica.
 
 ## Frente 3 — Arquitectura
 
@@ -166,8 +203,12 @@ Las versiones metodológicas son independientes del producto y deben mantenerse 
 
 ## Próximo trabajo
 
-El siguiente paso metodológico sigue siendo `F2-VAL-05`, pero su ejecución requiere evidencia externa real: primero obtener una captura reproducible del SUT y transformarla en `BotObservation`; después ejecutar `npm run evaluation:semantic:live` contra un evaluador externo real y generar el reporte visual. El estado solo podrá pasar a `VALIDADO` cuando la evidencia cumpla el protocolo.
+La tarea activa en `qa` continúa siendo P0/P1 Adaptive: primero ejecutar nuevamente CI después de la corrección de ESLint y aislar cualquier fallo restante; después continuar con el fallo E2E de interacción pública, priorizando una ruta que complete `send + receive` y estudiando la causa de las rutas no verificadas. Una vez exista una ruta `VERIFIED`, se ampliará el corpus y se compararán Legacy y Adaptive bajo el mismo criterio funcional.
+
+El trabajo debe permanecer en `qa` hasta cumplir los quality gates y disponer de evidencia suficiente; no se debe declarar cierre funcional por compilación, discovery aislado o CI verde.
 
 ## Regla de documentación
 
 Cada incremento o corrección debe actualizar el estado verificable resultante. Todo trabajo posterior a F2-35 debe declarar su clasificación canónica antes de ejecutarse y no puede redefinir retrospectivamente la baseline oficial.
+
+Para continuidad entre agentes, consultar también `docs/governance/AGENT-HANDOFF.md`, que contiene el objetivo operativo, criterios de éxito, prioridades y reglas de continuidad del MVP.

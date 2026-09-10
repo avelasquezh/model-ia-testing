@@ -32,6 +32,12 @@ export type ChatDiscoveryExecutionError = {
   readonly turnIndex?: number;
 };
 
+export type ChatExecutionVerification = {
+  readonly send: 'NOT_ATTEMPTED' | 'ATTEMPTED' | 'CONFIRMED';
+  readonly receive: 'NOT_ATTEMPTED' | 'FAILED' | 'CONFIRMED';
+  readonly conversation: 'NOT_STARTED' | 'FAILED' | 'VERIFIED';
+};
+
 export type ChatDiscoveryReport = {
   readonly schemaVersion: 'chat-discovery-0.1';
   readonly targetUrl: string;
@@ -45,6 +51,7 @@ export type ChatDiscoveryReport = {
     readonly evidence?: ChatDiscoveryCandidate['element'];
   }>>;
   readonly traversalPath?: readonly ChatDiscoveryTraversalStep[];
+  readonly execution?: ChatExecutionVerification;
   readonly executionFailureReason?:
     | 'CAPTCHA_GATE'
     | 'NAVIGATION_FAILED'

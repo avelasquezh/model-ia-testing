@@ -1,0 +1,80 @@
+name: Adaptive Discovery Benchmark
+
+on:
+  push:
+    branches:
+      - feat/adaptive-discovery-parallel
+  workflow_dispatch:
+    inputs:
+      corpus:
+        description: 'Public SUT corpus path'
+        required: false
+        default: 'examples/public-sut-discovery-corpus.json'
+        type: string
+      timeout_ms:
+        description: 'Per-target benchmark timeout in milliseconds'
+        required: false
+        default: '30000'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  adaptive-battery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Focused Adaptive Playwright battery
+        run: npx playwright test spike/browser/adaptive-discovery-experiment-runner.spec.ts --reporter=line
+
+      - name: Adaptive interaction verification fixture
+        run: npx playwright test spike/browser/adaptive-interaction-verification.spec.ts --reporter=line
+
+      - name: Legacy vs Adaptive public-SUT benchmark
+        env:
+          DISCOVERY_BENCHMARK_CORPUS_FILE: ${{ inputs.corpus || 'examples/public-sut-discovery-corpus.json' }}
+          DISCOVERY_BENCHMARK_TIMEOUT_MS: ${{ inputs.timeout_ms || '30000' }}
+          ADAPTIVE_DISCOVERY_MAX_CANDIDATES: '40'
+          ADAPTIVE_DISCOVERY_MAX_CLICKS: '12'
+          ADAPTIVE_DISCOVERY_THRESHOLD: '35'
+        run: npm run browser:discovery:benchmark
+
+      - name: Adaptive public-SUT interaction and screenshot benchmark
+        env:
+          DISCOVERY_BENCHMARK_CORPUS_FILE: ${{ inputs.corpus || 'examples/public-sut-discovery-corpus.json' }}
+          DISCOVERY_BENCHMARK_TIMEOUT_MS: ${{ inputs.timeout_ms || '30000' }}
+          ADAPTIVE_DISCOVERY_MAX_CANDIDATES: '40'
+          ADAPTIVE_DISCOVERY_MAX_CLICKS: '12'
+          ADAPTIVE_PROBE_MESSAGE: 'Hello'
+          ADAPTIVE_INTERACTION_TIMEOUT_MS: '30000'
+        run: npx tsx scripts/run-adaptive-interaction-benchmark.ts
+
+      - name: Upload benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: adaptive-discovery-battery
+          path: |
+            artifacts/browser-sut/adaptive-discovery-benchmark.json
+            artifacts/browser-sut/adaptive-interaction-benchmark.json
+            artifacts/browser-sut/adaptive-interaction
+          if-no-files-found: warn
+          retention-days: 14
