@@ -62,24 +62,28 @@ export class AdaptiveDiscoveryExperimentRunner {
 
   private async collectCandidates(debug: AdaptiveDiscoveryDebugAttempt[]): Promise<CandidateHandle[]> {
     const handles: CandidateHandle[] = [];
+    const seen = new Set<string>();
     const contexts: Array<Page | Frame> = [this.page, ...this.page.frames().filter((frame) => frame !== this.page.mainFrame())];
     const maxCandidates = this.options.maxCandidates ?? DEFAULT_MAX_CANDIDATES;
     for (const context of contexts) {
-      const interactive = context.locator('button, [role="button"]');
+      const interactive = context.locator('button, [role="button"], [tabindex="0"], [onclick]');
       let rawCount = 0;
       try { rawCount = await interactive.count(); }
       catch (error) {
         debug.push({ candidateId: `context:${context.url()}`, score: 0, frameUrl: context.url(), stage: 'COLLECT', action: 'INSPECT', ok: false, error: this.errorMessage(error) });
         continue;
       }
-      const count = Math.min(rawCount, Math.max(0, maxCandidates - handles.length));
+      const count = Math.min(rawCount, Math.max(0, maxCandidates * 3));
       for (let index = 0; index < count; index += 1) {
         const locator = interactive.nth(index);
         if (!await this.isSafeCandidate(locator)) continue;
         const candidate = await this.buildCandidate(locator);
         if (!candidate) continue;
+        const key = this.candidateKey(candidate);
+        if (seen.has(key)) continue;
+        seen.add(key);
         const scored = scoreDiscoveryCandidate(candidate);
-        handles.push({ locator, context, candidate: scored, key: this.candidateKey(candidate) });
+        handles.push({ locator, context, candidate: scored, key });
         debug.push({ candidateId: scored.candidateId, score: scored.score, frameUrl: context.url(), stage: 'COLLECT', action: 'INSPECT', ok: true });
         if (handles.length >= maxCandidates) return this.rankCandidates(handles);
       }
