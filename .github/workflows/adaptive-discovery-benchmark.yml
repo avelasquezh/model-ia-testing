@@ -45,6 +45,9 @@ jobs:
       - name: Focused Adaptive Playwright battery
         run: npx playwright test spike/browser/adaptive-discovery-experiment-runner.spec.ts --reporter=line
 
+      - name: Adaptive interaction verification fixture
+        run: npx playwright test spike/browser/adaptive-interaction-verification.spec.ts --reporter=line
+
       - name: Legacy vs Adaptive public-SUT benchmark
         env:
           DISCOVERY_BENCHMARK_CORPUS_FILE: ${{ inputs.corpus || 'examples/public-sut-discovery-corpus.json' }}
@@ -54,11 +57,24 @@ jobs:
           ADAPTIVE_DISCOVERY_THRESHOLD: '35'
         run: npm run browser:discovery:benchmark
 
+      - name: Adaptive public-SUT interaction and screenshot benchmark
+        env:
+          DISCOVERY_BENCHMARK_CORPUS_FILE: ${{ inputs.corpus || 'examples/public-sut-discovery-corpus.json' }}
+          DISCOVERY_BENCHMARK_TIMEOUT_MS: ${{ inputs.timeout_ms || '30000' }}
+          ADAPTIVE_DISCOVERY_MAX_CANDIDATES: '40'
+          ADAPTIVE_DISCOVERY_MAX_CLICKS: '12'
+          ADAPTIVE_PROBE_MESSAGE: 'Hello'
+          ADAPTIVE_INTERACTION_TIMEOUT_MS: '15000'
+        run: npx tsx scripts/run-adaptive-interaction-benchmark.ts
+
       - name: Upload benchmark evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: adaptive-discovery-battery
-          path: artifacts/browser-sut/adaptive-discovery-benchmark.json
+          path: |
+            artifacts/browser-sut/adaptive-discovery-benchmark.json
+            artifacts/browser-sut/adaptive-interaction-benchmark.json
+            artifacts/browser-sut/adaptive-interaction
           if-no-files-found: warn
           retention-days: 14
