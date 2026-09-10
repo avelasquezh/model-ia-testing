@@ -1,0 +1,121 @@
+name: Semantic model comparison
+
+on:
+  workflow_dispatch:
+    inputs:
+      observations_file:
+        description: Repository-relative path to real BotObservation evidence
+        required: true
+        default: artifacts/f2-val-05/01-observations.json
+      prompt_version:
+        description: Controlled semantic evaluator prompt version
+        required: true
+        default: PROMPT-0.1
+      method_version:
+        description: Controlled evaluation method version
+        required: true
+        default: AI-METHOD-0.1
+      openai_model_id:
+        description: Exact OpenAI evaluator model id
+        required: true
+        default: gpt-5.6-terra
+      openai_model_version:
+        description: Exact OpenAI evaluator model version recorded for this execution
+        required: true
+      anthropic_model_id:
+        description: Exact Anthropic evaluator model id
+        required: true
+        default: claude-sonnet-5
+      anthropic_model_version:
+        description: Exact Anthropic evaluator model version recorded for this execution
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: semantic-model-comparison
+  cancel-in-progress: false
+
+jobs:
+  compare:
+    name: Controlled semantic model comparison
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      OPENAI_EVALUATOR_ENDPOINT: ${{ secrets.OPENAI_EVALUATOR_ENDPOINT }}
+      OPENAI_EVALUATOR_AUTHORIZATION: ${{ secrets.OPENAI_EVALUATOR_AUTHORIZATION }}
+      ANTHROPIC_EVALUATOR_ENDPOINT: ${{ secrets.ANTHROPIC_EVALUATOR_ENDPOINT }}
+      ANTHROPIC_EVALUATOR_AUTHORIZATION: ${{ secrets.ANTHROPIC_EVALUATOR_AUTHORIZATION }}
+      SEMANTIC_EVALUATOR_PROMPT_VERSION: ${{ inputs.prompt_version }}
+      SEMANTIC_EVALUATOR_METHOD_VERSION: ${{ inputs.method_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate evaluator configuration
+        env:
+          OPENAI_MODEL_ID: ${{ inputs.openai_model_id }}
+          OPENAI_MODEL_VERSION: ${{ inputs.openai_model_version }}
+          ANTHROPIC_MODEL_ID: ${{ inputs.anthropic_model_id }}
+          ANTHROPIC_MODEL_VERSION: ${{ inputs.anthropic_model_version }}
+          OBSERVATIONS_FILE: ${{ inputs.observations_file }}
+        run: |
+          test -f "$OBSERVATIONS_FILE"
+          test -n "$OPENAI_EVALUATOR_ENDPOINT"
+          test -n "$ANTHROPIC_EVALUATOR_ENDPOINT"
+          test -n "$OPENAI_MODEL_ID"
+          test -n "$OPENAI_MODEL_VERSION"
+          test -n "$ANTHROPIC_MODEL_ID"
+          test -n "$ANTHROPIC_MODEL_VERSION"
+
+      - name: Build execution matrix
+        env:
+          OPENAI_MODEL_ID: ${{ inputs.openai_model_id }}
+          OPENAI_MODEL_VERSION: ${{ inputs.openai_model_version }}
+          ANTHROPIC_MODEL_ID: ${{ inputs.anthropic_model_id }}
+          ANTHROPIC_MODEL_VERSION: ${{ inputs.anthropic_model_version }}
+        run: |
+          mkdir -p artifacts/f2-val-05
+          cat > artifacts/f2-val-05/semantic-model-matrix.json <<EOF
+          {
+            "schemaVersion": "semantic-model-matrix-0.1",
+            "models": [
+              {
+                "modelId": "${OPENAI_MODEL_ID}",
+                "modelVersion": "${OPENAI_MODEL_VERSION}",
+                "endpointEnv": "OPENAI_EVALUATOR_ENDPOINT",
+                "authorizationEnv": "OPENAI_EVALUATOR_AUTHORIZATION"
+              },
+              {
+                "modelId": "${ANTHROPIC_MODEL_ID}",
+                "modelVersion": "${ANTHROPIC_MODEL_VERSION}",
+                "endpointEnv": "ANTHROPIC_EVALUATOR_ENDPOINT",
+                "authorizationEnv": "ANTHROPIC_EVALUATOR_AUTHORIZATION"
+              }
+            ]
+          }
+          EOF
+
+      - name: Run controlled comparison
+        env:
+          BOT_OBSERVATIONS_FILE: ${{ inputs.observations_file }}
+          SEMANTIC_MODEL_MATRIX_FILE: artifacts/f2-val-05/semantic-model-matrix.json
+        run: npm run evaluation:semantic:compare | tee artifacts/f2-val-05/05-model-comparison.json
+
+      - name: Publish comparison evidence
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: f2-val-05-semantic-model-comparison-${{ github.run_id }}
+          path: artifacts/f2-val-05/
+          if-no-files-found: warn
