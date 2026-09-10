@@ -211,6 +211,59 @@ describe('PlaywrightConversationUi', () => {
     await context.close();
   });
 
+  it('waits for streaming WebSocket traffic to go idle before trusting a partial response as final', async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await page.routeWebSocket('wss://example.test/chat', (serverSide) => {
+      serverSide.onMessage(() => {
+        serverSide.send('chunk:Res');
+        setTimeout(() => serverSide.send('chunk:Respuesta'), 60);
+        setTimeout(() => serverSide.send('done:Respuesta final'), 140);
+      });
+    });
+
+    await page.setContent(`
+      <main>
+        <input aria-label="Mensaje" />
+        <button id="send">Enviar</button>
+        <div data-testid="assistant-message"></div>
+        <script>
+          const socket = new WebSocket('wss://example.test/chat');
+          const responseEl = document.querySelector('[data-testid="assistant-message"]');
+          socket.addEventListener('message', (event) => {
+            const [, text] = event.data.split(':');
+            responseEl.textContent = text;
+          });
+          function trySend() {
+            if (socket.readyState === WebSocket.OPEN) {
+              socket.send('Hi');
+            } else {
+              socket.addEventListener('open', trySend, { once: true });
+            }
+          }
+          document.getElementById('send').addEventListener('click', trySend);
+        </script>
+      </main>
+    `);
+
+    const ui = new PlaywrightConversationUi(page, {
+      composer: { kind: 'role', role: 'textbox', name: 'Mensaje' },
+      sendButton: { kind: 'role', role: 'button', name: 'Enviar' },
+      response: { kind: 'testId', value: 'assistant-message' },
+      responseTimeoutMs: 2_000,
+      pollIntervalMs: 20,
+    });
+
+    // Sin la señal de red, la implementación anterior habría podido devolver
+    // "Res" o "Respuesta" (fragmentos parciales estables durante dos sondeos
+    // consecutivos). Con la señal de red, se espera a que el WebSocket se
+    // calme y se devuelve el mensaje realmente final.
+    await expect(ui.sendMessage('Hi', 2_000)).resolves.toBe('Respuesta final');
+
+    await context.close();
+  });
+
   it('raises a typed response timeout error when no new observable response appears', async () => {
     const context = await browser.newContext();
     const page = await context.newPage();
