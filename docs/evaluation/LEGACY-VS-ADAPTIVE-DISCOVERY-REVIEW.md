@@ -1,10 +1,10 @@
 # Legacy vs Adaptive — revisión técnica de descubrimiento conversacional
 
-**Estado:** REVISIÓN TÉCNICA INTERMEDIA — SIN RESULTADO EMPÍRICO CERRADO  
+**Estado:** REVISIÓN TÉCNICA INTERMEDIA — INTEGRACIÓN FUNCIONAL IMPLEMENTADA, VALIDACIÓN PÚBLICA PENDIENTE  
 **Producto:** `0.1.0`  
 **Rama:** `feat/adaptive-discovery-parallel`  
 **PR:** `#21`  
-**Head revisado:** `d002b2796092a8ce201448aa13366ed1349e2dbf`  
+**Head revisado:** `024aa90384e73818506fca2a74e2f9c5af3e79d4`  
 **Fecha de revisión:** 2026-09-10
 
 ## 1. Objetivo de esta revisión
@@ -29,7 +29,7 @@ Las señales actuales de scoring son:
 - `GEOMETRIC`: posición fija y proximidad a borde inferior/derecho.
 - `ACCESSIBILITY`: controles deshabilitados.
 - `BEHAVIORAL`: estado `readonly`.
-- `DOM_MUTATION`: declarado en el tipo de estrategia, pero actualmente no existe un `MutationObserver`; la adaptación se implementa mediante snapshots antes/después y su diff.
+- `DOM_MUTATION`: declarado en el tipo de estrategia; la implementación observable actual usa snapshots antes/después y su diff, no un `MutationObserver`.
 
 La ejecución está acotada por cantidad de candidatos, cantidad de clicks y tiempo de estabilización.
 
@@ -113,23 +113,32 @@ Conceptualmente:
 
 Esta es la diferencia arquitectónica importante que faltaba en revisiones anteriores.
 
-## 8. Límite funcional actual
+## 8. Estado funcional
 
-El benchmark actual no ejecuta todavía la interacción completa después de descubrir una superficie.
+La etapa que faltaba ya está implementada como una fase separada de verificación Adaptive.
 
-El CLI `browser:discovery:benchmark` registra explícitamente:
+Después de un `CHAT_SURFACE_FOUND`, el sistema:
 
-`CHAT_SURFACE_FOUND = descubrimiento de superficie chat-like`
+1. captura `chat-opened.png`;
+2. reutiliza `PlaywrightChatDiscovery` para resolver composer, send y response en la superficie ya abierta;
+3. reutiliza `PlaywrightConversationUi` para enviar un mensaje no destructivo;
+4. espera una respuesta nueva y estable;
+5. captura `response-received.png`;
+6. registra `send`, `receive` y `conversation` como `CONFIRMED`/`VERIFIED` o `FAILED`.
 
-pero:
+El nuevo CLI es:
 
-`SEND -> RECEIVE = NOT_PERFORMED`
+`npm run browser:discovery:interaction`
 
-Por tanto, una selección Adaptive no equivale todavía a una conversación verificada.
+La salida machine-readable queda en:
 
-Existe una capacidad separada de verificación SEND/RECEIVE en `scripts/run-browser-sut.ts`, pero esa verificación pertenece al flujo browser-SUT existente y actualmente no está integrada como fase final del `ParallelDiscoveryBenchmarkRunner` Adaptive.
+`artifacts/browser-sut/adaptive-interaction-benchmark.json`
 
-Este desacoplamiento es correcto metodológicamente para no convertir semejanza DOM en ground truth, pero deja incompleto el objetivo funcional final del nuevo sistema.
+Las capturas quedan bajo:
+
+`artifacts/browser-sut/adaptive-interaction/<targetId>/`
+
+La integración evita duplicar el motor de conversación existente y mantiene Legacy sin modificaciones funcionales.
 
 ## 9. Ground truth
 
@@ -147,25 +156,22 @@ El repositorio ya contiene `DiscoveryGroundTruth` con:
 
 La implementación correctamente evita inferir ground truth desde el score Adaptive o desde el DOM.
 
-Sin embargo, el corpus actual contiene principalmente objetivos candidatos y no incorpora todavía el etiquetado operacional completo `expectedChat + functionalValidation` requerido para calcular una evaluación empírica cerrada.
+El nuevo benchmark de interacción produce evidencia funcional independiente, pero la matriz TP/FP/TN/FN del corpus completo sigue pendiente de etiquetado operacional de `expectedChat`.
 
-## 10. Benchmark actual
+## 10. Evidencia empírica disponible
 
-El corpus mantenido contiene 23 objetivos públicos entre páginas de demostración y candidatos adicionales.
+La ejecución pública anterior de 23 objetivos produjo:
 
-La batería está configurada para comparar ambos motores sobre el mismo corpus y generar un reporte versionado.
+- Legacy: `CHAT_SURFACE_FOUND = 5/23`, discovery rate `21.7%`.
+- Adaptive: `CHAT_SURFACE_FOUND = 6/23`, discovery rate `26.1%`.
+- Adaptive: `CANDIDATE_FOUND = 12/23`.
+- Adaptive: `NOT_FOUND = 11/23`.
 
-La ejecución más reciente de la rama falló antes de benchmark por TypeScript. Se corrigieron posteriormente los errores observados en:
+Estos resultados demuestran una mejora de cobertura de descubrimiento en esa ejecución, pero no deben interpretarse como superioridad funcional porque SEND → RECEIVE no se había ejecutado todavía en ese benchmark.
 
-- fixture `debug` implícitamente `any`;
-- conversiones `null` versus propiedades opcionales;
-- mutaciones de propiedades `readonly` en la construcción de observaciones.
+La nueva etapa de interacción y screenshots está implementada y tiene fixture automatizado. La validación pública de esa etapa requiere completar la ejecución CI que se disparó con la integración.
 
-El último commit de corrección es `d002b2796092a8ce201448aa13366ed1349e2dbf`.
-
-No existe todavía una ejecución CI asociada a este SHA que permita afirmar que el benchmark funcional ya pasó. Por ello no se incluyen porcentajes ni un ganador Legacy/Adaptive en este documento.
-
-## 11. Problemas técnicos identificados antes del benchmark
+## 11. Problemas técnicos todavía abiertos
 
 ### P1 — restauración de estado limitada
 
@@ -183,9 +189,9 @@ La consulta actual es `button, [role="button"]`, no un modelo completo de elemen
 
 `highConfidenceThreshold` se propaga desde configuración, pero el runner actualmente no usa ese valor para modificar el resultado. El ranking sí usa el score.
 
-### P5 — Adaptive todavía no verifica SEND→RECEIVE
+### P5 — validación pública SEND→RECEIVE pendiente
 
-Es el principal hueco funcional respecto del objetivo final del sistema.
+La capacidad ya está implementada, pero todavía no existe evidencia CI pública cerrada que demuestre qué porcentaje de los seis `CHAT_SURFACE_FOUND` puede completar una conversación y conservar screenshots.
 
 ## 12. Estado frente al objetivo del MVP
 
@@ -199,38 +205,42 @@ Adaptive ya puede:
 - comparar interfaz antes/después;
 - detectar señales de una superficie conversacional;
 - conservar trazas de cada experimento;
+- ejecutar la fase posterior de composer/send/response;
+- confirmar SEND → RECEIVE con evidencia visual;
 - ejecutarse en paralelo con Legacy en contextos aislados.
 
-Adaptive todavía no puede declararse equivalente al ciclo completo de conversación porque falta integrar de forma nativa la etapa:
+Lo que todavía no debe declararse cerrado es la validación empírica a escala del corpus.
 
-`superficie descubierta -> composer -> send -> response -> SEND/RECEIVE VERIFIED`
-
-## 13. Criterio recomendado para el próximo incremento
+## 13. Criterio para el siguiente incremento
 
 No se debe calibrar todavía el scoring por resultados no verificados.
 
-La siguiente evolución debe ser un adaptador de interacción posterior al descubrimiento que:
+Primero se debe ejecutar la nueva batería pública y revisar:
 
-1. reutilice la superficie detectada;
-2. identifique composer de forma contextual;
-3. identifique send o determine la estrategia Enter;
-4. determine un observador de respuesta;
-5. ejecute un mensaje de prueba no destructivo;
-6. confirme SEND;
-7. confirme RECEIVE mediante cambio observable independiente;
-8. registre evidencia primaria;
-9. produzca `VERIFIED` o `FAILED` para ground truth.
+`CHAT_SURFACE_FOUND -> interaction.execution.conversation -> screenshots`
 
-Después de esa integración debe ejecutarse nuevamente el benchmark Legacy vs Adaptive y construir la matriz TP/FP/TN/FN.
+Después:
+
+1. identificar los casos `VERIFIED`;
+2. clasificar los `FAILED` por causa técnica;
+3. revisar las capturas reales;
+4. construir el etiquetado `expectedChat` y `functionalValidation`;
+5. calcular TP/FP/TN/FN, precisión, recall y FPR.
+
+Solo después de esa evidencia se debe decidir si ampliar la cobertura de clickables, corregir restauración de estado o recalibrar scoring.
 
 ## 14. Conclusión
-
-La revisión corrige la interpretación anterior del proyecto.
 
 Adaptive no es un segundo LLM evaluator ni una variante del análisis semántico. Es un motor experimental de descubrimiento web que usa interacción controlada y cambios observables del DOM/UI para encontrar una superficie conversacional desconocida.
 
 Legacy sigue siendo el control estable.
 
-Adaptive representa la vía para reducir la dependencia de locators preconfigurados y afrontar widgets con launchers ocultos, superficies dinámicas e interfaces no uniformes.
+La nueva etapa funcional permite llevar Adaptive desde:
 
-La evidencia actual demuestra la existencia y materialización de esta arquitectura, pero todavía no permite afirmar superioridad empírica ni cierre funcional del MVP. La decisión debe basarse en el benchmark y, especialmente, en validaciones independientes de SEND→RECEIVE.
+`descubrimiento de superficie`
+
+hasta:
+
+`composer -> send -> response -> SEND/RECEIVE VERIFIED -> evidencia visual`
+
+La implementación está presente; el cierre metodológico depende ahora de la ejecución pública y de la evidencia resultante. 
