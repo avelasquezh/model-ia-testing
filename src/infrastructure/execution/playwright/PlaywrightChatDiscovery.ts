@@ -451,9 +451,7 @@ export class PlaywrightChatDiscovery {
     if (!handle) return false;
 
     try {
-      return await right.evaluateAll((nodes, selected) => nodes.some((node) => node === selected), handle, {
-        timeout: ELEMENT_PROBE_TIMEOUT_MS,
-      });
+      return await right.evaluateAll((nodes, selected) => nodes.some((node) => node === selected), handle);
     } catch {
       // A candidate can detach during a reactive re-render; it is not a match anymore.
       return false;
