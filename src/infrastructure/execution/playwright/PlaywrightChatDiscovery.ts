@@ -40,7 +40,7 @@ export class PlaywrightChatDiscovery {
 
       let contexts = this.searchContexts();
       let composerSpecs = this.buildComposerCandidates(contexts);
-      let composer = await this.findFirstVisible(composerSpecs.map((candidate) => candidate.locator));
+      let composer = await this.findFirstEditableVisible(composerSpecs.map((candidate) => candidate.locator));
       await this.recordCandidates(candidates, 'composer', composerSpecs, composer);
 
       if (!composer) {
@@ -58,7 +58,7 @@ export class PlaywrightChatDiscovery {
           if (postOpenCaptcha) throw new Error(`CAPTCHA access gate detected (${postOpenCaptcha.strategy})`);
 
           composerSpecs = this.buildComposerCandidates(contexts);
-          composer = await this.findFirstVisible(composerSpecs.map((candidate) => candidate.locator));
+          composer = await this.findFirstEditableVisible(composerSpecs.map((candidate) => candidate.locator));
           await this.recordCandidates(candidates, 'composer', composerSpecs, composer);
         }
       }
@@ -128,21 +128,18 @@ export class PlaywrightChatDiscovery {
       return priorityDifference !== 0 ? priorityDifference : left.index - right.index;
     });
 
-    const deferredWithElements = [] as Array<{ candidate: ChatCandidateSpec; index: number }>;
-    for (const entry of ranked) {
-      if (await entry.candidate.locator.count() > 0) {
-        deferredWithElements.push(entry);
+    for (const { candidate } of ranked) {
+      if (await candidate.locator.count() === 0) {
+        return {
+          locator: candidate.locator,
+          deferred: true,
+          strategy: candidate.strategy,
+          confidence: candidate.confidence,
+        };
       }
     }
-    const selected = deferredWithElements[0] ?? ranked[0];
-    if (!selected) return { locator: null, deferred: false };
 
-    return {
-      locator: selected.candidate.locator,
-      deferred: true,
-      strategy: selected.candidate.strategy,
-      confidence: selected.candidate.confidence,
-    };
+    return { locator: null, deferred: false };
   }
 
   private deferredResponsePriority(strategy: string): number {
@@ -168,7 +165,7 @@ export class PlaywrightChatDiscovery {
   }> {
     let contexts = this.searchContexts();
     let composerSpecs = [...initialComposerSpecs];
-    let composer = await this.findFirstVisible(composerSpecs.map((candidate) => candidate.locator));
+    let composer = await this.findFirstEditableVisible(composerSpecs.map((candidate) => candidate.locator));
     if (composer) return { composer, composerSpecs, contexts };
 
     const visited = new Set<string>();
@@ -177,7 +174,7 @@ export class PlaywrightChatDiscovery {
     for (let depth = 1; depth <= MAX_TRAVERSAL_DEPTH && clicks < MAX_TRAVERSAL_CLICKS; depth += 1) {
       contexts = this.searchContexts();
       composerSpecs = this.buildComposerCandidates(contexts);
-      composer = await this.findFirstVisible(composerSpecs.map((candidate) => candidate.locator));
+      composer = await this.findFirstEditableVisible(composerSpecs.map((candidate) => candidate.locator));
       await this.recordCandidates(candidates, 'composer', composerSpecs, composer);
       if (composer) return { composer, composerSpecs, contexts };
 
@@ -213,7 +210,7 @@ export class PlaywrightChatDiscovery {
 
           contexts = this.searchContexts();
           composerSpecs = this.buildComposerCandidates(contexts);
-          composer = await this.findFirstVisible(composerSpecs.map((candidate) => candidate.locator));
+          composer = await this.findFirstEditableVisible(composerSpecs.map((candidate) => candidate.locator));
           await this.recordCandidates(candidates, 'composer', composerSpecs, composer);
           if (composer) return { composer, composerSpecs, contexts };
         }
@@ -456,6 +453,36 @@ export class PlaywrightChatDiscovery {
 
   private async findFirstVisible(candidates: Locator[]): Promise<Locator | null> {
     return this.findFirstVisibleExcluding(candidates, []);
+  }
+
+  private async findFirstEditableVisible(candidates: Locator[]): Promise<Locator | null> {
+    return this.findFirstEditableVisibleExcluding(candidates, []);
+  }
+
+  private async findFirstEditableVisibleExcluding(candidates: Locator[], excluded: Array<Locator | null>): Promise<Locator | null> {
+    for (const candidate of candidates) {
+      const count = await candidate.count();
+      for (let index = 0; index < count; index += 1) {
+        const item = candidate.nth(index);
+        if (!await item.isVisible()) continue;
+        if (await this.isExcluded(item, excluded)) continue;
+        if (!await this.isEditable(item)) continue;
+        return item;
+      }
+    }
+    return null;
+  }
+
+  private async isEditable(locator: Locator): Promise<boolean> {
+    return locator.evaluate((node) => {
+      if (node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement) {
+        return !node.disabled && !node.readOnly;
+      }
+      if (node instanceof HTMLElement && node.isContentEditable) {
+        return true;
+      }
+      return false;
+    });
   }
 
   private async findFirstVisibleExcluding(candidates: Locator[], excluded: Array<Locator | null>): Promise<Locator | null> {
