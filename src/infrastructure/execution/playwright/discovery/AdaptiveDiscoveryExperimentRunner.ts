@@ -117,7 +117,14 @@ export class AdaptiveDiscoveryExperimentRunner {
     const fixed = await locator.evaluate((element) => getComputedStyle(element).position === 'fixed').catch(() => false);
     return {
       id: `${tagName}:${ariaLabel ?? text}:${box.x.toFixed(0)}:${box.y.toFixed(0)}`,
-      tagName, role, ariaLabel, text, placeholder, readonly, disabled, fixed,
+      tagName,
+      ...(role ? { role } : {}),
+      ...(ariaLabel ? { ariaLabel } : {}),
+      text,
+      ...(placeholder ? { placeholder } : {}),
+      readonly,
+      disabled,
+      fixed,
       ...(viewport ? { bottomDistance: Math.max(0, viewport.height - (box.y + box.height)), rightDistance: Math.max(0, viewport.width - (box.x + box.width)) } : {}),
     };
   }
