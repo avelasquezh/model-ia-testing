@@ -38,7 +38,7 @@ export async function verifyAdaptiveV2NetworkConversation(
     }
 
     const deadline = startedAt + timeoutMs;
-    let domResponse = '';
+    let domResponse: string | null = null;
     while (Date.now() < deadline) {
       const current = await readResponseState(responseLocator);
       domResponse = findNewResponse(before, current, message);
