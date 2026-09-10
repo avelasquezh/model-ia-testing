@@ -52,10 +52,15 @@ export class PlaywrightConversationUi implements ConversationUi {
 
   public async sendMessage(input: string, timeoutMs: number): Promise<string> {
     const responseLocator = this.locate(this.config.response);
-    const probes: ResponseProbe[] = [{
-      locator: responseLocator,
-      previous: await this.readResponseState(responseLocator),
-    }];
+    const responseState = await this.readResponseState(responseLocator);
+    const probes: ResponseProbe[] = [{ locator: responseLocator, previous: responseState }];
+
+    if (responseState.count === 0) {
+      for (const selector of ['[aria-live]', '[role="log"]', '[role="status"]']) {
+        const locator = this.page.locator(selector);
+        probes.push({ locator, previous: await this.readResponseState(locator) });
+      }
+    }
 
     const composer = this.locate(this.config.composer);
     await composer.fill(input, { timeout: timeoutMs });
@@ -102,21 +107,6 @@ export class PlaywrightConversationUi implements ConversationUi {
     }
   }
 
-  private async discoverFallbackProbes(existing: readonly ResponseProbe[]): Promise<ResponseProbe[]> {
-    const selectors = ['[aria-live]', '[role="log"]', '[role="status"]'];
-    const probes = [...existing];
-
-    for (const selector of selectors) {
-      const locator = this.page.locator(selector);
-      const state = await this.readResponseState(locator);
-      if (state.count > 0 && !probes.some((probe) => probe.locator === locator)) {
-        probes.push({ locator, previous: state });
-      }
-    }
-
-    return probes;
-  }
-
   private async waitForResponse(
     probes: readonly ResponseProbe[],
     input: string,
@@ -124,12 +114,9 @@ export class PlaywrightConversationUi implements ConversationUi {
   ): Promise<string> {
     const deadline = Date.now() + Math.min(timeoutMs, this.responseTimeoutMs);
     const candidates = new Map<Locator, { response: string; polls: number }>();
-    let activeProbes = [...probes];
 
     while (Date.now() < deadline) {
-      activeProbes = await this.discoverFallbackProbes(activeProbes);
-
-      for (const probe of activeProbes) {
+      for (const probe of probes) {
         const current = await this.readResponseState(probe.locator);
         const response = this.findNewResponse(probe.previous, current, input);
         if (!response || this.isTransientResponse(response)) continue;
