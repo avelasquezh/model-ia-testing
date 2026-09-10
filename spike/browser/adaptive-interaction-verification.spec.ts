@@ -25,6 +25,7 @@ test('adaptive interaction verifies send and receive and records screenshots', a
   const evidenceDirectory = testInfo.outputPath('adaptive-interaction');
   const result = await verifyAdaptiveInteraction(page, 'fixture', 'Hello', evidenceDirectory, 5_000);
 
+  expect(result.error ?? 'unknown interaction verification failure').toBeUndefined();
   expect(result.execution.conversation).toBe('VERIFIED');
   expect(result.execution.send).toBe('CONFIRMED');
   expect(result.execution.receive).toBe('CONFIRMED');
