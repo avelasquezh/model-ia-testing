@@ -45,19 +45,36 @@ try {
   for (const target of corpus.targets) {
     const startedAt = Date.now();
     const context = await browser.newContext();
-    const page = await context.newPage();
+    const discoveryPage = await context.newPage();
     try {
-      await page.goto(target.url, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
-      const run = await new AdaptiveDiscoveryExperimentRunner(page, {
+      await discoveryPage.goto(target.url, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
+      const run = await new AdaptiveDiscoveryExperimentRunner(discoveryPage, {
         maxCandidates,
         maxClicks,
         highConfidenceThreshold: 35,
       }).run();
 
       const discovery = run.selected ? 'CHAT_SURFACE_FOUND' : run.experiments.length > 0 ? 'CANDIDATE_FOUND' : 'NOT_FOUND';
-      const interaction = run.selected
-        ? await verifyAdaptiveInteraction(page, target.id, probeMessage, evidenceDirectory, verificationTimeoutMs)
-        : undefined;
+      let interaction: AdaptiveInteractionVerification | undefined;
+
+      if (run.selected) {
+        // Discovery is allowed to mutate the page while probing. Use a new Page
+        // for conversation so no stale locator, frame document or transient UI
+        // created during exploration is reused for the actual interaction.
+        const interactionPage = await context.newPage();
+        try {
+          await interactionPage.goto(target.url, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
+          interaction = await verifyAdaptiveInteraction(
+            interactionPage,
+            target.id,
+            probeMessage,
+            evidenceDirectory,
+            verificationTimeoutMs,
+          );
+        } finally {
+          await interactionPage.close();
+        }
+      }
 
       results.push({
         targetId: target.id,
