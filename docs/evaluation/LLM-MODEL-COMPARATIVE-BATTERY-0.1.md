@@ -45,10 +45,10 @@ Ambos modelos deben recibir exactamente:
 - el mismo `criterionId` y `criterionVersion`;
 - el mismo `promptVersion`;
 - el mismo `methodVersion`;
-- el mismo endpoint lógico del evaluador y configuración equivalente de transporte;
+- configuración de transporte equivalente;
 - el mismo conjunto de casos y repeticiones.
 
-No se permite modificar las observaciones entre modelos.
+No se permite modificar las observaciones entre modelos. Cada modelo puede utilizar un endpoint físico diferente, siempre que ambos representen la misma interfaz semántica externa y la configuración metodológica permanezca controlada.
 
 ## 5. Diseño de casos
 
@@ -62,7 +62,7 @@ La batería mínima contiene exactamente tres clases:
 
 Cada caso requiere al menos dos repeticiones independientes. Para una primera comparación exploratoria se recomienda registrar cinco repeticiones por caso cuando el costo y disponibilidad lo permitan.
 
-La unidad de comparación es `caseId + repetition + turn`.
+La unidad de comparación es `caseId + repetition + turn + conversationId`.
 
 ## 6. Variables que deben permanecer constantes
 
@@ -85,35 +85,55 @@ Estas medidas ya existen en el modelo de repetición y estadísticas del proyect
 
 ## 8. Medidas comparativas
 
-Para cada par de resultados con igual `caseId`, `repetition` y `turn`:
+Para cada par de resultados con igual `caseId`, `repetition`, `turn` y `conversationId`:
 
-1. verificar igualdad de condiciones metodológicas;
+1. verificar alineación de las observaciones;
 2. comprobar si ambos evaluadores producen el mismo `outcome`;
 3. registrar `AGREEMENT` o `DISAGREEMENT`;
 4. conservar el resultado individual de cada modelo y sus `evidenceIds`;
 5. describir diferencias sin atribuir causalidad al modelo salvo que exista evidencia adicional.
 
-Se debe conservar como mínimo una matriz de desacuerdos por combinación de resultados, por ejemplo:
+La comparación automatizada no reemplaza la inspección de los resultados individuales.
+
+No se debe convertir esta comparación en un score global de calidad.
+
+## 9. Ejecución automatizada de la batería
+
+El repositorio ahora incorpora `npm run evaluation:semantic:compare`, que ejecuta la misma observación contra todos los evaluadores definidos en una matriz externa y luego verifica su alineación.
+
+Ejemplo de matriz sin credenciales: `examples/semantic-model-matrix.example.json`.
+
+Variables requeridas:
 
 ```text
-                 Modelo B
-             PASS PARTIAL FAIL INCONCLUSIVE NOT_EVALUABLE
-Modelo A PASS     ·      ·     ·      ·            ·
-         PARTIAL  ·      ·     ·      ·            ·
-         FAIL     ·      ·     ·      ·            ·
-         INCONCLUSIVE
-                  ·      ·     ·      ·            ·
-         NOT_EVALUABLE
-                  ·      ·     ·      ·            ·
+BOT_OBSERVATIONS_FILE=<archivo real de observaciones>
+SEMANTIC_MODEL_MATRIX_FILE=<matriz de modelos>
+SEMANTIC_EVALUATOR_PROMPT_VERSION=<versión del prompt>
+SEMANTIC_EVALUATOR_METHOD_VERSION=AI-METHOD-0.1
 ```
 
-No se debe convertir esta matriz en un score global de calidad.
+La matriz define para cada modelo:
 
-## 9. Ejecución del arnés existente
+```text
+modelId
+modelVersion
+endpointEnv
+authorizationEnv (opcional)
+```
 
-El arnés actual exige un evaluador externo real y un archivo de observaciones que contenga `ALIGNED`, `NOT_ALIGNED` y `AMBIGUOUS`, con al menos dos repeticiones por caso.
+Los endpoints y credenciales permanecen fuera del repositorio. El runner conserva la procedencia del modelo y valida que la respuesta externa preserve criterio, versión metodológica y `evidenceIds`.
 
-Para cada modelo se debe proporcionar externamente:
+Ejecución:
+
+```bash
+npm run evaluation:semantic:compare
+```
+
+El proceso imprime un resultado normalizado con las comparaciones por `caseId`, `repetition`, `turn` y `conversationId`, además de conteos de `AGREEMENT` y `DISAGREEMENT`. La comparación falla explícitamente si un modelo omite una observación o duplica su clave.
+
+## 10. Ejecución del arnés individual
+
+El arnés individual sigue disponible para validar un único evaluador externo:
 
 ```text
 SEMANTIC_EVALUATOR_ENDPOINT=<endpoint externo>
@@ -134,7 +154,7 @@ npm run evaluation:report -- <resultado-normalizado.json>
 
 El resultado debe conservar la procedencia completa y la identidad exacta de `evidenceIds`.
 
-## 10. Evidencia mínima de la batería
+## 11. Evidencia mínima de la batería
 
 Para cada modelo:
 
@@ -155,7 +175,7 @@ Para la comparación:
 
 `05` debe poder reconstruirse a partir de los dos resultados normalizados sin volver a consultar el SUT.
 
-## 11. Criterios de aceptación
+## 12. Criterios de aceptación
 
 La batería puede considerarse ejecutada cuando:
 
@@ -168,7 +188,7 @@ La batería puede considerarse ejecutada cuando:
 - las condiciones metodológicas son comparables;
 - no se genera un score global ni una aceptación/rechazo global del producto.
 
-## 12. Interpretación permitida
+## 13. Interpretación permitida
 
 Ejemplos de conclusiones válidas:
 
@@ -179,12 +199,12 @@ Ejemplos de conclusiones válidas:
 
 No son válidas conclusiones como "el modelo A es mejor" sin una metodología adicional que defina qué significa mejor y cómo se valida.
 
-## 13. Dependencia de evidencia externa
+## 14. Dependencia de evidencia externa
 
 Este documento no constituye por sí mismo ejecución de `F2-VAL-05`. La validación requiere un SUT externo real, observaciones reales y un evaluador semántico externo real, de acuerdo con `F2-VAL-05-EXECUTION-PROTOCOL.md`.
 
 El archivo `examples/bot-observations.example.json` es únicamente ilustrativo y no debe utilizarse como evidencia de ejecución real.
 
-## 14. Siguiente fase
+## 15. Siguiente fase
 
-La siguiente ejecución controlada debe usar un único conjunto de `BotObservation` real y ejecutar la misma batería contra los dos modelos definidos en la matriz. Una vez disponibles ambos resultados, el proyecto puede incorporar una comparación automatizada reutilizable sin modificar el contrato del dominio.
+La implementación de comparación ya está preparada. La siguiente actividad válida es ejecutar el runner con un único `BotObservation` real que cubra `ALIGNED`, `NOT_ALIGNED` y `AMBIGUOUS`, usando al menos dos repeticiones por caso y dos endpoints externos reales. Esa ejecución producirá evidencia para determinar si `F2-VAL-05` puede pasar de PREPARADO a VALIDADO.
