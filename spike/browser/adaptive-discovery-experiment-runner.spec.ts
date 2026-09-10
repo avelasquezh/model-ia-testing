@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { AdaptiveDiscoveryExperimentRunner } from '../../src/infrastructure/execution/playwright/discovery/AdaptiveDiscoveryExperimentRunner.js';
+import type { AdaptiveDiscoveryDebugAttempt } from '../../src/infrastructure/execution/playwright/discovery/AdaptiveDiscoveryExperiment.js';
 
 test('adaptive discovery identifies a launcher by behavioral DOM evidence', async ({ page }) => {
   await page.setContent(`
@@ -38,7 +39,7 @@ test('adaptive discovery does not experiment with unsafe controls', async ({ pag
 test('snapshot normalization ignores dynamic class, id and style changes', async ({ page }) => {
   await page.setContent('<div id="one" class="a" style="color:red">Hello</div>');
   const runner = new AdaptiveDiscoveryExperimentRunner(page);
-  const debug = [];
+  const debug: AdaptiveDiscoveryDebugAttempt[] = [];
   const before = await runner.snapshot(debug, 'SNAPSHOT_BEFORE');
   await page.evaluate(() => {
     const element = document.querySelector('div')!;
