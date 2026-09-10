@@ -32,6 +32,10 @@ jobs:
       - name: Run three-model conversation benchmark
         run: npm run browser:three-model:benchmark
 
+      - name: Print benchmark summary
+        if: always()
+        run: cat artifacts/browser-sut/three-model-conversation-benchmark.json
+
       - name: Publish benchmark evidence
         if: always()
         uses: actions/upload-artifact@v4
