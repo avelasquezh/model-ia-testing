@@ -32,7 +32,12 @@ export async function verifyAdaptiveV2NetworkConversation(
     network.markSend();
 
     if (config.sendButton) {
-      await locatorFromDefinition(page, config.sendButton).click({ timeout: timeoutMs });
+      const sendButton = locatorFromDefinition(page, config.sendButton);
+      if (await sendButton.isEnabled().catch(() => false)) {
+        await sendButton.click({ timeout: timeoutMs });
+      } else {
+        await composer.press('Enter', { timeout: timeoutMs });
+      }
     } else {
       await composer.press('Enter', { timeout: timeoutMs });
     }
