@@ -13,6 +13,10 @@ export type DiscoveryCandidate = {
   readonly ariaLabel?: string;
   readonly text?: string;
   readonly placeholder?: string;
+  readonly href?: string;
+  readonly ariaControls?: string;
+  readonly ariaExpanded?: string;
+  readonly navigationSignal?: boolean;
   readonly readonly?: boolean;
   readonly disabled?: boolean;
   readonly fixed?: boolean;
@@ -47,7 +51,23 @@ export function scoreDiscoveryCandidate(candidate: DiscoveryCandidate): Adaptive
     evidence.push({ strategy: 'STRUCTURAL', signal: 'button-role', weight: 5 });
   }
 
-  const semanticText = [candidate.ariaLabel, candidate.text, candidate.placeholder].filter(Boolean).join(' ');
+  if (candidate.tagName === 'a' && candidate.href) {
+    evidence.push({ strategy: 'STRUCTURAL', signal: 'anchor-navigation', weight: 3 });
+  }
+
+  if (candidate.ariaControls) {
+    evidence.push({ strategy: 'ACCESSIBILITY', signal: 'aria-controls', weight: 8 });
+  }
+
+  if (candidate.ariaExpanded !== undefined) {
+    evidence.push({ strategy: 'BEHAVIORAL', signal: 'aria-expanded', weight: 8 });
+  }
+
+  if (candidate.navigationSignal) {
+    evidence.push({ strategy: 'BEHAVIORAL', signal: 'navigation-event-handler', weight: 5 });
+  }
+
+  const semanticText = [candidate.ariaLabel, candidate.text, candidate.placeholder, candidate.href].filter(Boolean).join(' ');
   if (CHAT_TERMS.test(semanticText)) {
     evidence.push({ strategy: 'SEMANTIC', signal: 'chat-language', weight: 20 });
   }
