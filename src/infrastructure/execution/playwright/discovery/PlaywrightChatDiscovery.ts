@@ -132,15 +132,14 @@ export class PlaywrightChatDiscovery {
       return priorityDifference !== 0 ? priorityDifference : left.index - right.index;
     });
 
-    for (const { candidate } of ranked) {
-      if (await this.safeCount(candidate.locator) === 0) {
-        return {
-          locator: candidate.locator,
-          deferred: true,
-          strategy: candidate.strategy,
-          confidence: candidate.confidence,
-        };
-      }
+    const deferred = ranked[0]?.candidate;
+    if (deferred) {
+      return {
+        locator: deferred.locator,
+        deferred: true,
+        strategy: deferred.strategy,
+        confidence: deferred.confidence,
+      };
     }
 
     return { locator: null, deferred: false };
@@ -465,7 +464,6 @@ export class PlaywrightChatDiscovery {
         await rightHandle.dispose();
       }
     } catch {
-      // A candidate can detach during a reactive re-render; it is not a match anymore.
       return false;
     } finally {
       await leftHandle.dispose();
