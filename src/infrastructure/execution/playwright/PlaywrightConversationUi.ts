@@ -52,12 +52,10 @@ export class PlaywrightConversationUi implements ConversationUi {
 
   public async sendMessage(input: string, timeoutMs: number): Promise<string> {
     const responseLocator = this.locate(this.config.response);
-    const responseLocators = this.buildResponseLocators(responseLocator);
-    const probes: ResponseProbe[] = [];
-
-    for (const locator of responseLocators) {
-      probes.push({ locator, previous: await this.readResponseState(locator) });
-    }
+    const probes: ResponseProbe[] = [{
+      locator: responseLocator,
+      previous: await this.readResponseState(responseLocator),
+    }];
 
     const composer = this.locate(this.config.composer);
     await composer.fill(input, { timeout: timeoutMs });
@@ -88,28 +86,20 @@ export class PlaywrightConversationUi implements ConversationUi {
     }
   }
 
-  private buildResponseLocators(primary: Locator): Locator[] {
-    return [
-      primary,
-      this.page.locator('[aria-live="polite"]'),
-      this.page.locator('[aria-live="assertive"]'),
-      this.page.getByRole('log'),
-      this.page.locator('[data-testid*="message" i]'),
-      this.page.locator('[class*="response" i]'),
-      this.page.locator('[class*="message" i]'),
-    ];
-  }
-
   private async readResponseState(locator: Locator): Promise<ResponseState> {
-    const count = await locator.count();
-    if (count === 0) return { count: 0, values: [] };
+    try {
+      const count = await locator.count();
+      if (count === 0) return { count: 0, values: [] };
 
-    const values: string[] = [];
-    for (let index = 0; index < count; index += 1) {
-      const text = (await locator.nth(index).textContent())?.trim() || '';
-      values.push(text);
+      const values: string[] = [];
+      for (let index = 0; index < count; index += 1) {
+        const text = (await locator.nth(index).textContent())?.trim() || '';
+        values.push(text);
+      }
+      return { count, values };
+    } catch {
+      return { count: 0, values: [] };
     }
-    return { count, values };
   }
 
   private async waitForResponse(
