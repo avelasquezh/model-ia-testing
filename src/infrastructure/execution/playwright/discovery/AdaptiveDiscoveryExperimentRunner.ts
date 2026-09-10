@@ -44,32 +44,19 @@ export class AdaptiveDiscoveryExperimentRunner {
 
     for (const handle of candidates) {
       if (clicksAttempted >= maxClicks) break;
-
       const before = await this.snapshot(debug, 'SNAPSHOT_BEFORE');
       const beforeUrl = this.page.url();
       const clickResult = await this.safeClick(handle, debug);
       if (!clickResult.ok) continue;
       clicksAttempted += 1;
-
       await this.page.waitForTimeout(this.options.settleMs ?? DEFAULT_SETTLE_MS);
       const after = await this.snapshot(debug, 'SNAPSHOT_AFTER');
       const diff = diffUiSnapshots(before, after);
-      const result: DiscoveryExperimentResult = {
-        candidate: handle.candidate,
-        before,
-        after,
-        diff,
-        classification: classifyExperiment(diff),
-      };
+      const result: DiscoveryExperimentResult = { candidate: handle.candidate, before, after, diff, classification: classifyExperiment(diff) };
       experiments.push(result);
-
-      if (result.classification === 'CHAT_SURFACE_CANDIDATE') {
-        return { experiments, selected: result, candidatesConsidered: candidates.length, clicksAttempted, debug };
-      }
-
+      if (result.classification === 'CHAT_SURFACE_CANDIDATE') return { experiments, selected: result, candidatesConsidered: candidates.length, clicksAttempted, debug };
       await this.restoreAfterExperiment(beforeUrl, handle, debug);
     }
-
     return { experiments, candidatesConsidered: candidates.length, clicksAttempted, debug };
   }
 
@@ -77,17 +64,14 @@ export class AdaptiveDiscoveryExperimentRunner {
     const handles: CandidateHandle[] = [];
     const contexts: Array<Page | Frame> = [this.page, ...this.page.frames().filter((frame) => frame !== this.page.mainFrame())];
     const maxCandidates = this.options.maxCandidates ?? DEFAULT_MAX_CANDIDATES;
-
     for (const context of contexts) {
       const interactive = context.locator('button, [role="button"]');
       let rawCount = 0;
-      try {
-        rawCount = await interactive.count();
-      } catch (error) {
+      try { rawCount = await interactive.count(); }
+      catch (error) {
         debug.push({ candidateId: `context:${context.url()}`, score: 0, frameUrl: context.url(), stage: 'COLLECT', action: 'INSPECT', ok: false, error: this.errorMessage(error) });
         continue;
       }
-
       const count = Math.min(rawCount, Math.max(0, maxCandidates - handles.length));
       for (let index = 0; index < count; index += 1) {
         const locator = interactive.nth(index);
@@ -100,7 +84,6 @@ export class AdaptiveDiscoveryExperimentRunner {
         if (handles.length >= maxCandidates) return this.rankCandidates(handles);
       }
     }
-
     return this.rankCandidates(handles);
   }
 
@@ -111,22 +94,17 @@ export class AdaptiveDiscoveryExperimentRunner {
   private async isSafeCandidate(locator: Locator): Promise<boolean> {
     if (!await locator.isVisible().catch(() => false)) return false;
     if (!await locator.isEnabled().catch(() => false)) return false;
-
     const text = await locator.innerText().catch(() => '');
     const ariaLabel = await locator.getAttribute('aria-label').catch(() => null);
     const title = await locator.getAttribute('title').catch(() => null);
-    const fingerprint = `${text} ${ariaLabel ?? ''} ${title ?? ''}`.trim();
-    if (UNSAFE_TERMS.test(fingerprint)) return false;
-
+    if (UNSAFE_TERMS.test(`${text} ${ariaLabel ?? ''} ${title ?? ''}`.trim())) return false;
     const type = await locator.getAttribute('type').catch(() => null);
-    if (type && /submit|reset/i.test(type)) return false;
-    return true;
+    return !(type && /submit|reset/i.test(type));
   }
 
   private async buildCandidate(locator: Locator): Promise<DiscoveryCandidate | null> {
     const box = await locator.boundingBox().catch(() => null);
     if (!box) return null;
-
     const tagName = await locator.evaluate((element) => element.tagName.toLowerCase()).catch(() => 'unknown');
     const explicitRole = await locator.getAttribute('role');
     const role = explicitRole ?? (tagName === 'button' ? 'button' : undefined);
@@ -137,25 +115,14 @@ export class AdaptiveDiscoveryExperimentRunner {
     const disabled = (await locator.getAttribute('disabled')) !== null;
     const viewport = this.page.viewportSize();
     const fixed = await locator.evaluate((element) => getComputedStyle(element).position === 'fixed').catch(() => false);
-
     return {
       id: `${tagName}:${ariaLabel ?? text}:${box.x.toFixed(0)}:${box.y.toFixed(0)}`,
-      tagName,
-      role,
-      ariaLabel,
-      text,
-      placeholder,
-      readonly,
-      disabled,
-      fixed,
-      bottomDistance: viewport ? Math.max(0, viewport.height - (box.y + box.height)) : undefined,
-      rightDistance: viewport ? Math.max(0, viewport.width - (box.x + box.width)) : undefined,
+      tagName, role, ariaLabel, text, placeholder, readonly, disabled, fixed,
+      ...(viewport ? { bottomDistance: Math.max(0, viewport.height - (box.y + box.height)), rightDistance: Math.max(0, viewport.width - (box.x + box.width)) } : {}),
     };
   }
 
-  private candidateKey(candidate: DiscoveryCandidate): string {
-    return `${candidate.tagName}|${candidate.role ?? ''}|${candidate.ariaLabel ?? ''}|${candidate.text ?? ''}|${candidate.id}`;
-  }
+  private candidateKey(candidate: DiscoveryCandidate): string { return `${candidate.tagName}|${candidate.role ?? ''}|${candidate.ariaLabel ?? ''}|${candidate.text ?? ''}|${candidate.id}`; }
 
   private async safeClick(handle: CandidateHandle, debug: AdaptiveDiscoveryDebugAttempt[]): Promise<{ ok: boolean }> {
     const frameUrl = handle.context.url();
@@ -192,31 +159,20 @@ export class AdaptiveDiscoveryExperimentRunner {
   public async snapshot(debug: AdaptiveDiscoveryDebugAttempt[], stage: 'SNAPSHOT_BEFORE' | 'SNAPSHOT_AFTER'): Promise<UiSnapshot> {
     const contexts: Array<Page | Frame> = [this.page, ...this.page.frames().filter((frame) => frame !== this.page.mainFrame())];
     const parts: string[] = [];
-    let visibleElementCount = 0;
-    let dialogCount = 0;
-    let textboxCount = 0;
-    let formCount = 0;
-    let iframeCount = 0;
-
+    let visibleElementCount = 0; let dialogCount = 0; let textboxCount = 0; let formCount = 0; let iframeCount = 0;
     for (const context of contexts) {
       try {
         const html = await context.locator('html').evaluate((element) => {
           const clone = element.cloneNode(true) as HTMLElement;
           clone.querySelectorAll('[id], [class], [style], [data-reactroot], [data-testid]').forEach((node) => {
-            node.removeAttribute('id');
-            node.removeAttribute('class');
-            node.removeAttribute('style');
-            node.removeAttribute('data-reactroot');
-            node.removeAttribute('data-testid');
+            node.removeAttribute('id'); node.removeAttribute('class'); node.removeAttribute('style'); node.removeAttribute('data-reactroot'); node.removeAttribute('data-testid');
           });
           return clone.outerHTML;
         });
-        parts.push(context.url() + '|' + html);
-
+        parts.push(`${context.url()}|${html}`);
         const counts = await context.locator('body').evaluate((body) => {
           const visible = (element: Element): boolean => {
-            const style = window.getComputedStyle(element);
-            const rect = element.getBoundingClientRect();
+            const style = window.getComputedStyle(element); const rect = element.getBoundingClientRect();
             return style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0;
           };
           const elements = Array.from(body.querySelectorAll('*'));
@@ -228,20 +184,13 @@ export class AdaptiveDiscoveryExperimentRunner {
             iframeCount: elements.filter((element) => element.matches('iframe')).filter(visible).length,
           };
         });
-        visibleElementCount += counts.visibleElementCount;
-        dialogCount += counts.dialogCount;
-        textboxCount += counts.textboxCount;
-        formCount += counts.formCount;
-        iframeCount += counts.iframeCount;
+        visibleElementCount += counts.visibleElementCount; dialogCount += counts.dialogCount; textboxCount += counts.textboxCount; formCount += counts.formCount; iframeCount += counts.iframeCount;
       } catch (error) {
         debug.push({ candidateId: `context:${context.url()}`, score: 0, frameUrl: context.url(), stage, action: 'INSPECT', ok: false, error: this.errorMessage(error) });
       }
     }
-
     return { domHash: createHash('sha256').update(parts.join('\n')).digest('hex'), visibleElementCount, dialogCount, textboxCount, formCount, iframeCount };
   }
 
-  private errorMessage(error: unknown): string {
-    return error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-  }
+  private errorMessage(error: unknown): string { return error instanceof Error ? `${error.name}: ${error.message}` : String(error); }
 }
