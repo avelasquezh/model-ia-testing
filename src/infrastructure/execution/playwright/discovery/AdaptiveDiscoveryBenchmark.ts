@@ -1,20 +1,32 @@
 import type { AdaptiveDiscoveryRun } from './AdaptiveDiscoveryExperimentRunner.js';
+import type { AdaptiveInteractionVerification } from './AdaptiveInteractionVerification.js';
 import type { PublicSutFailureReason } from '../PublicSutFailureClassification.js';
 import type { DiscoveryAttemptOutcome, DiscoveryComparisonRecord, DiscoveryComparisonSummary } from './DiscoveryComparison.js';
 
 export type BenchmarkModel = 'LEGACY' | 'ADAPTIVE';
 export type BenchmarkObservation = {
-  readonly model: BenchmarkModel; readonly targetId: string; readonly targetUrl: string;
-  readonly outcome: DiscoveryAttemptOutcome; readonly attempts: number; readonly durationMs: number;
-  readonly failureReason?: PublicSutFailureReason; readonly adaptive?: AdaptiveDiscoveryRun;
+  readonly model: BenchmarkModel;
+  readonly targetId: string;
+  readonly targetUrl: string;
+  readonly outcome: DiscoveryAttemptOutcome;
+  readonly attempts: number;
+  readonly durationMs: number;
+  readonly failureReason?: PublicSutFailureReason;
+  readonly adaptive?: AdaptiveDiscoveryRun;
+  readonly interaction?: AdaptiveInteractionVerification;
 };
 export type PairedBenchmarkOutcome = {
-  readonly targetId: string; readonly targetUrl: string; readonly legacy?: BenchmarkObservation;
-  readonly adaptive?: BenchmarkObservation; readonly winner: 'LEGACY' | 'ADAPTIVE' | 'TIE' | 'INCOMPLETE';
+  readonly targetId: string;
+  readonly targetUrl: string;
+  readonly legacy?: BenchmarkObservation;
+  readonly adaptive?: BenchmarkObservation;
+  readonly winner: 'LEGACY' | 'ADAPTIVE' | 'TIE' | 'INCOMPLETE';
 };
 export type ParallelBenchmarkReport = {
-  readonly schemaVersion: 'adaptive-discovery-benchmark-0.1'; readonly generatedAt: string;
-  readonly observations: readonly BenchmarkObservation[]; readonly comparison: DiscoveryComparisonSummary;
+  readonly schemaVersion: 'adaptive-discovery-benchmark-0.1';
+  readonly generatedAt: string;
+  readonly observations: readonly BenchmarkObservation[];
+  readonly comparison: DiscoveryComparisonSummary;
   readonly paired: readonly PairedBenchmarkOutcome[];
 };
 
