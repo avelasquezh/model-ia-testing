@@ -108,9 +108,9 @@ export class AdaptiveDiscoveryExperimentRunner {
     const tagName = await locator.evaluate((element) => element.tagName.toLowerCase()).catch(() => 'unknown');
     const explicitRole = await locator.getAttribute('role');
     const role = explicitRole ?? (tagName === 'button' ? 'button' : undefined);
-    const ariaLabel = await locator.getAttribute('aria-label');
+    const ariaLabel = await locator.getAttribute('aria-label').catch(() => null) ?? undefined;
     const text = (await locator.innerText().catch(() => '')).trim().slice(0, 160);
-    const placeholder = await locator.getAttribute('placeholder');
+    const placeholder = await locator.getAttribute('placeholder').catch(() => null) ?? undefined;
     const readonly = (await locator.getAttribute('readonly')) !== null;
     const disabled = (await locator.getAttribute('disabled')) !== null;
     const viewport = this.page.viewportSize();
