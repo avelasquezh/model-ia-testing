@@ -31,7 +31,7 @@ export type AdaptiveDiscoveryDebugAttempt = {
   readonly score: number;
   readonly frameUrl: string;
   readonly stage: 'COLLECT' | 'SNAPSHOT_BEFORE' | 'CLICK' | 'SNAPSHOT_AFTER' | 'RESTORE';
-  readonly action: 'INSPECT' | 'CLICK' | 'RESTORE';
+  readonly action: 'INSPECT' | 'CLICK' | 'CLICK_FORCE' | 'RESTORE';
   readonly ok: boolean;
   readonly error?: string;
 };
