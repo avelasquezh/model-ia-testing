@@ -5,6 +5,7 @@
   "description": "Architecture spike for model-ia-testing",
   "type": "module",
   "scripts": {
+    "lint": "eslint src scripts spike playwright.config.ts --max-warnings=0",
     "build": "tsc --noEmit",
     "test": "vitest run",
     "test:bdd": "tsx scripts/test-bdd.ts",
@@ -19,7 +20,7 @@
     "browser:discovery:benchmark": "tsx scripts/run-discovery-benchmark.ts",
     "browser:discovery:interaction": "tsx scripts/run-adaptive-interaction-benchmark.ts",
     "browser:discovery:merge": "tsx scripts/merge-discovery-reports.ts",
-    "test:architecture": "npm run build && npm test && npm run test:bdd && npm run test:browser"
+    "test:architecture": "npm run lint && npm run build && npm test && npm run test:bdd && npm run test:browser"
   },
   "engines": {
     "node": ">=22"
@@ -32,8 +33,10 @@
     "@playwright/test": "^1.55.0",
     "@types/node": "^24.0.0",
     "@types/pg": "^8.15.5",
+    "eslint": "~10.10.0",
     "tsx": "^4.20.0",
     "typescript": "^5.9.2",
+    "typescript-eslint": "~8.70.0",
     "vitest": "^3.2.4"
   }
 }
