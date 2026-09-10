@@ -48,7 +48,7 @@ export async function verifyAdaptiveV2NetworkConversation(
         const finalNetwork = network.correlate();
         const hasInbound = finalNetwork.ordered;
         return {
-          send: finalNetwork.outbound ? 'CONFIRMED' : 'CONFIRMED',
+          send: 'CONFIRMED',
           receive: domResponse || hasInbound ? 'CONFIRMED' : 'FAILED',
           conversation: domResponse || hasInbound ? 'VERIFIED' : 'FAILED',
           network: finalNetwork,
