@@ -2,6 +2,20 @@
 
 **Propósito:** mantener continuidad entre agentes y evitar cambios de dirección durante la implementación del MVP.
 
+## Regla obligatoria de continuidad
+
+`qa` es la **única rama activa de trabajo, integración y validación** mientras exista una tarea en curso. `main` es la rama estable y solo recibe cambios promovidos desde `qa` después de completar pruebas, regresión, revisión de evidencia y quality gates.
+
+**Un agente nuevo no puede iniciar otra tarea por separado mientras exista una tarea activa en `qa`.** Debe primero leer este handoff, `PROJECT-STATUS.md`, los cambios recientes y el estado de CI; después continuará, corregirá o completará la tarea vigente sobre `qa`. No debe crear otra rama funcional para desviar el trabajo ni cambiar de frente sin una decisión explícita y documentada.
+
+Toda tarea debe seguir:
+
+`qa: tarea activa → cambios incrementales → pruebas/regresión → CI/quality gates → revisión de evidencia → main`
+
+La integración de avances realizados en ramas históricas debe ser deliberada. No se permite duplicar una funcionalidad en otra rama y considerarla integrada. Un cambio solo está consolidado cuando sus commits/cambios útiles han sido incorporados a `qa`, validados y posteriormente promovidos a `main`.
+
+Las ramas antiguas o experimentales son únicamente fuentes de recuperación histórica. Una vez reconciliadas y validadas, no deben recibir trabajo nuevo.
+
 ## Objetivo vigente
 
 El producto debe recibir una **URL pública arbitraria** y, sin depender de locators específicos del sitio ni de una UI propia del producto, ser capaz de:
@@ -46,16 +60,9 @@ Métricas de discovery sirven para diagnosticar. La métrica funcional prioritar
 
 ## Estado conocido al iniciar este handoff
 
-La batería Adaptive y el CI están operativos, pero la validación pública todavía no demuestra conversación verificada de forma consistente. La última ejecución estable antes de este handoff registró `verifiedCount = 0` para el benchmark público, con `selectedCount = 4`.
+La batería Adaptive y el CI están operativos, pero la validación pública todavía no demuestra conversación verificada de forma consistente. La última ejecución estable antes de este handoff registró `verifiedCount = 0` para el benchmark público.
 
-Esto implica que el trabajo actual debe concentrarse en:
-
-- reducir falsos positivos de superficies no conversacionales;
-- mantener composer, send y response en el mismo `Page/Frame` donde fue encontrada la conversación;
-- tolerar frames dinámicos que se desprenden durante la exploración sin abortar toda la ejecución;
-- detectar respuestas nuevas respecto al estado previo al envío;
-- conservar la evidencia de la ruta Adaptive;
-- convertir al menos una ruta pública real en `VERIFIED` antes de declarar éxito funcional.
+El trabajo activo continúa concentrado en P0/P1: reducir falsos positivos, mantener composer/send/response en el mismo contexto conversacional, tolerar frames dinámicos y detectar una respuesta nueva posterior al envío.
 
 No se debe ocultar este estado aumentando timeouts sin evidencia causal.
 
@@ -71,9 +78,19 @@ No crear nuevos identificadores `F2-XX` para este trabajo. Clasificar extensione
 
 No declarar éxito por CI verde cuando la evidencia funcional siga en `verifiedCount = 0`.
 
-No cambiar `main` como parte de una implementación experimental. Mantener el trabajo en la rama de la iniciativa hasta contar con evidencia y quality gates satisfactorios.
+No modificar `main` directamente durante una tarea experimental o de validación.
+
+No crear una segunda tarea funcional mientras exista una tarea activa en `qa`.
 
 No ampliar la observación de respuestas a locators globales de la página cuando la conversación ya fue localizada dentro de un frame; la evidencia debe permanecer dentro de la superficie conversacional seleccionada.
+
+## Gobierno de ramas
+
+`qa` es la **fuente única de verdad para la tarea activa**. Todos los agentes que continúen el trabajo deben operar sobre esta rama hasta que el objetivo quede validado o se documente formalmente un cambio de alcance.
+
+`main` recibe únicamente cambios ya validados desde `qa`. Un merge a `main` no sustituye la obligación de conservar la continuidad de la tarea en `qa` hasta que el incremento esté realmente terminado.
+
+Las ramas históricas se pueden consultar para recuperar cambios concretos, pero no deben convertirse nuevamente en líneas de desarrollo paralelas.
 
 ## Orden de prioridad
 
@@ -94,6 +111,8 @@ Cada agente debe terminar dejando explícito:
 - qué parte del flujo end-to-end está demostrada;
 - qué parte continúa fallando;
 - qué evidencia respalda esa conclusión;
-- cuál es el siguiente incremento directamente relacionado con P0/P1.
+- cuál es la siguiente acción de la tarea activa en `qa`.
+
+Si la tarea continúa abierta, el siguiente agente debe continuarla; no debe sustituirla por otra tarea independiente.
 
 Este documento funciona como handoff operativo y complemento de los ADR y requisitos normativos; no los reemplaza.
