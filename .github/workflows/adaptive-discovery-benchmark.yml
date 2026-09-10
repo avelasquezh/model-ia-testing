@@ -21,7 +21,7 @@ permissions:
   contents: read
 
 jobs:
-  benchmark:
+  adaptive-battery:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -39,17 +39,26 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run legacy vs adaptive benchmark
+      - name: Build
+        run: npm run build
+
+      - name: Focused Adaptive Playwright battery
+        run: npx playwright test spike/browser/adaptive-discovery-experiment-runner.spec.ts --reporter=line
+
+      - name: Legacy vs Adaptive public-SUT benchmark
         env:
           DISCOVERY_BENCHMARK_CORPUS_FILE: ${{ inputs.corpus || 'examples/public-sut-discovery-corpus.json' }}
           DISCOVERY_BENCHMARK_TIMEOUT_MS: ${{ inputs.timeout_ms || '30000' }}
+          ADAPTIVE_DISCOVERY_MAX_CANDIDATES: '40'
+          ADAPTIVE_DISCOVERY_MAX_CLICKS: '12'
+          ADAPTIVE_DISCOVERY_THRESHOLD: '35'
         run: npm run browser:discovery:benchmark
 
       - name: Upload benchmark evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: adaptive-discovery-benchmark
+          name: adaptive-discovery-battery
           path: artifacts/browser-sut/adaptive-discovery-benchmark.json
           if-no-files-found: warn
           retention-days: 14
