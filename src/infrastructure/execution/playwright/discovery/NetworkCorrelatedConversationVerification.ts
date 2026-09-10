@@ -1,5 +1,5 @@
 import type { Page, Request, Response, WebSocket } from '@playwright/test';
-import type { PlaywrightConversationUiConfig, PlaywrightLocatorDefinition } from '../PlaywrightConversationUi.js';
+import type { PlaywrightLocatorDefinition } from '../PlaywrightConversationUi.js';
 
 export type NetworkEvidenceKind =
   | 'NETWORK_OUTBOUND_MESSAGE_CANDIDATE'
@@ -25,14 +25,12 @@ export type NetworkCorrelationResult = {
 
 const IGNORED_URL = /analytics|telemetry|collect|tracking|pixel|beacon|google-analytics|doubleclick|sentry/i;
 const MESSAGE_METHODS = new Set(['POST', 'PUT', 'PATCH']);
-const RESPONSE_TYPES = /json|text|event-stream|graphql/i;
 
 export class NetworkConversationEvidence {
   private readonly events: NetworkEvidenceEvent[] = [];
   private sendStartedAt = 0;
   private input = '';
   private readonly requests = new Map<Request, NetworkEvidenceEvent>();
-  private readonly responses = new Map<Response, NetworkEvidenceEvent>();
 
   public constructor(private readonly page: Page) {}
 
@@ -58,7 +56,6 @@ export class NetworkConversationEvidence {
     const orderedEvents = [...this.events].sort((left, right) => left.timestamp - right.timestamp);
     const outboundIndex = orderedEvents.findIndex((event) => event.kind === 'NETWORK_OUTBOUND_MESSAGE_CANDIDATE' && event.timestamp >= this.sendStartedAt);
     const inboundIndex = orderedEvents.findIndex((event, index) => event.kind === 'NETWORK_INBOUND_RESPONSE_CANDIDATE' && index > outboundIndex && event.timestamp >= this.sendStartedAt);
-
     return {
       outbound: outboundIndex >= 0,
       inbound: inboundIndex >= 0,
@@ -72,15 +69,10 @@ export class NetworkConversationEvidence {
     const postData = request.postData() ?? '';
     const matchedInput = Boolean(this.input) && postData.toLowerCase().includes(this.input.toLowerCase());
     const method = request.method().toUpperCase();
-    if (!matchedInput && !MESSAGE_METHODS.has(method)) return;
-
+    if (!matchedInput || !MESSAGE_METHODS.has(method)) return;
     const event: NetworkEvidenceEvent = {
-      kind: 'NETWORK_OUTBOUND_MESSAGE_CANDIDATE',
-      transport: 'HTTP',
-      url: request.url(),
-      method,
-      timestamp: Date.now(),
-      matchedInput,
+      kind: 'NETWORK_OUTBOUND_MESSAGE_CANDIDATE', transport: 'HTTP', url: request.url(), method,
+      timestamp: Date.now(), matchedInput,
     };
     this.requests.set(request, event);
     this.events.push(event);
@@ -88,48 +80,27 @@ export class NetworkConversationEvidence {
 
   private readonly onResponse = (response: Response): void => {
     const request = response.request();
-    if (request.isNavigationRequest() || isIgnoredUrl(response.url())) return;
-    const contentType = response.headers()['content-type'] ?? '';
+    if (request.isNavigationRequest() || isIgnoredUrl(response.url()) || Date.now() < this.sendStartedAt) return;
     const linkedRequest = this.requests.get(request);
-    if (!linkedRequest && !RESPONSE_TYPES.test(contentType)) return;
-    if (Date.now() < this.sendStartedAt) return;
-
-    const event: NetworkEvidenceEvent = {
-      kind: 'NETWORK_INBOUND_RESPONSE_CANDIDATE',
-      transport: 'HTTP',
-      url: response.url(),
-      method: request.method().toUpperCase(),
-      status: response.status(),
-      contentType,
-      timestamp: Date.now(),
-      matchedInput: linkedRequest?.matchedInput ?? false,
-    };
-    this.responses.set(response, event);
-    this.events.push(event);
+    const contentType = response.headers()['content-type'] ?? '';
+    const isEventStream = /event-stream/i.test(contentType);
+    if (!linkedRequest && !isEventStream) return;
+    this.events.push({
+      kind: 'NETWORK_INBOUND_RESPONSE_CANDIDATE', transport: 'HTTP', url: response.url(),
+      method: request.method().toUpperCase(), status: response.status(), contentType,
+      timestamp: Date.now(), matchedInput: linkedRequest?.matchedInput ?? false,
+    });
   };
 
   private readonly onWebSocket = (webSocket: WebSocket): void => {
     if (isIgnoredUrl(webSocket.url())) return;
     webSocket.on('framesent', (payload) => {
-      const matchedInput = payload.toLowerCase().includes(this.input.toLowerCase());
-      if (!matchedInput) return;
-      this.events.push({
-        kind: 'NETWORK_OUTBOUND_MESSAGE_CANDIDATE',
-        transport: 'WEBSOCKET',
-        url: webSocket.url(),
-        timestamp: Date.now(),
-        matchedInput: true,
-      });
+      if (!this.input || !payload.toLowerCase().includes(this.input.toLowerCase())) return;
+      this.events.push({ kind: 'NETWORK_OUTBOUND_MESSAGE_CANDIDATE', transport: 'WEBSOCKET', url: webSocket.url(), timestamp: Date.now(), matchedInput: true });
     });
     webSocket.on('framereceived', () => {
       if (Date.now() < this.sendStartedAt) return;
-      this.events.push({
-        kind: 'NETWORK_INBOUND_RESPONSE_CANDIDATE',
-        transport: 'WEBSOCKET',
-        url: webSocket.url(),
-        timestamp: Date.now(),
-        matchedInput: false,
-      });
+      this.events.push({ kind: 'NETWORK_INBOUND_RESPONSE_CANDIDATE', transport: 'WEBSOCKET', url: webSocket.url(), timestamp: Date.now(), matchedInput: false });
     });
   };
 }
