@@ -3,6 +3,7 @@ import { PlaywrightChatDiscovery } from '../PlaywrightChatDiscovery.js';
 import { classifyPublicSutFailure, type PublicSutFailureReason } from '../PublicSutFailureClassification.js';
 import { AdaptiveDiscoveryExperimentRunner, type AdaptiveDiscoveryRun, type AdaptiveDiscoveryRunnerOptions } from './AdaptiveDiscoveryExperimentRunner.js';
 import type { BenchmarkModel, BenchmarkObservation } from './AdaptiveDiscoveryBenchmark.js';
+import type { AdaptiveDiscoveryDebugAttempt } from './AdaptiveDiscoveryExperiment.js';
 import type { DiscoveryAttemptOutcome } from './DiscoveryComparison.js';
 
 export type DiscoveryBenchmarkTarget = {
@@ -19,11 +20,7 @@ export type DiscoveryBenchmarkRunnerOptions = {
 
 export type DiscoveryBenchmarkRunResult = {
   readonly observations: readonly BenchmarkObservation[];
-  readonly errors: readonly {
-    readonly model: BenchmarkModel;
-    readonly targetId: string;
-    readonly message: string;
-  }[];
+  readonly errors: readonly { readonly model: BenchmarkModel; readonly targetId: string; readonly message: string }[];
 };
 
 export function classifyAdaptiveDiscoveryOutcome(run: Pick<AdaptiveDiscoveryRun, 'selected' | 'experiments'>): DiscoveryAttemptOutcome {
@@ -41,10 +38,7 @@ function failureReason(error: unknown, operation?: string): PublicSutFailureReas
 }
 
 export class ParallelDiscoveryBenchmarkRunner {
-  public constructor(
-    private readonly browser: Browser,
-    private readonly options: DiscoveryBenchmarkRunnerOptions = {},
-  ) {}
+  public constructor(private readonly browser: Browser, private readonly options: DiscoveryBenchmarkRunnerOptions = {}) {}
 
   public async run(targets: readonly DiscoveryBenchmarkTarget[]): Promise<DiscoveryBenchmarkRunResult> {
     const observations: BenchmarkObservation[] = [];
@@ -57,18 +51,14 @@ export class ParallelDiscoveryBenchmarkRunner {
         try {
           const context = await this.browser.newContext();
           page = await context.newPage();
-          await page.goto(target.url, {
-            waitUntil: 'domcontentloaded',
-            timeout: this.options.navigationTimeoutMs ?? 30_000,
-          });
-
+          await page.goto(target.url, { waitUntil: 'domcontentloaded', timeout: this.options.navigationTimeoutMs ?? 30_000 });
           const observation = model === 'LEGACY'
             ? await this.runLegacy(page, target, startedAt)
             : await this.runAdaptive(page, target, startedAt);
           observations.push(observation);
           await context.close();
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
+          const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
           errors.push({ model, targetId: target.id, message });
           observations.push({
             model,
@@ -78,6 +68,7 @@ export class ParallelDiscoveryBenchmarkRunner {
             attempts: 0,
             durationMs: Date.now() - startedAt,
             failureReason: failureReason(error),
+            ...(model === 'ADAPTIVE' ? { adaptive: failedAdaptiveRun(error) } : {}),
           });
           if (page) await page.context().close().catch(() => undefined);
         }
@@ -87,21 +78,10 @@ export class ParallelDiscoveryBenchmarkRunner {
     return { observations, errors };
   }
 
-  private async runLegacy(
-    page: Page,
-    target: DiscoveryBenchmarkTarget,
-    startedAt: number,
-  ): Promise<BenchmarkObservation> {
+  private async runLegacy(page: Page, target: DiscoveryBenchmarkTarget, startedAt: number): Promise<BenchmarkObservation> {
     try {
       const result = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
-      return {
-        model: 'LEGACY',
-        targetId: target.id,
-        targetUrl: target.url,
-        outcome: 'CHAT_SURFACE_FOUND',
-        attempts: result.report.candidates.length,
-        durationMs: Date.now() - startedAt,
-      };
+      return { model: 'LEGACY', targetId: target.id, targetUrl: target.url, outcome: 'CHAT_SURFACE_FOUND', attempts: result.report.candidates.length, durationMs: Date.now() - startedAt };
     } catch (error) {
       const report = error instanceof Error && 'report' in error
         ? (error as Error & { report?: { candidates?: readonly unknown[]; selected?: Record<string, unknown>; errors?: readonly { operation?: string; message?: string }[] } }).report
@@ -120,11 +100,7 @@ export class ParallelDiscoveryBenchmarkRunner {
     }
   }
 
-  private async runAdaptive(
-    page: Page,
-    target: DiscoveryBenchmarkTarget,
-    startedAt: number,
-  ): Promise<BenchmarkObservation> {
+  private async runAdaptive(page: Page, target: DiscoveryBenchmarkTarget, startedAt: number): Promise<BenchmarkObservation> {
     try {
       const run: AdaptiveDiscoveryRun = await new AdaptiveDiscoveryExperimentRunner(page, this.options.adaptive).run();
       return {
@@ -145,7 +121,22 @@ export class ParallelDiscoveryBenchmarkRunner {
         attempts: 0,
         durationMs: Date.now() - startedAt,
         failureReason: failureReason(error),
+        adaptive: failedAdaptiveRun(error),
       };
     }
   }
+}
+
+function failedAdaptiveRun(error: unknown): AdaptiveDiscoveryRun {
+  const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+  const debug: AdaptiveDiscoveryDebugAttempt[] = [{
+    candidateId: 'runner',
+    score: 0,
+    frameUrl: '',
+    stage: 'COLLECT',
+    action: 'INSPECT',
+    ok: false,
+    error: message,
+  }];
+  return { experiments: [], candidatesConsidered: 0, clicksAttempted: 0, debug };
 }
