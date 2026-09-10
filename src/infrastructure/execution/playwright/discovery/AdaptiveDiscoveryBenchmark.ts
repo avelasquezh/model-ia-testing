@@ -3,31 +3,18 @@ import type { PublicSutFailureReason } from '../PublicSutFailureClassification.j
 import type { DiscoveryAttemptOutcome, DiscoveryComparisonRecord, DiscoveryComparisonSummary } from './DiscoveryComparison.js';
 
 export type BenchmarkModel = 'LEGACY' | 'ADAPTIVE';
-
 export type BenchmarkObservation = {
-  readonly model: BenchmarkModel;
-  readonly targetId: string;
-  readonly targetUrl: string;
-  readonly outcome: DiscoveryAttemptOutcome;
-  readonly attempts: number;
-  readonly durationMs: number;
-  readonly failureReason?: PublicSutFailureReason;
-  readonly adaptive?: AdaptiveDiscoveryRun;
+  readonly model: BenchmarkModel; readonly targetId: string; readonly targetUrl: string;
+  readonly outcome: DiscoveryAttemptOutcome; readonly attempts: number; readonly durationMs: number;
+  readonly failureReason?: PublicSutFailureReason; readonly adaptive?: AdaptiveDiscoveryRun;
 };
-
 export type PairedBenchmarkOutcome = {
-  readonly targetId: string;
-  readonly targetUrl: string;
-  readonly legacy?: BenchmarkObservation;
-  readonly adaptive?: BenchmarkObservation;
-  readonly winner: 'LEGACY' | 'ADAPTIVE' | 'TIE' | 'INCOMPLETE';
+  readonly targetId: string; readonly targetUrl: string; readonly legacy?: BenchmarkObservation;
+  readonly adaptive?: BenchmarkObservation; readonly winner: 'LEGACY' | 'ADAPTIVE' | 'TIE' | 'INCOMPLETE';
 };
-
 export type ParallelBenchmarkReport = {
-  readonly schemaVersion: 'adaptive-discovery-benchmark-0.1';
-  readonly generatedAt: string;
-  readonly observations: readonly BenchmarkObservation[];
-  readonly comparison: DiscoveryComparisonSummary;
+  readonly schemaVersion: 'adaptive-discovery-benchmark-0.1'; readonly generatedAt: string;
+  readonly observations: readonly BenchmarkObservation[]; readonly comparison: DiscoveryComparisonSummary;
   readonly paired: readonly PairedBenchmarkOutcome[];
 };
 
@@ -37,39 +24,24 @@ export function toComparisonRecords(observations: readonly BenchmarkObservation[
 
 export function pairBenchmarkObservations(observations: readonly BenchmarkObservation[]): PairedBenchmarkOutcome[] {
   const byTarget = new Map<string, { legacy?: BenchmarkObservation; adaptive?: BenchmarkObservation }>();
-
   for (const observation of observations) {
     const current = byTarget.get(observation.targetId) ?? {};
-    if (observation.model === 'LEGACY') current.legacy = observation;
-    else current.adaptive = observation;
-    byTarget.set(observation.targetId, current);
+    byTarget.set(observation.targetId, observation.model === 'LEGACY' ? { ...current, legacy: observation } : { ...current, adaptive: observation });
   }
-
-  return [...byTarget.entries()].map(([targetId, pair]) => {
-    const targetUrl = pair.legacy?.targetUrl ?? pair.adaptive?.targetUrl ?? '';
-    const result: PairedBenchmarkOutcome = {
-      targetId,
-      targetUrl,
-      winner: compareOutcome(pair.legacy?.outcome, pair.adaptive?.outcome),
-    };
-    if (pair.legacy) result.legacy = pair.legacy;
-    if (pair.adaptive) result.adaptive = pair.adaptive;
-    return result;
-  });
+  return [...byTarget.entries()].map(([targetId, pair]) => ({
+    targetId,
+    targetUrl: pair.legacy?.targetUrl ?? pair.adaptive?.targetUrl ?? '',
+    ...(pair.legacy ? { legacy: pair.legacy } : {}),
+    ...(pair.adaptive ? { adaptive: pair.adaptive } : {}),
+    winner: compareOutcome(pair.legacy?.outcome, pair.adaptive?.outcome),
+  }));
 }
 
 export function buildParallelBenchmarkReport(
-  observations: readonly BenchmarkObservation[],
-  summarize: (records: readonly DiscoveryComparisonRecord[]) => DiscoveryComparisonSummary,
+  observations: readonly BenchmarkObservation[], summarize: (records: readonly DiscoveryComparisonRecord[]) => DiscoveryComparisonSummary,
 ): ParallelBenchmarkReport {
   const records = toComparisonRecords(observations);
-  return {
-    schemaVersion: 'adaptive-discovery-benchmark-0.1',
-    generatedAt: new Date().toISOString(),
-    observations,
-    comparison: summarize(records),
-    paired: pairBenchmarkObservations(observations),
-  };
+  return { schemaVersion: 'adaptive-discovery-benchmark-0.1', generatedAt: new Date().toISOString(), observations, comparison: summarize(records), paired: pairBenchmarkObservations(observations) };
 }
 
 function compareOutcome(legacy: DiscoveryAttemptOutcome | undefined, adaptive: DiscoveryAttemptOutcome | undefined): PairedBenchmarkOutcome['winner'] {
