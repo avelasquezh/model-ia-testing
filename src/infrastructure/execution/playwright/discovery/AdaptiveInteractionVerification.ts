@@ -23,13 +23,19 @@ export async function verifyAdaptiveInteraction(
   await mkdir(targetDirectory, { recursive: true });
   const screenshotPaths: string[] = [];
 
-  const chatOpenedPath = join(targetDirectory, 'chat-opened.png');
-  await page.screenshot({ path: chatOpenedPath, type: 'png', fullPage: false });
-  screenshotPaths.push(chatOpenedPath);
-
   try {
+    // Adaptive discovery may have clicked a launcher or caused iframe navigation.
+    // Start verification from a clean document so no Locator crosses documents.
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: timeoutMs });
+    await page.waitForTimeout(350);
+
     const discovery = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
     const ui = new PlaywrightConversationUi(page, discovery.config);
+
+    const chatOpenedPath = join(targetDirectory, 'chat-opened.png');
+    await page.screenshot({ path: chatOpenedPath, type: 'png', fullPage: false });
+    screenshotPaths.push(chatOpenedPath);
+
     const response = await ui.sendMessage(message, timeoutMs);
 
     const responseReceivedPath = join(targetDirectory, 'response-received.png');
