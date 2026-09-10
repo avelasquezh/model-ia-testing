@@ -18,10 +18,8 @@ test('adaptive discovery identifies a launcher by behavioral DOM evidence', asyn
       });
     </script>
   `);
-
   const runner = new AdaptiveDiscoveryExperimentRunner(page, { maxClicks: 4, settleMs: 0 });
   const result = await runner.run();
-
   expect(result.selected?.classification).toBe('CHAT_SURFACE_CANDIDATE');
   expect(result.selected?.diff.newTextboxes).toBe(1);
   expect(result.selected?.diff.newDialogs).toBe(1);
@@ -34,10 +32,8 @@ test('adaptive discovery does not experiment with unsafe controls', async ({ pag
     <button aria-label="Purchase">Buy</button>
     <button aria-label="Open assistant" style="position:fixed;right:16px;bottom:16px">?</button>
   `);
-
   const runner = new AdaptiveDiscoveryExperimentRunner(page, { maxClicks: 4, settleMs: 0 });
   const result = await runner.run();
-
   expect(result.experiments).toHaveLength(0);
   expect(result.clicksAttempted).toBe(0);
 });
@@ -45,15 +41,13 @@ test('adaptive discovery does not experiment with unsafe controls', async ({ pag
 test('snapshot normalization ignores dynamic class, id and style changes', async ({ page }) => {
   await page.setContent('<div id="one" class="a" style="color:red">Hello</div>');
   const runner = new AdaptiveDiscoveryExperimentRunner(page);
-  const before = await runner.snapshot();
-
+  const before = await runner.snapshot([]);
   await page.evaluate(() => {
     const element = document.querySelector('div')!;
     element.id = 'two';
     element.className = 'b';
     element.setAttribute('style', 'color:blue');
   });
-
-  const after = await runner.snapshot();
+  const after = await runner.snapshot([]);
   expect(after.domHash).toBe(before.domHash);
 });
