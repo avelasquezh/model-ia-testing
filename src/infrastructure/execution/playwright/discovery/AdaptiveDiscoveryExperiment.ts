@@ -26,6 +26,16 @@ export type DiscoveryExperimentResult = {
   readonly classification: 'NO_SIGNAL' | 'INTERESTING' | 'CHAT_SURFACE_CANDIDATE';
 };
 
+export type AdaptiveDiscoveryDebugAttempt = {
+  readonly candidateId: string;
+  readonly score: number;
+  readonly frameUrl: string;
+  readonly stage: 'COLLECT' | 'SNAPSHOT_BEFORE' | 'CLICK' | 'SNAPSHOT_AFTER' | 'RESTORE';
+  readonly action: 'INSPECT' | 'CLICK' | 'RESTORE';
+  readonly ok: boolean;
+  readonly error?: string;
+};
+
 export function diffUiSnapshots(before: UiSnapshot, after: UiSnapshot): UiSnapshotDiff {
   return {
     newVisibleElements: Math.max(0, after.visibleElementCount - before.visibleElementCount),
