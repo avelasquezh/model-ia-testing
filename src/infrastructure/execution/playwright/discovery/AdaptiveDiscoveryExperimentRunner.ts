@@ -1,13 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { Frame, Locator, Page } from '@playwright/test';
 import { scoreDiscoveryCandidate, type AdaptiveCandidateScore, type DiscoveryCandidate } from './AdaptiveDiscovery.js';
-import {
-  classifyExperiment,
-  diffUiSnapshots,
-  type AdaptiveDiscoveryDebugAttempt,
-  type DiscoveryExperimentResult,
-  type UiSnapshot,
-} from './AdaptiveDiscoveryExperiment.js';
+import { classifyExperiment, diffUiSnapshots, type AdaptiveDiscoveryDebugAttempt, type DiscoveryExperimentResult, type UiSnapshot } from './AdaptiveDiscoveryExperiment.js';
 
 const DEFAULT_MAX_CANDIDATES = 40;
 const DEFAULT_MAX_CLICKS = 12;
@@ -39,10 +33,7 @@ type CandidateHandle = {
 const UNSAFE_TERMS = /delete|remove|logout|log out|sign out|purchase|buy|checkout|pay|payment|subscribe|unsubscribe|cancel|confirm|submit order|eliminar|borrar|cerrar sesión|comprar|pagar|suscribir|cancelar/i;
 
 export class AdaptiveDiscoveryExperimentRunner {
-  public constructor(
-    private readonly page: Page,
-    private readonly options: AdaptiveDiscoveryRunnerOptions = {},
-  ) {}
+  public constructor(private readonly page: Page, private readonly options: AdaptiveDiscoveryRunnerOptions = {}) {}
 
   public async run(): Promise<AdaptiveDiscoveryRun> {
     const debug: AdaptiveDiscoveryDebugAttempt[] = [];
@@ -50,19 +41,18 @@ export class AdaptiveDiscoveryExperimentRunner {
     const experiments: DiscoveryExperimentResult[] = [];
     let clicksAttempted = 0;
     const maxClicks = this.options.maxClicks ?? DEFAULT_MAX_CLICKS;
-    const highConfidenceThreshold = this.options.highConfidenceThreshold ?? HIGH_CONFIDENCE_THRESHOLD;
 
     for (const handle of candidates) {
       if (clicksAttempted >= maxClicks) break;
 
-      const before = await this.snapshot(debug);
+      const before = await this.snapshot(debug, 'SNAPSHOT_BEFORE');
       const beforeUrl = this.page.url();
       const clickResult = await this.safeClick(handle, debug);
       if (!clickResult.ok) continue;
       clicksAttempted += 1;
 
       await this.page.waitForTimeout(this.options.settleMs ?? DEFAULT_SETTLE_MS);
-      const after = await this.snapshot(debug);
+      const after = await this.snapshot(debug, 'SNAPSHOT_AFTER');
       const diff = diffUiSnapshots(before, after);
       const result: DiscoveryExperimentResult = {
         candidate: handle.candidate,
@@ -80,7 +70,6 @@ export class AdaptiveDiscoveryExperimentRunner {
       await this.restoreAfterExperiment(beforeUrl, handle, debug);
     }
 
-    void highConfidenceThreshold;
     return { experiments, candidatesConsidered: candidates.length, clicksAttempted, debug };
   }
 
@@ -95,15 +84,7 @@ export class AdaptiveDiscoveryExperimentRunner {
       try {
         rawCount = await interactive.count();
       } catch (error) {
-        debug.push({
-          candidateId: `context:${context.url()}`,
-          score: 0,
-          frameUrl: context.url(),
-          stage: 'COLLECT',
-          action: 'INSPECT',
-          ok: false,
-          error: this.errorMessage(error),
-        });
+        debug.push({ candidateId: `context:${context.url()}`, score: 0, frameUrl: context.url(), stage: 'COLLECT', action: 'INSPECT', ok: false, error: this.errorMessage(error) });
         continue;
       }
 
@@ -115,14 +96,7 @@ export class AdaptiveDiscoveryExperimentRunner {
         if (!candidate) continue;
         const scored = scoreDiscoveryCandidate(candidate);
         handles.push({ locator, context, candidate: scored, key: this.candidateKey(candidate) });
-        debug.push({
-          candidateId: scored.candidateId,
-          score: scored.score,
-          frameUrl: context.url(),
-          stage: 'COLLECT',
-          action: 'INSPECT',
-          ok: true,
-        });
+        debug.push({ candidateId: scored.candidateId, score: scored.score, frameUrl: context.url(), stage: 'COLLECT', action: 'INSPECT', ok: true });
         if (handles.length >= maxCandidates) return this.rankCandidates(handles);
       }
     }
@@ -191,23 +165,31 @@ export class AdaptiveDiscoveryExperimentRunner {
       await handle.locator.click({ timeout: 3_000, noWaitAfter: true });
       debug.push({ candidateId, score: handle.candidate.score, frameUrl, stage: 'CLICK', action: 'CLICK', ok: true });
       return { ok: true };
-    } catch (error) {
-      debug.push({ candidateId, score: handle.candidate.score, frameUrl, stage: 'CLICK', action: 'CLICK', ok: false, error: this.errorMessage(error) });
-      return { ok: false };
+    } catch (firstError) {
+      debug.push({ candidateId, score: handle.candidate.score, frameUrl, stage: 'CLICK', action: 'CLICK', ok: false, error: this.errorMessage(firstError) });
+      try {
+        await handle.locator.scrollIntoViewIfNeeded({ timeout: 1_000 });
+        await handle.locator.click({ timeout: 2_000, force: true, noWaitAfter: true });
+        debug.push({ candidateId, score: handle.candidate.score, frameUrl, stage: 'CLICK', action: 'CLICK_FORCE', ok: true });
+        return { ok: true };
+      } catch (forceError) {
+        debug.push({ candidateId, score: handle.candidate.score, frameUrl, stage: 'CLICK', action: 'CLICK_FORCE', ok: false, error: this.errorMessage(forceError) });
+        return { ok: false };
+      }
     }
   }
 
   private async restoreAfterExperiment(beforeUrl: string, handle: CandidateHandle, debug: AdaptiveDiscoveryDebugAttempt[]): Promise<void> {
     if (this.page.url() === beforeUrl) return;
     try {
-      debug.push({ candidateId: handle.candidate.candidateId, score: handle.candidate.score, frameUrl: handle.context.url(), stage: 'RESTORE', action: 'RESTORE', ok: false, error: 'URL_CHANGED_RELOAD' });
+      debug.push({ candidateId: handle.candidate.candidateId, score: handle.candidate.score, frameUrl: handle.context.url(), stage: 'RESTORE', action: 'RESTORE', ok: true });
       await this.page.goto(beforeUrl, { waitUntil: 'domcontentloaded', timeout: 8_000 });
     } catch (error) {
       debug.push({ candidateId: handle.candidate.candidateId, score: handle.candidate.score, frameUrl: handle.context.url(), stage: 'RESTORE', action: 'RESTORE', ok: false, error: this.errorMessage(error) });
     }
   }
 
-  public async snapshot(debug?: AdaptiveDiscoveryDebugAttempt[]): Promise<UiSnapshot> {
+  public async snapshot(debug: AdaptiveDiscoveryDebugAttempt[], stage: 'SNAPSHOT_BEFORE' | 'SNAPSHOT_AFTER'): Promise<UiSnapshot> {
     const contexts: Array<Page | Frame> = [this.page, ...this.page.frames().filter((frame) => frame !== this.page.mainFrame())];
     const parts: string[] = [];
     let visibleElementCount = 0;
@@ -252,18 +234,11 @@ export class AdaptiveDiscoveryExperimentRunner {
         formCount += counts.formCount;
         iframeCount += counts.iframeCount;
       } catch (error) {
-        debug?.push({ candidateId: `context:${context.url()}`, score: 0, frameUrl: context.url(), stage: 'SNAPSHOT_AFTER', action: 'INSPECT', ok: false, error: this.errorMessage(error) });
+        debug.push({ candidateId: `context:${context.url()}`, score: 0, frameUrl: context.url(), stage, action: 'INSPECT', ok: false, error: this.errorMessage(error) });
       }
     }
 
-    return {
-      domHash: createHash('sha256').update(parts.join('\n')).digest('hex'),
-      visibleElementCount,
-      dialogCount,
-      textboxCount,
-      formCount,
-      iframeCount,
-    };
+    return { domHash: createHash('sha256').update(parts.join('\n')).digest('hex'), visibleElementCount, dialogCount, textboxCount, formCount, iframeCount };
   }
 
   private errorMessage(error: unknown): string {
