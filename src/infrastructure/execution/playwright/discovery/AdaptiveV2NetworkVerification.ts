@@ -1,0 +1,108 @@
+import type { Page } from '@playwright/test';
+import type { PlaywrightConversationUiConfig } from '../PlaywrightConversationUi.js';
+import { locatorFromDefinition, NetworkConversationEvidence, type NetworkCorrelationResult } from './NetworkCorrelatedConversationVerification.js';
+
+export type AdaptiveV2Verification = {
+  readonly send: 'CONFIRMED' | 'FAILED';
+  readonly receive: 'CONFIRMED' | 'FAILED';
+  readonly conversation: 'VERIFIED' | 'FAILED';
+  readonly network: NetworkCorrelationResult;
+  readonly domResponseObserved: boolean;
+  readonly responseLength?: number;
+  readonly error?: string;
+};
+
+type ResponseState = { readonly count: number; readonly values: readonly string[] };
+
+export async function verifyAdaptiveV2NetworkConversation(
+  page: Page,
+  config: PlaywrightConversationUiConfig,
+  message: string,
+  timeoutMs: number,
+): Promise<AdaptiveV2Verification> {
+  const network = new NetworkConversationEvidence(page);
+  const responseLocator = locatorFromDefinition(page, config.response);
+  const before = await readResponseState(responseLocator);
+  const startedAt = Date.now();
+
+  try {
+    network.start(message);
+    const composer = locatorFromDefinition(page, config.composer);
+    await composer.fill(message, { timeout: timeoutMs });
+    network.markSend();
+
+    if (config.sendButton) {
+      await locatorFromDefinition(page, config.sendButton).click({ timeout: timeoutMs });
+    } else {
+      await composer.press('Enter', { timeout: timeoutMs });
+    }
+
+    const deadline = startedAt + timeoutMs;
+    let domResponse = '';
+    while (Date.now() < deadline) {
+      const current = await readResponseState(responseLocator);
+      domResponse = findNewResponse(before, current, message);
+      const correlation = network.correlate();
+      if (domResponse || correlation.ordered) {
+        network.stop();
+        const finalNetwork = network.correlate();
+        const hasInbound = finalNetwork.ordered;
+        return {
+          send: finalNetwork.outbound ? 'CONFIRMED' : 'CONFIRMED',
+          receive: domResponse || hasInbound ? 'CONFIRMED' : 'FAILED',
+          conversation: domResponse || hasInbound ? 'VERIFIED' : 'FAILED',
+          network: finalNetwork,
+          domResponseObserved: Boolean(domResponse),
+          ...(domResponse ? { responseLength: domResponse.length } : {}),
+        };
+      }
+      await page.waitForTimeout(100);
+    }
+
+    network.stop();
+    const finalNetwork = network.correlate();
+    return {
+      send: finalNetwork.outbound ? 'CONFIRMED' : 'FAILED',
+      receive: finalNetwork.inbound ? 'CONFIRMED' : 'FAILED',
+      conversation: finalNetwork.ordered ? 'VERIFIED' : 'FAILED',
+      network: finalNetwork,
+      domResponseObserved: false,
+      error: 'Timed out waiting for correlated conversation evidence',
+    };
+  } catch (error) {
+    network.stop();
+    const finalNetwork = network.correlate();
+    return {
+      send: finalNetwork.outbound ? 'CONFIRMED' : 'FAILED',
+      receive: finalNetwork.inbound ? 'CONFIRMED' : 'FAILED',
+      conversation: finalNetwork.ordered ? 'VERIFIED' : 'FAILED',
+      network: finalNetwork,
+      domResponseObserved: false,
+      error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+    };
+  }
+}
+
+async function readResponseState(locator: ReturnType<typeof locatorFromDefinition>): Promise<ResponseState> {
+  try {
+    const count = await locator.count();
+    const values: string[] = [];
+    for (let index = 0; index < count; index += 1) {
+      values.push((await locator.nth(index).textContent())?.trim() ?? '');
+    }
+    return { count, values };
+  } catch {
+    return { count: 0, values: [] };
+  }
+}
+
+function findNewResponse(previous: ResponseState, current: ResponseState, input: string): string | null {
+  const previousValues = new Set(previous.values.filter(Boolean));
+  const normalizedInput = input.trim();
+  for (const value of current.values) {
+    const normalized = value.trim();
+    if (!normalized || normalized === normalizedInput) continue;
+    if (!previousValues.has(normalized)) return normalized;
+  }
+  return null;
+}
