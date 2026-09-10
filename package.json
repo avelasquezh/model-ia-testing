@@ -13,6 +13,7 @@
     "evidence:viewer": "tsx src/infrastructure/evidence/serve-live-evidence.ts",
     "db:migrate": "tsx scripts/migrate.ts",
     "evaluation:semantic:live": "tsx scripts/run-live-semantic-evaluator.ts",
+    "evaluation:semantic:compare": "tsx scripts/run-semantic-model-comparison.ts",
     "evaluation:report": "tsx scripts/render-evaluation-report.ts",
     "browser:sut": "tsx scripts/run-browser-sut.ts",
     "browser:discovery:run": "tsx scripts/run-public-sut-discovery.ts",
