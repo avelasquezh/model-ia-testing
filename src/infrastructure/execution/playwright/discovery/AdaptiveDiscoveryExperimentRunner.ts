@@ -1,7 +1,13 @@
 import { createHash } from 'node:crypto';
 import type { Frame, Locator, Page } from '@playwright/test';
 import { scoreDiscoveryCandidate, type AdaptiveCandidateScore, type DiscoveryCandidate } from './AdaptiveDiscovery.js';
-import { classifyExperiment, diffUiSnapshots, type DiscoveryExperimentResult, type UiSnapshot } from './AdaptiveDiscoveryExperiment.js';
+import {
+  classifyExperiment,
+  diffUiSnapshots,
+  type AdaptiveDiscoveryDebugAttempt,
+  type DiscoveryExperimentResult,
+  type UiSnapshot,
+} from './AdaptiveDiscoveryExperiment.js';
 
 const DEFAULT_MAX_CANDIDATES = 40;
 const DEFAULT_MAX_CLICKS = 12;
@@ -20,10 +26,12 @@ export type AdaptiveDiscoveryRun = {
   readonly selected?: DiscoveryExperimentResult;
   readonly candidatesConsidered: number;
   readonly clicksAttempted: number;
+  readonly debug: readonly AdaptiveDiscoveryDebugAttempt[];
 };
 
 type CandidateHandle = {
   readonly locator: Locator;
+  readonly context: Page | Frame;
   readonly candidate: AdaptiveCandidateScore;
   readonly key: string;
 };
@@ -37,7 +45,8 @@ export class AdaptiveDiscoveryExperimentRunner {
   ) {}
 
   public async run(): Promise<AdaptiveDiscoveryRun> {
-    const candidates = await this.collectCandidates();
+    const debug: AdaptiveDiscoveryDebugAttempt[] = [];
+    const candidates = await this.collectCandidates(debug);
     const experiments: DiscoveryExperimentResult[] = [];
     let clicksAttempted = 0;
     const maxClicks = this.options.maxClicks ?? DEFAULT_MAX_CLICKS;
@@ -46,22 +55,14 @@ export class AdaptiveDiscoveryExperimentRunner {
     for (const handle of candidates) {
       if (clicksAttempted >= maxClicks) break;
 
-      // The score is a ranking signal, not an eligibility gate. A low-scoring
-      // candidate can still be the actual launcher on an unfamiliar SUT. The
-      // behavioral experiment is what decides whether the candidate is useful.
-      // Keep the threshold available as evidence metadata without preventing
-      // exploration of candidates below it.
-      const isHighConfidence = handle.candidate.score >= highConfidenceThreshold;
-      void isHighConfidence;
-
-      const before = await this.snapshot();
+      const before = await this.snapshot(debug);
       const beforeUrl = this.page.url();
-      const clicked = await this.safeClick(handle.locator);
-      if (!clicked) continue;
+      const clickResult = await this.safeClick(handle, debug);
+      if (!clickResult.ok) continue;
       clicksAttempted += 1;
 
       await this.page.waitForTimeout(this.options.settleMs ?? DEFAULT_SETTLE_MS);
-      const after = await this.snapshot();
+      const after = await this.snapshot(debug);
       const diff = diffUiSnapshots(before, after);
       const result: DiscoveryExperimentResult = {
         candidate: handle.candidate,
@@ -73,29 +74,55 @@ export class AdaptiveDiscoveryExperimentRunner {
       experiments.push(result);
 
       if (result.classification === 'CHAT_SURFACE_CANDIDATE') {
-        return { experiments, selected: result, candidatesConsidered: candidates.length, clicksAttempted };
+        return { experiments, selected: result, candidatesConsidered: candidates.length, clicksAttempted, debug };
       }
 
-      await this.restoreAfterExperiment(beforeUrl);
+      await this.restoreAfterExperiment(beforeUrl, handle, debug);
     }
 
-    return { experiments, candidatesConsidered: candidates.length, clicksAttempted };
+    void highConfidenceThreshold;
+    return { experiments, candidatesConsidered: candidates.length, clicksAttempted, debug };
   }
 
-  private async collectCandidates(): Promise<CandidateHandle[]> {
+  private async collectCandidates(debug: AdaptiveDiscoveryDebugAttempt[]): Promise<CandidateHandle[]> {
     const handles: CandidateHandle[] = [];
     const contexts: Array<Page | Frame> = [this.page, ...this.page.frames().filter((frame) => frame !== this.page.mainFrame())];
     const maxCandidates = this.options.maxCandidates ?? DEFAULT_MAX_CANDIDATES;
 
     for (const context of contexts) {
       const interactive = context.locator('button, [role="button"]');
-      const count = Math.min(await interactive.count(), maxCandidates - handles.length);
+      let rawCount = 0;
+      try {
+        rawCount = await interactive.count();
+      } catch (error) {
+        debug.push({
+          candidateId: `context:${context.url()}`,
+          score: 0,
+          frameUrl: context.url(),
+          stage: 'COLLECT',
+          action: 'INSPECT',
+          ok: false,
+          error: this.errorMessage(error),
+        });
+        continue;
+      }
+
+      const count = Math.min(rawCount, Math.max(0, maxCandidates - handles.length));
       for (let index = 0; index < count; index += 1) {
         const locator = interactive.nth(index);
         if (!await this.isSafeCandidate(locator)) continue;
         const candidate = await this.buildCandidate(locator);
         if (!candidate) continue;
-        handles.push({ locator, candidate: scoreDiscoveryCandidate(candidate), key: this.candidateKey(candidate) });
+        const scored = scoreDiscoveryCandidate(candidate);
+        handles.push({ locator, context, candidate: scored, key: this.candidateKey(candidate) });
+        debug.push({
+          candidateId: scored.candidateId,
+          score: scored.score,
+          frameUrl: context.url(),
+          stage: 'COLLECT',
+          action: 'INSPECT',
+          ok: true,
+        });
         if (handles.length >= maxCandidates) return this.rankCandidates(handles);
       }
     }
@@ -156,54 +183,90 @@ export class AdaptiveDiscoveryExperimentRunner {
     return `${candidate.tagName}|${candidate.role ?? ''}|${candidate.ariaLabel ?? ''}|${candidate.text ?? ''}|${candidate.id}`;
   }
 
-  private async safeClick(locator: Locator): Promise<boolean> {
+  private async safeClick(handle: CandidateHandle, debug: AdaptiveDiscoveryDebugAttempt[]): Promise<{ ok: boolean }> {
+    const frameUrl = handle.context.url();
+    const candidateId = handle.candidate.candidateId;
     try {
-      await locator.scrollIntoViewIfNeeded({ timeout: 1_500 });
-      await locator.click({ timeout: 3_000, noWaitAfter: true });
-      return true;
-    } catch {
-      return false;
+      await handle.locator.scrollIntoViewIfNeeded({ timeout: 1_500 });
+      await handle.locator.click({ timeout: 3_000, noWaitAfter: true });
+      debug.push({ candidateId, score: handle.candidate.score, frameUrl, stage: 'CLICK', action: 'CLICK', ok: true });
+      return { ok: true };
+    } catch (error) {
+      debug.push({ candidateId, score: handle.candidate.score, frameUrl, stage: 'CLICK', action: 'CLICK', ok: false, error: this.errorMessage(error) });
+      return { ok: false };
     }
   }
 
-  private async restoreAfterExperiment(beforeUrl: string): Promise<void> {
-    if (this.page.url() !== beforeUrl) {
+  private async restoreAfterExperiment(beforeUrl: string, handle: CandidateHandle, debug: AdaptiveDiscoveryDebugAttempt[]): Promise<void> {
+    if (this.page.url() === beforeUrl) return;
+    try {
+      debug.push({ candidateId: handle.candidate.candidateId, score: handle.candidate.score, frameUrl: handle.context.url(), stage: 'RESTORE', action: 'RESTORE', ok: false, error: 'URL_CHANGED_RELOAD' });
+      await this.page.goto(beforeUrl, { waitUntil: 'domcontentloaded', timeout: 8_000 });
+    } catch (error) {
+      debug.push({ candidateId: handle.candidate.candidateId, score: handle.candidate.score, frameUrl: handle.context.url(), stage: 'RESTORE', action: 'RESTORE', ok: false, error: this.errorMessage(error) });
+    }
+  }
+
+  public async snapshot(debug?: AdaptiveDiscoveryDebugAttempt[]): Promise<UiSnapshot> {
+    const contexts: Array<Page | Frame> = [this.page, ...this.page.frames().filter((frame) => frame !== this.page.mainFrame())];
+    const parts: string[] = [];
+    let visibleElementCount = 0;
+    let dialogCount = 0;
+    let textboxCount = 0;
+    let formCount = 0;
+    let iframeCount = 0;
+
+    for (const context of contexts) {
       try {
-        await this.page.goto(beforeUrl, { waitUntil: 'domcontentloaded', timeout: 8_000 });
-      } catch {
-        // A failed restore is evidence for the caller; the bounded run simply stops using this page state.
+        const html = await context.locator('html').evaluate((element) => {
+          const clone = element.cloneNode(true) as HTMLElement;
+          clone.querySelectorAll('[id], [class], [style], [data-reactroot], [data-testid]').forEach((node) => {
+            node.removeAttribute('id');
+            node.removeAttribute('class');
+            node.removeAttribute('style');
+            node.removeAttribute('data-reactroot');
+            node.removeAttribute('data-testid');
+          });
+          return clone.outerHTML;
+        });
+        parts.push(context.url() + '|' + html);
+
+        const counts = await context.locator('body').evaluate((body) => {
+          const visible = (element: Element): boolean => {
+            const style = window.getComputedStyle(element);
+            const rect = element.getBoundingClientRect();
+            return style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0;
+          };
+          const elements = Array.from(body.querySelectorAll('*'));
+          return {
+            visibleElementCount: elements.filter(visible).length,
+            dialogCount: elements.filter((element) => element.matches('[role="dialog"], dialog')).filter(visible).length,
+            textboxCount: elements.filter((element) => element.matches('textarea, input:not([type="hidden"]), [contenteditable="true"], [role="textbox"]')).filter(visible).length,
+            formCount: elements.filter((element) => element.matches('form')).filter(visible).length,
+            iframeCount: elements.filter((element) => element.matches('iframe')).filter(visible).length,
+          };
+        });
+        visibleElementCount += counts.visibleElementCount;
+        dialogCount += counts.dialogCount;
+        textboxCount += counts.textboxCount;
+        formCount += counts.formCount;
+        iframeCount += counts.iframeCount;
+      } catch (error) {
+        debug?.push({ candidateId: `context:${context.url()}`, score: 0, frameUrl: context.url(), stage: 'SNAPSHOT_AFTER', action: 'INSPECT', ok: false, error: this.errorMessage(error) });
       }
     }
+
+    return {
+      domHash: createHash('sha256').update(parts.join('\n')).digest('hex'),
+      visibleElementCount,
+      dialogCount,
+      textboxCount,
+      formCount,
+      iframeCount,
+    };
   }
 
-  public async snapshot(): Promise<UiSnapshot> {
-    const html = await this.page.locator('html').evaluate((element) => {
-      const clone = element.cloneNode(true) as HTMLElement;
-      clone.querySelectorAll('[id], [class], [style], [data-reactroot], [data-testid]').forEach((node) => {
-        node.removeAttribute('id');
-        node.removeAttribute('class');
-        node.removeAttribute('style');
-        node.removeAttribute('data-reactroot');
-        node.removeAttribute('data-testid');
-      });
-      return clone.outerHTML;
-    });
-    const counts = await this.page.locator('body').evaluate((body) => {
-      const visible = (element: Element): boolean => {
-        const style = window.getComputedStyle(element);
-        const rect = element.getBoundingClientRect();
-        return style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0;
-      };
-      const elements = Array.from(body.querySelectorAll('*'));
-      return {
-        visibleElementCount: elements.filter(visible).length,
-        dialogCount: elements.filter((element) => element.matches('[role="dialog"], dialog')).filter(visible).length,
-        textboxCount: elements.filter((element) => element.matches('textarea, input:not([type="hidden"]), [contenteditable="true"], [role="textbox"]')).filter(visible).length,
-        formCount: elements.filter((element) => element.matches('form')).filter(visible).length,
-        iframeCount: elements.filter((element) => element.matches('iframe')).filter(visible).length,
-      };
-    });
-
-    return { domHash: createHash('sha256').update(html).digest('hex'), ...counts };
+  private errorMessage(error: unknown): string {
+    return error instanceof Error ? `${error.name}: ${error.message}` : String(error);
   }
 }
