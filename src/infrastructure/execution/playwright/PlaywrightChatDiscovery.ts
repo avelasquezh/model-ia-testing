@@ -128,18 +128,21 @@ export class PlaywrightChatDiscovery {
       return priorityDifference !== 0 ? priorityDifference : left.index - right.index;
     });
 
-    for (const { candidate } of ranked) {
-      if (await candidate.locator.count() === 0) {
-        return {
-          locator: candidate.locator,
-          deferred: true,
-          strategy: candidate.strategy,
-          confidence: candidate.confidence,
-        };
+    const deferredWithElements = [] as Array<{ candidate: ChatCandidateSpec; index: number }>;
+    for (const entry of ranked) {
+      if (await entry.candidate.locator.count() > 0) {
+        deferredWithElements.push(entry);
       }
     }
+    const selected = deferredWithElements[0] ?? ranked[0];
+    if (!selected) return { locator: null, deferred: false };
 
-    return { locator: null, deferred: false };
+    return {
+      locator: selected.candidate.locator,
+      deferred: true,
+      strategy: selected.candidate.strategy,
+      confidence: selected.candidate.confidence,
+    };
   }
 
   private deferredResponsePriority(strategy: string): number {
