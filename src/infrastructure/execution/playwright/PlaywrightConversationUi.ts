@@ -102,6 +102,21 @@ export class PlaywrightConversationUi implements ConversationUi {
     }
   }
 
+  private async discoverFallbackProbes(existing: readonly ResponseProbe[]): Promise<ResponseProbe[]> {
+    const selectors = ['[aria-live]', '[role="log"]', '[role="status"]'];
+    const probes = [...existing];
+
+    for (const selector of selectors) {
+      const locator = this.page.locator(selector);
+      const state = await this.readResponseState(locator);
+      if (state.count > 0 && !probes.some((probe) => probe.locator === locator)) {
+        probes.push({ locator, previous: state });
+      }
+    }
+
+    return probes;
+  }
+
   private async waitForResponse(
     probes: readonly ResponseProbe[],
     input: string,
@@ -109,9 +124,12 @@ export class PlaywrightConversationUi implements ConversationUi {
   ): Promise<string> {
     const deadline = Date.now() + Math.min(timeoutMs, this.responseTimeoutMs);
     const candidates = new Map<Locator, { response: string; polls: number }>();
+    let activeProbes = [...probes];
 
     while (Date.now() < deadline) {
-      for (const probe of probes) {
+      activeProbes = await this.discoverFallbackProbes(activeProbes);
+
+      for (const probe of activeProbes) {
         const current = await this.readResponseState(probe.locator);
         const response = this.findNewResponse(probe.previous, current, input);
         if (!response || this.isTransientResponse(response)) continue;
