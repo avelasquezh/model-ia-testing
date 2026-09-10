@@ -32,8 +32,10 @@ test('adaptive discovery does not experiment with unsafe controls', async ({ pag
   `);
   const runner = new AdaptiveDiscoveryExperimentRunner(page, { maxClicks: 4, settleMs: 0 });
   const result = await runner.run();
-  expect(result.experiments).toHaveLength(0);
-  expect(result.clicksAttempted).toBe(0);
+  expect(result.experiments).toHaveLength(1);
+  expect(result.experiments[0]?.candidate.candidateId).toContain('Open assistant');
+  expect(result.clicksAttempted).toBe(1);
+  expect(result.selected).toBeUndefined();
 });
 
 test('snapshot normalization ignores dynamic class, id and style changes', async ({ page }) => {
