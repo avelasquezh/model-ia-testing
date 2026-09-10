@@ -35,7 +35,11 @@ export async function verifyAdaptiveV2NetworkConversation(
       const sendButton = locatorFromDefinition(page, config.sendButton);
       if (await sendButton.isEnabled().catch(() => false)) {
         await sendButton.click({ timeout: timeoutMs });
-      } else {
+        await waitForOutboundOrDomResponse(page, network, responseLocator, before, message, 750);
+      }
+
+      const afterClick = network.correlate();
+      if (!afterClick.outbound) {
         await composer.press('Enter', { timeout: timeoutMs });
       }
     } else {
@@ -85,6 +89,23 @@ export async function verifyAdaptiveV2NetworkConversation(
       domResponseObserved: false,
       error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
     };
+  }
+}
+
+async function waitForOutboundOrDomResponse(
+  page: Page,
+  network: NetworkConversationEvidence,
+  responseLocator: ReturnType<typeof locatorFromDefinition>,
+  previous: ResponseState,
+  input: string,
+  timeoutMs: number,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (network.correlate().outbound) return;
+    const current = await readResponseState(responseLocator);
+    if (findNewResponse(previous, current, input)) return;
+    await page.waitForTimeout(50);
   }
 }
 
