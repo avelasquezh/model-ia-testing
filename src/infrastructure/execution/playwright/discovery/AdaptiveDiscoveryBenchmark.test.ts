@@ -20,8 +20,8 @@ describe('adaptive discovery benchmark', () => {
   });
 
   it('retains target identity and operational failure evidence in raw observations', () => {
-    expect(observations[1].targetId).toBe('b');
-    expect(observations[1].failureReason).toBe('NO_LAUNCHER');
+    expect(observations[1]!.targetId).toBe('b');
+    expect(observations[1]!.failureReason).toBe('NO_LAUNCHER');
   });
 
   it('calculates discovery and verification rates independently', () => {
