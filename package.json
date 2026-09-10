@@ -17,6 +17,7 @@
     "browser:discovery:run": "tsx scripts/run-public-sut-discovery.ts",
     "browser:discovery:adaptive": "tsx scripts/run-adaptive-discovery.ts",
     "browser:discovery:benchmark": "tsx scripts/run-discovery-benchmark.ts",
+    "browser:discovery:interaction": "tsx scripts/run-adaptive-interaction-benchmark.ts",
     "browser:discovery:merge": "tsx scripts/merge-discovery-reports.ts",
     "test:architecture": "npm run build && npm test && npm run test:bdd && npm run test:browser"
   },
