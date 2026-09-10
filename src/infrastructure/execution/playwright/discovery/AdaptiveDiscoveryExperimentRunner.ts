@@ -216,5 +216,38 @@ export class AdaptiveDiscoveryExperimentRunner {
     return { domHash: createHash('sha256').update(parts.join('\n')).digest('hex'), visibleElementCount, dialogCount, textboxCount, formCount, iframeCount };
   }
 
-  private errorMessage(error: unknown): string { return error instanceof Error ? `${error.name}: ${error.message}` : String(error); }
+  private async errorMessage(error: unknown): string { return error instanceof Error ? `${error.name}: ${error.message}` : String(error); }
+
+  private async sameElement(left: Locator, right: Locator): Promise<boolean> {
+    const leftSignature = await this.elementSignature(left);
+    if (!leftSignature) return false;
+    const rightSignature = await this.elementSignature(right);
+    return rightSignature !== null && rightSignature === leftSignature;
+  }
+
+  private async elementSignature(locator: Locator): Promise<string | null> {
+    try {
+      const count = await locator.count();
+      if (count === 0) return null;
+      return await locator.first().evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return JSON.stringify({
+          tag: element.tagName.toLowerCase(),
+          id: element.getAttribute('id'),
+          role: element.getAttribute('role'),
+          ariaLabel: element.getAttribute('aria-label'),
+          testId: element.getAttribute('data-testid'),
+          name: element.getAttribute('name'),
+          placeholder: element.getAttribute('placeholder'),
+          text: (element.textContent ?? '').trim().slice(0, 256),
+          x: Math.round(rect.x),
+          y: Math.round(rect.y),
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+        });
+      });
+    } catch {
+      return null;
+    }
+  }
 }
