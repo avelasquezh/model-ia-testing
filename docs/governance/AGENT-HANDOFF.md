@@ -46,12 +46,13 @@ Métricas de discovery sirven para diagnosticar. La métrica funcional prioritar
 
 ## Estado conocido al iniciar este handoff
 
-La batería Adaptive y el CI están operativos, pero la validación pública todavía no demuestra conversación verificada de forma consistente. En la última ejecución registrada antes de este documento, `verifiedCount = 0` para el benchmark público.
+La batería Adaptive y el CI están operativos, pero la validación pública todavía no demuestra conversación verificada de forma consistente. La última ejecución estable antes de este handoff registró `verifiedCount = 0` para el benchmark público, con `selectedCount = 4`.
 
 Esto implica que el trabajo actual debe concentrarse en:
 
 - reducir falsos positivos de superficies no conversacionales;
-- robustecer la transición entre apertura, composer, envío y respuesta;
+- mantener composer, send y response en el mismo `Page/Frame` donde fue encontrada la conversación;
+- tolerar frames dinámicos que se desprenden durante la exploración sin abortar toda la ejecución;
 - detectar respuestas nuevas respecto al estado previo al envío;
 - conservar la evidencia de la ruta Adaptive;
 - convertir al menos una ruta pública real en `VERIFIED` antes de declarar éxito funcional.
@@ -71,6 +72,8 @@ No crear nuevos identificadores `F2-XX` para este trabajo. Clasificar extensione
 No declarar éxito por CI verde cuando la evidencia funcional siga en `verifiedCount = 0`.
 
 No cambiar `main` como parte de una implementación experimental. Mantener el trabajo en la rama de la iniciativa hasta contar con evidencia y quality gates satisfactorios.
+
+No ampliar la observación de respuestas a locators globales de la página cuando la conversación ya fue localizada dentro de un frame; la evidencia debe permanecer dentro de la superficie conversacional seleccionada.
 
 ## Orden de prioridad
 
