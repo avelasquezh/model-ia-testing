@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "semantic-model-matrix-0.1",
+  "models": [
+    {
+      "modelId": "gpt-5.6-terra",
+      "modelVersion": "PIN-DURING-EXECUTION",
+      "endpointEnv": "OPENAI_EVALUATOR_ENDPOINT",
+      "authorizationEnv": "OPENAI_EVALUATOR_AUTHORIZATION"
+    },
+    {
+      "modelId": "claude-sonnet-5",
+      "modelVersion": "PIN-DURING-EXECUTION",
+      "endpointEnv": "ANTHROPIC_EVALUATOR_ENDPOINT",
+      "authorizationEnv": "ANTHROPIC_EVALUATOR_AUTHORIZATION"
+    }
+  ]
+}
