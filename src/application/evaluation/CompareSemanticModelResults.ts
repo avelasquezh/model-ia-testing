@@ -77,6 +77,10 @@ export class CompareSemanticModelResults {
     }));
 
     const baseline = indexed[0];
+    if (!baseline) {
+      throw new Error('Semantic model comparison requires at least one baseline evaluator');
+    }
+
     for (const candidate of indexed.slice(1)) {
       if (candidate.results.size !== baseline.results.size) {
         throw new Error('Semantic model result sets are not aligned: different observation counts');
