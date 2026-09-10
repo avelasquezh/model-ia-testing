@@ -454,11 +454,11 @@ export class PlaywrightChatDiscovery {
     if (!leftHandle) return false;
 
     try {
-      const leftFrame = await leftHandle.ownerFrame();
+      const leftFrame = this.normalizeFrame(await leftHandle.ownerFrame());
       const rightHandle = await right.elementHandle({ timeout: ELEMENT_PROBE_TIMEOUT_MS }).catch(() => null);
       if (!rightHandle) return false;
       try {
-        const rightFrame = await rightHandle.ownerFrame();
+        const rightFrame = this.normalizeFrame(await rightHandle.ownerFrame());
         if (leftFrame !== rightFrame) return false;
         return await right.evaluateAll((nodes, selected) => nodes.some((node) => node === selected), leftHandle);
       } finally {
@@ -476,17 +476,22 @@ export class PlaywrightChatDiscovery {
     const handle = await locator.elementHandle({ timeout: ELEMENT_PROBE_TIMEOUT_MS }).catch(() => null);
     if (!handle) return null;
     try {
-      return await handle.ownerFrame();
+      return this.normalizeFrame(await handle.ownerFrame());
     } finally {
       await handle.dispose();
     }
   }
 
+  private normalizeFrame(frame: Frame | null): Frame {
+    return frame ?? this.page.mainFrame();
+  }
+
   private async filterByFrame(candidates: readonly ChatCandidateSpec[], frame: Frame | null): Promise<ChatCandidateSpec[]> {
+    const targetFrame = frame ?? this.page.mainFrame();
     const matching: ChatCandidateSpec[] = [];
     for (const candidate of candidates) {
-      const candidateFrame = await this.ownerFrame(candidate.locator);
-      if (candidateFrame === frame) matching.push(candidate);
+      const candidateFrame = this.normalizeFrame(await this.ownerFrame(candidate.locator));
+      if (candidateFrame === targetFrame) matching.push(candidate);
     }
     return matching;
   }
