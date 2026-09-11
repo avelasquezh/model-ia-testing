@@ -14,6 +14,9 @@ export type DiscoveryCandidate = {
   readonly text?: string;
   readonly placeholder?: string;
   readonly href?: string;
+  readonly title?: string;
+  readonly name?: string;
+  readonly testId?: string;
   readonly ariaControls?: string;
   readonly ariaExpanded?: string;
   readonly navigationSignal?: boolean;
@@ -36,8 +39,8 @@ export type AdaptiveCandidateScore = {
   readonly evidence: readonly DiscoveryEvidence[];
 };
 
-const CHAT_TERMS = /chat|help|assistant|support|message|mensaje|ayuda|asistente/i;
-const NEGATIVE_TERMS = /delete|logout|sign.?out|purchase|buy|checkout|share|copy/i;
+const CHAT_TERMS = /chat|help|assistant|support|message|mensaje|ayuda|asistente|contact|contacto|customer service|live chat/i;
+const NEGATIVE_TERMS = /delete|logout|sign.?out|purchase|buy|checkout|share|copy|download/i;
 
 /**
  * Provider-neutral scoring primitives. This deliberately does not replace the
@@ -67,7 +70,9 @@ export function scoreDiscoveryCandidate(candidate: DiscoveryCandidate): Adaptive
     evidence.push({ strategy: 'BEHAVIORAL', signal: 'navigation-event-handler', weight: 5 });
   }
 
-  const semanticText = [candidate.ariaLabel, candidate.text, candidate.placeholder, candidate.href].filter(Boolean).join(' ');
+  const semanticText = [candidate.ariaLabel, candidate.text, candidate.placeholder, candidate.href, candidate.title, candidate.name, candidate.testId]
+    .filter(Boolean)
+    .join(' ');
   if (CHAT_TERMS.test(semanticText)) {
     evidence.push({ strategy: 'SEMANTIC', signal: 'chat-language', weight: 20 });
   }
