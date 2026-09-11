@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { AdaptiveDiscoveryExperimentRunner } from '../../src/infrastructure/execution/playwright/discovery/AdaptiveDiscoveryExperimentRunner.js';
+import { scoreDiscoveryCandidate } from '../../src/infrastructure/execution/playwright/discovery/AdaptiveDiscovery.js';
 import type { AdaptiveDiscoveryDebugAttempt } from '../../src/infrastructure/execution/playwright/discovery/AdaptiveDiscoveryExperiment.js';
 
 test('adaptive discovery identifies a launcher by behavioral DOM evidence', async ({ page }) => {
@@ -51,4 +52,16 @@ test('snapshot normalization ignores dynamic class, id and style changes', async
   });
   const after = await runner.snapshot(debug, 'SNAPSHOT_AFTER');
   expect(after.domHash).toBe(before.domHash);
+});
+
+test('adaptive scoring uses title, name and test id when visible labels are weak', () => {
+  const result = scoreDiscoveryCandidate({
+    id: 'button:widget:0:0',
+    tagName: 'button',
+    title: 'Live chat support',
+    name: 'customer-support',
+    testId: 'chat-launcher',
+  });
+  expect(result.evidence.some((item) => item.signal === 'chat-language')).toBe(true);
+  expect(result.score).toBeGreaterThan(20);
 });
