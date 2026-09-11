@@ -1,7 +1,8 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { chromium, type Browser } from '@playwright/test';
 import { AdaptiveDiscoveryExperimentRunner, type AdaptiveDiscoveryRun } from '../src/infrastructure/execution/playwright/discovery/AdaptiveDiscoveryExperimentRunner.js';
-import { PlaywrightChatDiscovery } from '../src/infrastructure/execution/playwright/PlaywrightChatDiscovery.js';
+import { ChatDiscoveryError, PlaywrightChatDiscovery } from '../src/infrastructure/execution/playwright/PlaywrightChatDiscovery.js';
+import type { ChatDiscoveryReport } from '../src/infrastructure/execution/playwright/ChatDiscoveryReport.js';
 
 type Target = { readonly id: string; readonly name: string; readonly url: string; readonly status?: string };
 type Corpus = { readonly targets: readonly Target[] };
@@ -17,15 +18,27 @@ type StageResult = {
   readonly debugEvents?: number;
   readonly error?: string;
 };
+type LegacyResult = {
+  readonly executionOk: boolean;
+  readonly candidateFound: boolean;
+  readonly chatSurfaceFound: boolean;
+  readonly launcherFound: boolean;
+  readonly composerFound: boolean;
+  readonly sendButtonFound: boolean;
+  readonly responseFound: boolean;
+  readonly status: ChatDiscoveryReport['status'];
+  readonly durationMs: number;
+  readonly error?: string;
+};
 type TargetResult = {
   readonly id: string;
   readonly name: string;
   readonly url: string;
-  readonly legacy: { readonly ok: boolean; readonly durationMs: number; readonly error?: string };
+  readonly legacy: LegacyResult;
   readonly stages: readonly StageResult[];
 };
 type Report = {
-  readonly schemaVersion: 'discovery-staged-evidence-0.1';
+  readonly schemaVersion: 'discovery-staged-evidence-0.2';
   readonly generatedAt: string;
   readonly experimentalBoundary: {
     readonly sendReceive: 'NOT_PERFORMED';
@@ -34,7 +47,12 @@ type Report = {
   readonly targets: readonly TargetResult[];
   readonly summary: {
     readonly targetCount: number;
-    readonly legacyDiscovered: number;
+    readonly legacyExecutionOk: number;
+    readonly legacyCandidateFound: number;
+    readonly legacyChatSurfaceFound: number;
+    readonly legacyComposerFound: number;
+    readonly legacySendButtonFound: number;
+    readonly legacyResponseFound: number;
     readonly stageChatSurfaceByStage: Record<StageName, number>;
     readonly stageClicksByStage: Record<StageName, number>;
   };
@@ -58,14 +76,17 @@ async function main(): Promise<void> {
   const browser = await chromium.launch({ headless: true });
   try {
     const targets: TargetResult[] = [];
-    for (const target of corpus.targets) {
-      targets.push(await runTarget(browser, target));
-    }
+    for (const target of corpus.targets) targets.push(await runTarget(browser, target));
 
-    const stageChatSurfaceByStage = Object.fromEntries(stages.map(({ name }) => [name, targets.filter((target) => target.stages.find((stage) => stage.stage === name)?.chatSurfaceFound).length])) as Record<StageName, number>;
-    const stageClicksByStage = Object.fromEntries(stages.map(({ name }) => [name, targets.reduce((sum, target) => sum + (target.stages.find((stage) => stage.stage === name)?.clicksAttempted ?? 0), 0)])) as Record<StageName, number>;
+    const stageChatSurfaceByStage = Object.fromEntries(
+      stages.map(({ name }) => [name, targets.filter((target) => target.stages.find((stage) => stage.stage === name)?.chatSurfaceFound).length]),
+    ) as Record<StageName, number>;
+    const stageClicksByStage = Object.fromEntries(
+      stages.map(({ name }) => [name, targets.reduce((sum, target) => sum + (target.stages.find((stage) => stage.stage === name)?.clicksAttempted ?? 0), 0)]),
+    ) as Record<StageName, number>;
+
     const report: Report = {
-      schemaVersion: 'discovery-staged-evidence-0.1',
+      schemaVersion: 'discovery-staged-evidence-0.2',
       generatedAt: new Date().toISOString(),
       experimentalBoundary: {
         sendReceive: 'NOT_PERFORMED',
@@ -74,12 +95,18 @@ async function main(): Promise<void> {
       targets,
       summary: {
         targetCount: targets.length,
-        legacyDiscovered: targets.filter((target) => target.legacy.ok).length,
+        legacyExecutionOk: targets.filter((target) => target.legacy.executionOk).length,
+        legacyCandidateFound: targets.filter((target) => target.legacy.candidateFound).length,
+        legacyChatSurfaceFound: targets.filter((target) => target.legacy.chatSurfaceFound).length,
+        legacyComposerFound: targets.filter((target) => target.legacy.composerFound).length,
+        legacySendButtonFound: targets.filter((target) => target.legacy.sendButtonFound).length,
+        legacyResponseFound: targets.filter((target) => target.legacy.responseFound).length,
         stageChatSurfaceByStage,
         stageClicksByStage,
       },
     };
-    await mkdir(outputFile.substring(0, outputFile.lastIndexOf('/')), { recursive: true });
+    const outputDirectory = outputFile.includes('/') ? outputFile.slice(0, outputFile.lastIndexOf('/')) : '.';
+    await mkdir(outputDirectory, { recursive: true });
     await writeFile(outputFile, JSON.stringify(report, null, 2), 'utf8');
     console.log(JSON.stringify(report.summary, null, 2));
   } finally {
@@ -91,14 +118,37 @@ async function runTarget(browser: Browser, target: Target): Promise<TargetResult
   const legacyContext = await browser.newContext();
   const legacyPage = await legacyContext.newPage();
   const legacyStarted = Date.now();
-  let legacy: TargetResult['legacy'];
+  let legacy: LegacyResult;
   try {
-    await legacyPage.goto(target.url, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
-    await new PlaywrightChatDiscovery(legacyPage).discoverWithEvidence();
-    legacy = { ok: true, durationMs: Date.now() - legacyStarted };
+    const discovery = await new PlaywrightChatDiscovery(legacyPage).discoverWithEvidence();
+    const report = discovery.report;
+    legacy = {
+      executionOk: true,
+      candidateFound: report.candidates.length > 0,
+      chatSurfaceFound: report.status === 'DISCOVERED',
+      launcherFound: Boolean(report.selected.launcher),
+      composerFound: Boolean(report.selected.composer),
+      sendButtonFound: Boolean(report.selected.sendButton),
+      responseFound: Boolean(report.selected.response),
+      status: report.status,
+      durationMs: Date.now() - legacyStarted,
+    };
   } catch (error) {
-    legacy = { ok: false, durationMs: Date.now() - legacyStarted, error: errorMessage(error) };
+    const report = error instanceof ChatDiscoveryError ? error.report : undefined;
+    legacy = {
+      executionOk: false,
+      candidateFound: Boolean(report?.candidates.length),
+      chatSurfaceFound: report?.status === 'DISCOVERED',
+      launcherFound: Boolean(report?.selected.launcher),
+      composerFound: Boolean(report?.selected.composer),
+      sendButtonFound: Boolean(report?.selected.sendButton),
+      responseFound: Boolean(report?.selected.response),
+      status: report?.status ?? 'FAILED',
+      durationMs: Date.now() - legacyStarted,
+      error: errorMessage(error),
+    };
   } finally {
+    await legacyPage.goto('about:blank').catch(() => undefined);
     await legacyContext.close();
   }
 
