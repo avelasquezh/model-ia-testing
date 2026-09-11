@@ -8,9 +8,9 @@ type Target = { readonly id: string; readonly name: string; readonly url: string
 type Corpus = { readonly targets: readonly Target[] };
 type StageName = 'DOM_INVENTORY' | 'SAFE_PROBE_1' | 'SAFE_EXPLORATION_3' | 'SAFE_EXPLORATION_12';
 type StageResult = { readonly stage: StageName; readonly ok: boolean; readonly durationMs: number; readonly candidatesConsidered?: number; readonly clicksAttempted?: number; readonly experiments?: number; readonly chatSurfaceFound?: boolean; readonly debugEvents?: number; readonly error?: string };
-type LegacyResult = { readonly executionOk: boolean; readonly candidateFound: boolean; readonly chatSurfaceFound: boolean; readonly launcherFound: boolean; readonly composerFound: boolean; readonly sendButtonFound: boolean; readonly responseFound: boolean; readonly status: ChatDiscoveryReport['status']; readonly durationMs: number; readonly error?: string };
+type LegacyResult = { readonly executionOk: boolean; readonly candidateFound: boolean; readonly surfaceSignalFound: boolean; readonly chatSurfaceFound: boolean; readonly launcherFound: boolean; readonly composerFound: boolean; readonly sendButtonFound: boolean; readonly responseFound: boolean; readonly status: ChatDiscoveryReport['status']; readonly failureReason?: ChatDiscoveryReport['executionFailureReason']; readonly durationMs: number; readonly error?: string };
 type TargetResult = { readonly id: string; readonly name: string; readonly url: string; readonly legacy: LegacyResult; readonly stages: readonly StageResult[] };
-type Report = { readonly schemaVersion: 'discovery-staged-evidence-0.2'; readonly generatedAt: string; readonly experimentalBoundary: { readonly sendReceive: 'NOT_PERFORMED'; readonly note: string }; readonly targets: readonly TargetResult[]; readonly summary: { readonly targetCount: number; readonly legacyExecutionOk: number; readonly legacyCandidateFound: number; readonly legacyChatSurfaceFound: number; readonly legacyComposerFound: number; readonly legacySendButtonFound: number; readonly legacyResponseFound: number; readonly stageChatSurfaceByStage: Record<StageName, number>; readonly stageClicksByStage: Record<StageName, number> } };
+type Report = { readonly schemaVersion: 'discovery-staged-evidence-0.3'; readonly generatedAt: string; readonly experimentalBoundary: { readonly sendReceive: 'NOT_PERFORMED'; readonly note: string }; readonly targets: readonly TargetResult[]; readonly summary: { readonly targetCount: number; readonly legacyExecutionOk: number; readonly legacyCandidateFound: number; readonly legacySurfaceSignalFound: number; readonly legacyChatSurfaceFound: number; readonly legacyComposerFound: number; readonly legacySendButtonFound: number; readonly legacyResponseFound: number; readonly stageChatSurfaceByStage: Record<StageName, number>; readonly stageClicksByStage: Record<StageName, number> } };
 
 const corpusFile = process.env.DISCOVERY_BENCHMARK_CORPUS_FILE ?? 'examples/public-sut-discovery-corpus.json';
 const outputFile = process.env.DISCOVERY_STAGED_OUTPUT_FILE ?? 'artifacts/browser-sut/discovery-staged-evidence.json';
@@ -33,7 +33,7 @@ async function main(): Promise<void> {
     const stageChatSurfaceByStage = Object.fromEntries(stages.map(({ name }) => [name, targets.filter((target) => target.stages.find((stage) => stage.stage === name)?.chatSurfaceFound).length])) as Record<StageName, number>;
     const stageClicksByStage = Object.fromEntries(stages.map(({ name }) => [name, targets.reduce((sum, target) => sum + (target.stages.find((stage) => stage.stage === name)?.clicksAttempted ?? 0), 0)])) as Record<StageName, number>;
     const report: Report = {
-      schemaVersion: 'discovery-staged-evidence-0.2',
+      schemaVersion: 'discovery-staged-evidence-0.3',
       generatedAt: new Date().toISOString(),
       experimentalBoundary: { sendReceive: 'NOT_PERFORMED', note: 'All staged executions stop at discovery evidence. No composer input, SEND action or RECEIVE verification is performed.' },
       targets,
@@ -41,6 +41,7 @@ async function main(): Promise<void> {
         targetCount: targets.length,
         legacyExecutionOk: targets.filter((target) => target.legacy.executionOk).length,
         legacyCandidateFound: targets.filter((target) => target.legacy.candidateFound).length,
+        legacySurfaceSignalFound: targets.filter((target) => target.legacy.surfaceSignalFound).length,
         legacyChatSurfaceFound: targets.filter((target) => target.legacy.chatSurfaceFound).length,
         legacyComposerFound: targets.filter((target) => target.legacy.composerFound).length,
         legacySendButtonFound: targets.filter((target) => target.legacy.sendButtonFound).length,
@@ -65,31 +66,25 @@ async function runTarget(browser: Browser, target: Target): Promise<TargetResult
     await legacyPage.goto(target.url, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
     const discovery = await new PlaywrightChatDiscovery(legacyPage).discoverWithEvidence();
     const report = discovery.report;
-    legacy = {
-      executionOk: true,
-      candidateFound: report.candidates.length > 0,
-      chatSurfaceFound: report.status === 'DISCOVERED',
-      launcherFound: Boolean(report.selected.launcher),
-      composerFound: Boolean(report.selected.composer),
-      sendButtonFound: Boolean(report.selected.sendButton),
-      responseFound: Boolean(report.selected.response),
-      status: report.status,
-      durationMs: Date.now() - legacyStarted,
-    };
+    legacy = legacyFromReport(report, Date.now() - legacyStarted);
   } catch (error) {
     const report = error instanceof ChatDiscoveryError ? error.report : undefined;
-    legacy = {
-      executionOk: false,
-      candidateFound: Boolean(report?.candidates.length),
-      chatSurfaceFound: report?.status === 'DISCOVERED',
-      launcherFound: Boolean(report?.selected.launcher),
-      composerFound: Boolean(report?.selected.composer),
-      sendButtonFound: Boolean(report?.selected.sendButton),
-      responseFound: Boolean(report?.selected.response),
-      status: report?.status ?? 'FAILED',
-      durationMs: Date.now() - legacyStarted,
-      error: errorMessage(error),
-    };
+    legacy = report
+      ? legacyFromReport(report, Date.now() - legacyStarted, errorMessage(error))
+      : {
+          executionOk: false,
+          candidateFound: false,
+          surfaceSignalFound: false,
+          chatSurfaceFound: false,
+          launcherFound: false,
+          composerFound: false,
+          sendButtonFound: false,
+          responseFound: false,
+          status: 'FAILED',
+          failureReason: 'EXECUTION_FAILED',
+          durationMs: Date.now() - legacyStarted,
+          error: errorMessage(error),
+        };
   } finally { await legacyContext.close(); }
 
   const stageResults: StageResult[] = [];
@@ -106,6 +101,27 @@ async function runTarget(browser: Browser, target: Target): Promise<TargetResult
     } finally { await context.close(); }
   }
   return { id: target.id, name: target.name, url: target.url, legacy, stages: stageResults };
+}
+
+function legacyFromReport(report: ChatDiscoveryReport, durationMs: number, error?: string): LegacyResult {
+  const launcherFound = Boolean(report.selected.launcher);
+  const composerFound = Boolean(report.selected.composer);
+  const sendButtonFound = Boolean(report.selected.sendButton);
+  const responseFound = Boolean(report.selected.response);
+  return {
+    executionOk: report.status === 'DISCOVERED' || Boolean(report.candidates.length),
+    candidateFound: report.candidates.length > 0,
+    surfaceSignalFound: launcherFound,
+    chatSurfaceFound: report.status === 'DISCOVERED',
+    launcherFound,
+    composerFound,
+    sendButtonFound,
+    responseFound,
+    status: report.status,
+    failureReason: report.executionFailureReason,
+    durationMs,
+    ...(error ? { error } : {}),
+  };
 }
 
 function errorMessage(error: unknown): string { return error instanceof Error ? `${error.name}: ${error.message}` : String(error); }
