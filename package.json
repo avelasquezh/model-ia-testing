@@ -18,6 +18,7 @@
     "browser:discovery:run": "tsx scripts/run-public-sut-discovery.ts",
     "browser:discovery:adaptive": "tsx scripts/run-adaptive-discovery.ts",
     "browser:discovery:benchmark": "tsx scripts/run-discovery-benchmark.ts",
+    "browser:discovery:stages": "tsx scripts/run-discovery-stages.ts",
     "browser:discovery:interaction": "tsx scripts/run-adaptive-interaction-benchmark.ts",
     "browser:three-model:benchmark": "tsx scripts/run-three-model-conversation-benchmark.ts",
     "browser:discovery:merge": "tsx scripts/merge-discovery-reports.ts",
@@ -37,7 +38,12 @@
     "eslint": "~10.10.0",
     "tsx": "^4.20.0",
     "typescript": "^5.9.2",
-    "typescript-eslint": "~8.70.0",
+    "@types/pg": "^8.15.5",
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^24.0.0",
+    "eslint": "~10.10.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }
 }
