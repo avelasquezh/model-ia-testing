@@ -126,6 +126,9 @@ export class AdaptiveDiscoveryExperimentRunner {
     const text = (await locator.innerText().catch(() => '')).trim().slice(0, 160);
     const placeholder = await locator.getAttribute('placeholder').catch(() => null) ?? undefined;
     const href = await locator.getAttribute('href').catch(() => null) ?? undefined;
+    const title = await locator.getAttribute('title').catch(() => null) ?? undefined;
+    const name = await locator.getAttribute('name').catch(() => null) ?? undefined;
+    const testId = await locator.getAttribute('data-testid').catch(() => null) ?? undefined;
     const ariaControls = await locator.getAttribute('aria-controls').catch(() => null) ?? undefined;
     const ariaExpanded = await locator.getAttribute('aria-expanded').catch(() => null) ?? undefined;
     const navigationSignal = await locator.evaluate((element) => ['onmousedown', 'onmouseup', 'ontouchstart', 'onkeydown'].some((name) => element.hasAttribute(name))).catch(() => false);
@@ -141,6 +144,9 @@ export class AdaptiveDiscoveryExperimentRunner {
       text,
       ...(placeholder ? { placeholder } : {}),
       ...(href ? { href } : {}),
+      ...(title ? { title } : {}),
+      ...(name ? { name } : {}),
+      ...(testId ? { testId } : {}),
       ...(ariaControls ? { ariaControls } : {}),
       ...(ariaExpanded !== undefined ? { ariaExpanded } : {}),
       ...(navigationSignal ? { navigationSignal } : {}),
@@ -151,7 +157,7 @@ export class AdaptiveDiscoveryExperimentRunner {
     };
   }
 
-  private candidateKey(candidate: DiscoveryCandidate): string { return `${candidate.tagName}|${candidate.role ?? ''}|${candidate.ariaLabel ?? ''}|${candidate.text ?? ''}|${candidate.href ?? ''}|${candidate.ariaControls ?? ''}|${candidate.ariaExpanded ?? ''}|${candidate.navigationSignal ?? false}|${candidate.id}`; }
+  private candidateKey(candidate: DiscoveryCandidate): string { return `${candidate.tagName}|${candidate.role ?? ''}|${candidate.ariaLabel ?? ''}|${candidate.text ?? ''}|${candidate.href ?? ''}|${candidate.title ?? ''}|${candidate.name ?? ''}|${candidate.testId ?? ''}|${candidate.ariaControls ?? ''}|${candidate.ariaExpanded ?? ''}|${candidate.navigationSignal ?? false}|${candidate.id}`; }
 
   private async safeClick(handle: CandidateHandle, debug: AdaptiveDiscoveryDebugAttempt[]): Promise<{ ok: boolean }> {
     const frameUrl = handle.context.url();
