@@ -6,7 +6,6 @@ import { classifyExperiment, diffUiSnapshots, type AdaptiveDiscoveryDebugAttempt
 const DEFAULT_MAX_CANDIDATES = 40;
 const DEFAULT_MAX_CLICKS = 12;
 const DEFAULT_SETTLE_MS = 350;
-const HIGH_CONFIDENCE_THRESHOLD = 35;
 
 export type AdaptiveDiscoveryRunnerOptions = {
   readonly maxCandidates?: number;
