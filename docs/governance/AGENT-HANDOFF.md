@@ -98,6 +98,12 @@ Ningún punto de esta hoja de ruta autoriza a saltarse el orden de prioridad P0/
 - **Evidencia:** CI `34547022795` (success) y Architecture Spike `34547022667` (success) sobre `17c7051`; corrida previa `34545786139` (failure) sobre `094cf97` con el detalle del fallo y su corrección documentados en `PROJECT-STATUS.md`.
 - **Siguiente acción de la tarea activa:** descargar/inspeccionar `public-sut-locator-candidate-registry-*` de la corrida más reciente en `qa` para confirmar el estado final por target. Si `verifiedCount` sigue en 0, el siguiente incremento de mayor apalancamiento es la Pasada 1 de la hoja de ruta (huella de proveedores conocidos), no seguir ajustando la guardia de red ya aplicada.
 
+## Incidente de gobernanza — reset de `qa` a `f8dddd3`, commit de recuperación `8c4413e`
+
+Después de `17c7051`, otro agente aplicó **15 commits seguidos a `qa` sin actualizar `PROJECT-STATUS.md` ni este archivo en ninguno de ellos**, dejando la punta de la rama rota (`CI`/`Architecture Spike`/`Discovery QA Stages` en `failure`). Esto viola directamente la regla obligatoria de continuidad al inicio de este documento. Se revirtió `qa` (con force-push) al último commit verde conocido, `f8dddd3`, tras respaldar la punta rota completa en la rama `qa-broken-backup-79e5634` (no se perdió nada). Se diagnosticó la causa raíz real del quiebre — un bug de aserción en un test nuevo, verificado ejecutando la función real, no solo por lectura de código — y se reaplicó selectivamente lo que valía la pena, corregido. **Detalle completo, con la evidencia exacta, en `PROJECT-STATUS.md` → "Incidente de recuperación".**
+
+**Regla derivada de este incidente, para cualquier agente futuro:** ningún commit se considera aceptable sin (a) haber corrido `npm run build` y `lint` localmente antes de subirlo, y (b) haber actualizado el estado verificable en `PROJECT-STATUS.md` en el mismo commit o inmediatamente después. Apilar commits sobre una punta que no se sabe si está verde, sin dejar rastro documentado de la intención de cada uno, es exactamente el patrón que causó este incidente.
+
 
 
 Antes de modificar código, leer este archivo, `docs/governance/PROJECT-STATUS.md`, `docs/governance/PENDING-DECISIONS.md` y los documentos del flujo Adaptive relacionados.
