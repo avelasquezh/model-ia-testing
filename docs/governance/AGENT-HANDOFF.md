@@ -66,7 +66,39 @@ El trabajo activo continúa concentrado en P0/P1: reducir falsos positivos, mant
 
 No se debe ocultar este estado aumentando timeouts sin evidencia causal.
 
-## Reglas para cualquier agente nuevo
+## Plan vigente de descubrimiento e interacción (hoja de ruta)
+
+Este plan define la dirección estratégica del frente Adaptive. No reemplaza el objetivo vigente ni el criterio de aceptación funcional de arriba; los organiza en incrementos concretos. Cualquier agente que continúe este trabajo debe ubicar en qué punto de esta hoja de ruta está antes de proponer un cambio de dirección.
+
+**Principio rector:** descubrir el chat y confirmar la conversación son dos problemas distintos que deben resolverse con evidencia de naturaleza distinta. Descubrimiento y apertura siguen siendo un problema de DOM/visual (posición, z-index, iconografía, comportamiento al click). Confirmación de envío/recepción no debe depender solo del DOM — debe apoyarse también en tráfico de red observado (WebSocket/xhr/fetch), porque la mayoría de los chatbots modernos entregan la respuesta por esa vía y no solo por mutación visual del DOM.
+
+1. **Embudo de descubrimiento en tres pasadas** (de más barata/confiable a más costosa/especulativa):
+   - Pasada 1 — huella de proveedor conocido (Intercom, Drift, Zendesk, Tawk.to, Crisp, LiveChat, Freshchat, HubSpot, Salesforce...): dominios de script/iframe, variables globales inyectadas, IDs de contenedor predecibles. Da velocidad y cobertura inmediata para la mayoría del mercado real. **No implementado todavía** — es el siguiente incremento de mayor apalancamiento si `verifiedCount` sigue en 0 tras confirmar el punto 3.
+   - Pasada 2 — heurística posicional/visual cuando no hay huella conocida (`position: fixed`/`sticky`, esquina inferior derecha, tamaño de botón circular 40–80px, z-index alto, iconografía SVG de burbuja de diálogo). Ya cubierto en gran parte por el discovery Adaptive existente.
+   - Pasada 3 — interacción exploratoria controlada solo sobre los candidatos mejor puntuados de la pasada 2: diff de DOM antes/después del click, y verificación de que apareció un `role="dialog"` o un contenedor `aria-live`/`role="log"`/`role="status"` (señal semántica de que hay mensajes que se anuncian, no solo un menú o acordeón).
+
+2. **Diferenciar chat real de formulario/buscador/registro:** la señal confiable es estructura conversacional (turnos alternados usuario/bot + input de texto libre + control de envío), no la presencia de la palabra "chat" en el DOM. Sigue siendo un riesgo activo de falso positivo mencionado en este handoff (`CHAT_SURFACE_FOUND` no es éxito).
+
+3. **Confirmación de envío/recepción robusta a streaming — EN PROGRESO.** Incremento aplicado en los commits `094cf97`/`17c7051` sobre `qa`: `PlaywrightConversationUi` ahora escucha frames de WebSocket y respuestas `xhr`/`fetch` a nivel de página, y no acepta un texto del DOM como respuesta final mientras haya tráfico de red entrante activo asociado al envío (streaming/SSE/WS). CI confirmado en verde (`34547022795`/`34547022667` sobre `17c7051`); ver el detalle completo, incluyendo qué NO queda confirmado por este CI (si `verifiedCount` subió contra los targets reales), en `PROJECT-STATUS.md`. **Siguiente acción de este punto:** inspeccionar el artifact `public-sut-locator-candidate-registry-*` de la corrida `34547022795` (o la más reciente en `qa`) para ver si algún target alcanzó `VERIFIED`; si ninguno lo alcanza, el cuello de botella probablemente está en discovery/apertura (puntos 1–2), no en send/receive.
+
+4. **Impedimentos — clasificar, no resolver, y convertirlos en hallazgo de negocio:**
+   - Captcha: detectar por huella conocida (reCAPTCHA, hCaptcha, Cloudflare Turnstile), marcar `BLOCKED_CAPTCHA` (ya existe como valor de `executionFailureReason` en `ChatDiscoveryReport.ts`) y continuar con el siguiente candidato. No intentar resolverlo.
+   - Formulario de pre-chat (nombre/email antes de escribir): completar con un perfil sintético reutilizable y continuar; registrar cuántos campos exige como métrica de fricción.
+   - Modales anidados: restringir la búsqueda de candidatos al contexto de apilamiento activo (el `role="dialog"` de mayor z-index abierto), sin expandir a selectores globales de la página — coherente con la regla ya vigente en este handoff.
+   - Shadow DOM/iframes/frameworks distintos: recorrer documento principal, iframes y shadow roots como nodos de un mismo grafo recorrido de forma recursiva y uniforme, no como reglas por sitio.
+
+5. **Cache de patrones aprendidos (velocidad e iterabilidad):** cuando una ruta llegue a `VERIFIED`, conservar la huella de cómo se abrió y dónde vivía el composer como prior de scoring reutilizable (no como regla dura por dominio). Esto es lo que sostiene, a mediano plazo, el modelo de negocio (analizar el chatbot de un sitio y venderle retroalimentación al dueño): cuantos más sitios se analizan, más rápido y barato se vuelve analizar el siguiente. **No implementado todavía** — depende de que exista al menos una ruta `VERIFIED` real de la que aprender.
+
+Ningún punto de esta hoja de ruta autoriza a saltarse el orden de prioridad P0/P1 ya definido, ni a declarar cierre del punto 3 sin la evidencia pendiente descrita ahí mismo.
+
+## Estado de continuidad — commits `094cf97` / `17c7051` (rama `qa`)
+
+- **Demostrado:** el incremento de guardia de red para send/receive (punto 3 de la hoja de ruta) compila, pasa lint, no rompe ningún test existente, y el pipeline completo de CI (unit tests, Playwright E2E, BDD, quality gate, discovery público contra 4 targets) corre en verde sobre `17c7051`.
+- **Continúa sin demostrarse:** que este incremento haya elevado `verifiedCount` por encima de 0 contra alguno de los targets públicos reales configurados en CI. No se pudo inspeccionar el contenido de los artifacts de esa corrida desde el entorno donde se hizo este trabajo (sin acceso de red a `blob.core.windows.net`, dominio de descarga de artifacts/logs de GitHub Actions).
+- **Evidencia:** CI `34547022795` (success) y Architecture Spike `34547022667` (success) sobre `17c7051`; corrida previa `34545786139` (failure) sobre `094cf97` con el detalle del fallo y su corrección documentados en `PROJECT-STATUS.md`.
+- **Siguiente acción de la tarea activa:** descargar/inspeccionar `public-sut-locator-candidate-registry-*` de la corrida más reciente en `qa` para confirmar el estado final por target. Si `verifiedCount` sigue en 0, el siguiente incremento de mayor apalancamiento es la Pasada 1 de la hoja de ruta (huella de proveedores conocidos), no seguir ajustando la guardia de red ya aplicada.
+
+
 
 Antes de modificar código, leer este archivo, `docs/governance/PROJECT-STATUS.md`, `docs/governance/PENDING-DECISIONS.md` y los documentos del flujo Adaptive relacionados.
 
