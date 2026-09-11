@@ -1,0 +1,67 @@
+name: Discovery QA Stages
+
+on:
+  push:
+    branches:
+      - qa
+  workflow_dispatch:
+    inputs:
+      corpus:
+        description: 'Public SUT corpus path'
+        required: false
+        default: 'examples/public-sut-discovery-corpus.json'
+        type: string
+      timeout_ms:
+        description: 'Per-target timeout in milliseconds'
+        required: false
+        default: '30000'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  discovery-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Focused discovery unit battery
+        run: npx playwright test spike/browser/adaptive-discovery-experiment-runner.spec.ts --reporter=line
+
+      - name: Isolated staged discovery benchmark (no SEND)
+        env:
+          DISCOVERY_BENCHMARK_CORPUS_FILE: ${{ inputs.corpus || 'examples/public-sut-discovery-corpus.json' }}
+          DISCOVERY_BENCHMARK_TIMEOUT_MS: ${{ inputs.timeout_ms || '30000' }}
+          DISCOVERY_STAGED_OUTPUT_FILE: artifacts/browser-sut/discovery-staged-evidence.json
+          ADAPTIVE_DISCOVERY_MAX_CANDIDATES: '40'
+          ADAPTIVE_DISCOVERY_SETTLE_MS: '350'
+        run: npm run browser:discovery:stages
+
+      - name: Upload staged evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: discovery-qa-staged-evidence
+          path: artifacts/browser-sut/discovery-staged-evidence.json
+          if-no-files-found: warn
+          retention-days: 14
