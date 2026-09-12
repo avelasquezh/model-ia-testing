@@ -76,8 +76,21 @@ export function classifyExperiment(diff: UiSnapshotDiff): DiscoveryExperimentRes
     diff.newChatSignals * 10 +
     diff.newShadowRoots * 2;
 
-  if (surfaceScore >= 12 && (diff.newTextboxes > 0 || diff.newContentEditables > 0) &&
-      (diff.newDialogs > 0 || diff.newIframes > 0 || diff.newForms > 0 || diff.newChatSignals > 0 || diff.newLiveRegions > 0)) {
+  const primaryInputAdded = diff.newTextboxes > 0 || diff.newContentEditables > 0;
+  const explicitSurfaceSignal =
+    diff.newDialogs > 0 ||
+    diff.newIframes > 0 ||
+    diff.newForms > 0 ||
+    diff.newChatSignals > 0 ||
+    diff.newLiveRegions > 0;
+
+  // Some real widgets expose a usable textbox before they expose a semantic
+  // dialog/iframe/form role. Preserve the richer evidence without making a
+  // single new textbox sufficient: require multiple new visible nodes plus a
+  // DOM mutation as the structural fallback.
+  const structuralSurfaceSignal = diff.newVisibleElements >= 2 && diff.domChanged;
+
+  if (surfaceScore >= 12 && primaryInputAdded && (explicitSurfaceSignal || structuralSurfaceSignal)) {
     return 'CHAT_SURFACE_CANDIDATE';
   }
   if (surfaceScore > 0 || diff.domChanged || diff.newVisibleElements > 0) {
