@@ -37,9 +37,9 @@ const DEFAULT_SETTLE_MS = 350;
  * Independent third discovery model.
  *
  * It does not modify LEGACY or ADAPTIVE. LEGACY supplies observed candidate
- * evidence; this model converts that evidence into Adaptive scores, reloads
- * the original page, and safely explores the Legacy-derived candidates in
- * Adaptive score order.
+ * evidence; this model converts that evidence into Adaptive scores, restores
+ * the original page when possible, and safely explores the Legacy-derived
+ * candidates in Adaptive score order.
  */
 export class LegacySeededAdaptiveDiscovery {
   public constructor(private readonly page: Page, private readonly options: LegacySeededAdaptiveDiscoveryOptions = {}) {}
@@ -48,7 +48,13 @@ export class LegacySeededAdaptiveDiscovery {
     const debug: AdaptiveDiscoveryDebugAttempt[] = [];
     const targetUrl = this.page.url();
     const legacy = await this.discoverLegacy(debug);
-    await this.restore(targetUrl, debug);
+
+    // Keep synthetic/unit-test pages intact. For real URLs, restore after
+    // Legacy discovery so its exploratory clicks cannot contaminate the seed
+    // collection or the third model's exploration state.
+    if (targetUrl !== 'about:blank') {
+      await this.restore(targetUrl, debug);
+    }
 
     const seeds = await this.collectLegacySeeds(legacy, debug);
     const experiments: DiscoveryExperimentResult[] = [];
@@ -76,7 +82,9 @@ export class LegacySeededAdaptiveDiscovery {
       if (result.classification === 'CHAT_SURFACE_CANDIDATE') {
         return { model: 'LEGACY_SEEDED_ADAPTIVE', legacy, seedsConsidered: seeds.length, clicksAttempted, experiments, selected: result, debug };
       }
-      await this.restore(beforeUrl, debug);
+      if (beforeUrl !== 'about:blank') {
+        await this.restore(beforeUrl, debug);
+      }
     }
 
     return { model: 'LEGACY_SEEDED_ADAPTIVE', legacy, seedsConsidered: seeds.length, clicksAttempted, experiments, debug };
