@@ -313,6 +313,7 @@ export class AdaptiveDiscoveryExperimentRunner {
                 shadowSerializations.push(node.shadowRoot.innerHTML.slice(0, 50_000));
                 visit(node.shadowRoot);
               }
+              visit(node);
             }
           };
 
