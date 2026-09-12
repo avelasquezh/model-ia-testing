@@ -7,6 +7,11 @@ export type UiSnapshot = {
   readonly textboxCount: number;
   readonly formCount: number;
   readonly iframeCount: number;
+  readonly contentEditableCount: number;
+  readonly liveRegionCount: number;
+  readonly messageNodeCount: number;
+  readonly chatSignalCount: number;
+  readonly shadowRootCount: number;
 };
 
 export type UiSnapshotDiff = {
@@ -15,6 +20,11 @@ export type UiSnapshotDiff = {
   readonly newTextboxes: number;
   readonly newForms: number;
   readonly newIframes: number;
+  readonly newContentEditables: number;
+  readonly newLiveRegions: number;
+  readonly newMessageNodes: number;
+  readonly newChatSignals: number;
+  readonly newShadowRoots: number;
   readonly domChanged: boolean;
 };
 
@@ -24,6 +34,8 @@ export type DiscoveryExperimentResult = {
   readonly after: UiSnapshot;
   readonly diff: UiSnapshotDiff;
   readonly classification: 'NO_SIGNAL' | 'INTERESTING' | 'CHAT_SURFACE_CANDIDATE';
+  readonly surfaceScore?: number;
+  readonly surfaceEvidence?: readonly string[];
 };
 
 export type AdaptiveDiscoveryDebugAttempt = {
@@ -43,15 +55,32 @@ export function diffUiSnapshots(before: UiSnapshot, after: UiSnapshot): UiSnapsh
     newTextboxes: Math.max(0, after.textboxCount - before.textboxCount),
     newForms: Math.max(0, after.formCount - before.formCount),
     newIframes: Math.max(0, after.iframeCount - before.iframeCount),
+    newContentEditables: Math.max(0, after.contentEditableCount - before.contentEditableCount),
+    newLiveRegions: Math.max(0, after.liveRegionCount - before.liveRegionCount),
+    newMessageNodes: Math.max(0, after.messageNodeCount - before.messageNodeCount),
+    newChatSignals: Math.max(0, after.chatSignalCount - before.chatSignalCount),
+    newShadowRoots: Math.max(0, after.shadowRootCount - before.shadowRootCount),
     domChanged: before.domHash !== after.domHash,
   };
 }
 
 export function classifyExperiment(diff: UiSnapshotDiff): DiscoveryExperimentResult['classification'] {
-  if (diff.newTextboxes > 0 && (diff.newDialogs > 0 || diff.newIframes > 0 || diff.newForms > 0)) {
+  const surfaceScore =
+    diff.newTextboxes * 12 +
+    diff.newDialogs * 10 +
+    diff.newIframes * 8 +
+    diff.newForms * 6 +
+    diff.newContentEditables * 12 +
+    diff.newLiveRegions * 7 +
+    diff.newMessageNodes * 7 +
+    diff.newChatSignals * 10 +
+    diff.newShadowRoots * 2;
+
+  if (surfaceScore >= 12 && (diff.newTextboxes > 0 || diff.newContentEditables > 0) &&
+      (diff.newDialogs > 0 || diff.newIframes > 0 || diff.newForms > 0 || diff.newChatSignals > 0 || diff.newLiveRegions > 0)) {
     return 'CHAT_SURFACE_CANDIDATE';
   }
-  if (diff.domChanged || diff.newVisibleElements > 0 || diff.newDialogs > 0 || diff.newTextboxes > 0) {
+  if (surfaceScore > 0 || diff.domChanged || diff.newVisibleElements > 0) {
     return 'INTERESTING';
   }
   return 'NO_SIGNAL';
