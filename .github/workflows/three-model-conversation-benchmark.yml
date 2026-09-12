@@ -1,0 +1,44 @@
+name: Three-model conversation benchmark
+
+on:
+  push:
+    branches: [qa]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    name: Legacy vs Adaptive vs Adaptive V2 Network
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run three-model conversation benchmark
+        run: npm run browser:three-model:benchmark
+
+      - name: Print benchmark summary
+        if: always()
+        run: cat artifacts/browser-sut/three-model-conversation-benchmark.json
+
+      - name: Publish benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: three-model-conversation-benchmark-${{ github.sha }}
+          path: artifacts/browser-sut/three-model-conversation-benchmark.json
+          if-no-files-found: warn

@@ -211,6 +211,60 @@ describe('PlaywrightConversationUi', () => {
     await context.close();
   });
 
+  it('waits for streaming HTTP traffic to go idle before trusting a partial response as final', async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    const chunks = ['Res', 'Respuesta', 'Respuesta final'];
+    let requestCount = 0;
+    await page.route('https://example.test/api/chat', async (route) => {
+      const chunk = chunks[Math.min(requestCount, chunks.length - 1)];
+      requestCount += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'access-control-allow-origin': '*' },
+        body: JSON.stringify({ reply: chunk }),
+      });
+    });
+
+    await page.setContent(`
+      <main>
+        <input aria-label="Mensaje" />
+        <button id="send">Enviar</button>
+        <div data-testid="assistant-message"></div>
+        <script>
+          const responseEl = document.querySelector('[data-testid="assistant-message"]');
+          async function streamReply() {
+            for (let step = 0; step < 3; step += 1) {
+              const res = await fetch('https://example.test/api/chat');
+              const data = await res.json();
+              responseEl.textContent = data.reply;
+              if (step < 2) await new Promise((resolve) => setTimeout(resolve, 60));
+            }
+          }
+          document.getElementById('send').addEventListener('click', () => { streamReply(); });
+        </script>
+      </main>
+    `);
+
+    const ui = new PlaywrightConversationUi(page, {
+      composer: { kind: 'role', role: 'textbox', name: 'Mensaje' },
+      sendButton: { kind: 'role', role: 'button', name: 'Enviar' },
+      response: { kind: 'testId', value: 'assistant-message' },
+      responseTimeoutMs: 2_000,
+      pollIntervalMs: 20,
+    });
+
+    // Sin la señal de red, la implementación anterior habría podido devolver
+    // "Res" o "Respuesta" (fragmentos parciales estables durante dos sondeos
+    // consecutivos). Con la señal de red (respuestas fetch sucesivas), se
+    // espera a que el tráfico se calme y se devuelve el mensaje final.
+    await expect(ui.sendMessage('Hi', 2_000)).resolves.toBe('Respuesta final');
+
+    await context.close();
+  });
+
   it('raises a typed response timeout error when no new observable response appears', async () => {
     const context = await browser.newContext();
     const page = await context.newPage();

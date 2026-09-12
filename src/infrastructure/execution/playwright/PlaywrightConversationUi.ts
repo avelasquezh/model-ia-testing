@@ -38,9 +38,26 @@ type ResponseProbe = {
   readonly previous: ResponseState;
 };
 
+type NetworkActivityKind = 'ws-sent' | 'ws-received' | 'http-response';
+
+type NetworkActivityEvent = {
+  readonly kind: NetworkActivityKind;
+  readonly at: number;
+};
+
+/**
+ * Muchos chatbots modernos entregan la respuesta de forma incremental por WebSocket
+ * o SSE/XHR (streaming). El DOM puede "estabilizarse" momentáneamente entre tokens,
+ * lo que produce falsos positivos (se acepta un fragmento parcial) o falsos timeouts
+ * (se agota el plazo mientras el bot sigue generando). Esta señal es complementaria
+ * a la evidencia de DOM, nunca la reemplaza: solo evita declarar una respuesta como
+ * definitiva mientras hay tráfico de red asociado todavía en curso.
+ */
 export class PlaywrightConversationUi implements ConversationUi {
   private readonly responseTimeoutMs: number;
   private readonly pollIntervalMs: number;
+  private readonly networkIdleGraceMs: number;
+  private readonly networkEvents: NetworkActivityEvent[] = [];
 
   public constructor(
     private readonly page: Page,
@@ -48,6 +65,8 @@ export class PlaywrightConversationUi implements ConversationUi {
   ) {
     this.responseTimeoutMs = config.responseTimeoutMs ?? 30_000;
     this.pollIntervalMs = config.pollIntervalMs ?? 100;
+    this.networkIdleGraceMs = Math.max(this.pollIntervalMs * 2, 250);
+    this.attachNetworkListeners();
   }
 
   public async sendMessage(input: string, timeoutMs: number): Promise<string> {
@@ -55,15 +74,15 @@ export class PlaywrightConversationUi implements ConversationUi {
     const responseState = await this.readResponseState(responseLocator);
     const probes: ResponseProbe[] = [{ locator: responseLocator, previous: responseState }];
 
-    if (responseState.count === 0) {
-      for (const selector of ['[aria-live]', '[role="log"]', '[role="status"]']) {
-        const locator = this.page.locator(selector);
-        probes.push({ locator, previous: await this.readResponseState(locator) });
-      }
+    for (const selector of ['[aria-live]', '[role="log"]', '[role="status"]']) {
+      const locator = this.page.locator(selector);
+      probes.push({ locator, previous: await this.readResponseState(locator) });
     }
 
     const composer = this.locate(this.config.composer);
     await composer.fill(input, { timeout: timeoutMs });
+
+    const sentAt = Date.now();
 
     if (this.config.sendButton) {
       await this.locate(this.config.sendButton).click({ timeout: timeoutMs });
@@ -71,7 +90,45 @@ export class PlaywrightConversationUi implements ConversationUi {
       await composer.press('Enter', { timeout: timeoutMs });
     }
 
-    return this.waitForResponse(probes, input, timeoutMs);
+    return this.waitForResponse(probes, input, timeoutMs, sentAt);
+  }
+
+  /**
+   * Escucha, a nivel de página, tráfico de WebSocket y de respuestas xhr/fetch.
+   * Se adjunta una sola vez en el constructor porque el widget puede abrir su
+   * conexión antes de que se dispare sendMessage; perder ese evento de creación
+   * impediría suscribirse a sus frames más adelante.
+   */
+  private attachNetworkListeners(): void {
+    this.page.on('websocket', (webSocket) => {
+      webSocket.on('framesent', () => this.recordNetworkEvent('ws-sent'));
+      webSocket.on('framereceived', () => this.recordNetworkEvent('ws-received'));
+    });
+
+    this.page.on('response', (response) => {
+      const resourceType = response.request().resourceType();
+      if (resourceType === 'xhr' || resourceType === 'fetch') {
+        this.recordNetworkEvent('http-response');
+      }
+    });
+  }
+
+  private recordNetworkEvent(kind: NetworkActivityKind): void {
+    this.networkEvents.push({ kind, at: Date.now() });
+  }
+
+  /**
+   * Milisegundos transcurridos desde la última actividad de red entrante
+   * (frame de WebSocket recibido o respuesta xhr/fetch) posterior a `sinceAt`.
+   * Devuelve null si no se observó ninguna actividad relevante todavía.
+   */
+  private msSinceLastInboundNetworkActivity(sinceAt: number): number | null {
+    let lastAt: number | null = null;
+    for (const event of this.networkEvents) {
+      if (event.kind === 'ws-sent' || event.at < sinceAt) continue;
+      if (lastAt === null || event.at > lastAt) lastAt = event.at;
+    }
+    return lastAt === null ? null : Date.now() - lastAt;
   }
 
   private locate(definition: PlaywrightLocatorDefinition): Locator {
@@ -111,15 +168,23 @@ export class PlaywrightConversationUi implements ConversationUi {
     probes: readonly ResponseProbe[],
     input: string,
     timeoutMs: number,
+    sentAt: number,
   ): Promise<string> {
     const deadline = Date.now() + Math.min(timeoutMs, this.responseTimeoutMs);
     const candidates = new Map<Locator, { response: string; polls: number }>();
 
     while (Date.now() < deadline) {
+      const idleForMs = this.msSinceLastInboundNetworkActivity(sentAt);
+      const networkStillFlowing = idleForMs !== null && idleForMs < this.networkIdleGraceMs;
+
       for (const probe of probes) {
         const current = await this.readResponseState(probe.locator);
         const response = this.findNewResponse(probe.previous, current, input);
         if (!response || this.isTransientResponse(response)) continue;
+        // Hay tráfico de red asociado todavía activo (streaming/SSE/WS): el texto
+        // actual puede ser un fragmento parcial, no la respuesta final. Se espera
+        // a que la red se calme antes de empezar a contar estabilidad en el DOM.
+        if (networkStillFlowing) continue;
 
         const previousCandidate = candidates.get(probe.locator);
         const polls = previousCandidate?.response === response ? previousCandidate.polls + 1 : 1;

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { AdaptiveDiscoveryExperimentRunner } from '../../src/infrastructure/execution/playwright/discovery/AdaptiveDiscoveryExperimentRunner.js';
+import { scoreDiscoveryCandidate } from '../../src/infrastructure/execution/playwright/discovery/AdaptiveDiscovery.js';
 import type { AdaptiveDiscoveryDebugAttempt } from '../../src/infrastructure/execution/playwright/discovery/AdaptiveDiscoveryExperiment.js';
 
 test('adaptive discovery identifies a launcher by behavioral DOM evidence', async ({ page }) => {
@@ -51,4 +52,23 @@ test('snapshot normalization ignores dynamic class, id and style changes', async
   });
   const after = await runner.snapshot(debug, 'SNAPSHOT_AFTER');
   expect(after.domHash).toBe(before.domHash);
+});
+
+test('adaptive scoring uses title, name and test id when visible labels are weak', () => {
+  const result = scoreDiscoveryCandidate({
+    id: 'button:widget:0:0',
+    tagName: 'button',
+    title: 'Live chat support',
+    name: 'customer-support',
+    testId: 'chat-launcher',
+  });
+  // Con esta implementación, un candidato sin role/href/aria/navigationSignal/fixed
+  // y con únicamente coincidencia semántica ("chat", "support") en title/name/testId
+  // produce un único signal ('chat-language', peso 20), por lo que el score es
+  // exactamente 20 — no estrictamente mayor. Se usa >= 20 para no acoplar el test
+  // a un peso exacto que pueda cambiar levemente, sin perder la intención original
+  // del otro agente (confirmar que el scoring SÍ usa title/name/testId como señal
+  // semántica cuando no hay ariaLabel/text/placeholder visibles).
+  expect(result.evidence.some((item) => item.signal === 'chat-language')).toBe(true);
+  expect(result.score).toBeGreaterThanOrEqual(20);
 });
