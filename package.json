@@ -19,6 +19,7 @@
     "browser:discovery:adaptive": "tsx scripts/run-adaptive-discovery.ts",
     "browser:discovery:benchmark": "tsx scripts/run-discovery-benchmark.ts",
     "browser:discovery:stages": "tsx scripts/run-discovery-stages.ts",
+    "browser:discovery:three-model": "tsx scripts/run-three-discovery-model-benchmark.ts",
     "browser:discovery:interaction": "tsx scripts/run-adaptive-interaction-benchmark.ts",
     "browser:three-model:benchmark": "tsx scripts/run-three-model-conversation-benchmark.ts",
     "browser:discovery:merge": "tsx scripts/merge-discovery-reports.ts",
