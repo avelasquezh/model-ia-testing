@@ -70,11 +70,16 @@ export function scoreDiscoveryCandidate(candidate: DiscoveryCandidate): Adaptive
     evidence.push({ strategy: 'BEHAVIORAL', signal: 'navigation-event-handler', weight: 5 });
   }
 
-  const semanticText = [candidate.ariaLabel, candidate.text, candidate.placeholder, candidate.href, candidate.title, candidate.name, candidate.testId]
-    .filter(Boolean)
-    .join(' ');
+  const semanticFields = [candidate.ariaLabel, candidate.text, candidate.placeholder, candidate.href, candidate.title, candidate.name, candidate.testId]
+    .filter(Boolean) as string[];
+  const semanticText = semanticFields.join(' ');
   if (CHAT_TERMS.test(semanticText)) {
     evidence.push({ strategy: 'SEMANTIC', signal: 'chat-language', weight: 20 });
+
+    const metadataText = [candidate.title, candidate.name, candidate.testId].filter(Boolean).join(' ');
+    if (metadataText && CHAT_TERMS.test(metadataText)) {
+      evidence.push({ strategy: 'SEMANTIC', signal: 'metadata-chat-language', weight: 3 });
+    }
   }
   if (NEGATIVE_TERMS.test(semanticText)) {
     evidence.push({ strategy: 'SEMANTIC', signal: 'non-chat-language', weight: -20 });
