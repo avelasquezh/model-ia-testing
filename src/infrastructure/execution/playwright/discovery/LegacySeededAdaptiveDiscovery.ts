@@ -162,7 +162,7 @@ export class LegacySeededAdaptiveDiscovery {
       ...(name ? { name } : {}),
       ...(testId ? { testId } : {}),
       ...(ariaControls ? { ariaControls } : {}),
-      ...(ariaExpanded !== null ? { ariaExpanded } : {}),
+      ...(typeof ariaExpanded === 'string' ? { ariaExpanded } : {}),
       ...(navigationSignal ? { navigationSignal } : {}),
       fixed,
       ...(viewport ? { bottomDistance: Math.max(0, viewport.height - (box.y + box.height)), rightDistance: Math.max(0, viewport.width - (box.x + box.width)) } : {}),
