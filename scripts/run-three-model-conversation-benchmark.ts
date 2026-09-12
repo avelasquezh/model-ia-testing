@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { chromium } from '@playwright/test';
-import { AdaptiveDiscoveryExperimentRunner } from '../src/infrastructure/execution/playwright/discovery/AdaptiveDiscoveryExperimentRunner.js';
+import { AdaptiveDiscoveryExperimentRunner, type AdaptiveDiscoveryRun } from '../src/infrastructure/execution/playwright/discovery/AdaptiveDiscoveryExperimentRunner.js';
 import { verifyAdaptiveV2NetworkConversation } from '../src/infrastructure/execution/playwright/discovery/AdaptiveV2NetworkVerification.js';
 import { PlaywrightChatDiscovery } from '../src/infrastructure/execution/playwright/PlaywrightChatDiscovery.js';
 import { PlaywrightConversationUi } from '../src/infrastructure/execution/playwright/PlaywrightConversationUi.js';
@@ -21,6 +21,13 @@ type Result = {
   readonly networkInbound?: boolean;
   readonly networkOrdered?: boolean;
   readonly domResponseObserved?: boolean;
+  readonly adaptiveCandidatesConsidered?: number;
+  readonly adaptiveClicksAttempted?: number;
+  readonly adaptiveExperiments?: number;
+  readonly adaptiveClassificationCounts?: Readonly<Record<'NO_SIGNAL' | 'INTERESTING' | 'CHAT_SURFACE_CANDIDATE', number>>;
+  readonly adaptiveSelectedCandidateId?: string;
+  readonly adaptiveSelectedSurfaceScore?: number;
+  readonly adaptiveSelectedSurfaceEvidence?: readonly string[];
   readonly durationMs: number;
   readonly error?: string;
 };
@@ -101,8 +108,12 @@ async function runAdaptive(page: import('@playwright/test').Page, target: Target
       settleMs: 650,
       isolateExperiments: true,
     }).run();
+    const diagnostics = adaptiveDiagnostics(adaptive);
     if (!adaptive.selected) {
-      return baseResult(networkMode ? 'ADAPTIVE_V2_NETWORK' : 'ADAPTIVE', target, startedAt, { discovery: 'NOT_FOUND', chatOpen: 'NOT_FOUND', composer: 'NOT_FOUND', send: 'NOT_PERFORMED', receive: 'NOT_PERFORMED', conversation: 'NOT_PERFORMED' });
+      return baseResult(networkMode ? 'ADAPTIVE_V2_NETWORK' : 'ADAPTIVE', target, startedAt, {
+        discovery: 'NOT_FOUND', chatOpen: 'NOT_FOUND', composer: 'NOT_FOUND', send: 'NOT_PERFORMED', receive: 'NOT_PERFORMED', conversation: 'NOT_PERFORMED',
+        ...diagnostics,
+      });
     }
 
     const discovery = await new PlaywrightChatDiscovery(page).discoverWithEvidence();
@@ -110,9 +121,9 @@ async function runAdaptive(page: import('@playwright/test').Page, target: Target
       const ui = new PlaywrightConversationUi(page, discovery.config);
       try {
         await ui.sendMessage(message, timeoutMs);
-        return baseResult('ADAPTIVE', target, startedAt, { discovery: 'FOUND', chatOpen: 'FOUND', composer: 'FOUND', send: 'CONFIRMED', receive: 'CONFIRMED', conversation: 'VERIFIED' });
+        return baseResult('ADAPTIVE', target, startedAt, { discovery: 'FOUND', chatOpen: 'FOUND', composer: 'FOUND', send: 'CONFIRMED', receive: 'CONFIRMED', conversation: 'VERIFIED', ...diagnostics });
       } catch (error) {
-        return baseResult('ADAPTIVE', target, startedAt, { discovery: 'FOUND', chatOpen: 'FOUND', composer: 'FOUND', send: 'CONFIRMED', receive: 'FAILED', conversation: 'FAILED', error: messageOf(error) });
+        return baseResult('ADAPTIVE', target, startedAt, { discovery: 'FOUND', chatOpen: 'FOUND', composer: 'FOUND', send: 'CONFIRMED', receive: 'FAILED', conversation: 'FAILED', error: messageOf(error), ...diagnostics });
       }
     }
 
@@ -120,11 +131,31 @@ async function runAdaptive(page: import('@playwright/test').Page, target: Target
     return baseResult('ADAPTIVE_V2_NETWORK', target, startedAt, {
       discovery: 'FOUND', chatOpen: 'FOUND', composer: 'FOUND', send: verification.send, receive: verification.receive, conversation: verification.conversation,
       networkOutbound: verification.network.outbound, networkInbound: verification.network.inbound, networkOrdered: verification.network.ordered,
-      domResponseObserved: verification.domResponseObserved, ...(verification.error ? { error: verification.error } : {}),
+      domResponseObserved: verification.domResponseObserved, ...(verification.error ? { error: verification.error } : {}), ...diagnostics,
     });
   } catch (error) {
     return baseResult(networkMode ? 'ADAPTIVE_V2_NETWORK' : 'ADAPTIVE', target, startedAt, { discovery: 'FOUND', chatOpen: 'ERROR', composer: 'ERROR', send: 'NOT_PERFORMED', receive: 'NOT_PERFORMED', conversation: 'NOT_PERFORMED', error: messageOf(error) });
   }
+}
+
+function adaptiveDiagnostics(run: AdaptiveDiscoveryRun): Pick<Result, 'adaptiveCandidatesConsidered' | 'adaptiveClicksAttempted' | 'adaptiveExperiments' | 'adaptiveClassificationCounts' | 'adaptiveSelectedCandidateId' | 'adaptiveSelectedSurfaceScore' | 'adaptiveSelectedSurfaceEvidence'> {
+  const classificationCounts = {
+    NO_SIGNAL: 0,
+    INTERESTING: 0,
+    CHAT_SURFACE_CANDIDATE: 0,
+  } as Record<'NO_SIGNAL' | 'INTERESTING' | 'CHAT_SURFACE_CANDIDATE', number>;
+  for (const experiment of run.experiments) classificationCounts[experiment.classification] += 1;
+  return {
+    adaptiveCandidatesConsidered: run.candidatesConsidered,
+    adaptiveClicksAttempted: run.clicksAttempted,
+    adaptiveExperiments: run.experiments.length,
+    adaptiveClassificationCounts: classificationCounts,
+    ...(run.selected ? {
+      adaptiveSelectedCandidateId: run.selected.candidate.candidateId,
+      adaptiveSelectedSurfaceScore: run.selected.surfaceScore,
+      adaptiveSelectedSurfaceEvidence: run.selected.surfaceEvidence,
+    } : {}),
+  };
 }
 
 function baseResult(model: Model, target: Target, startedAt: number, value: Omit<Result, 'model' | 'targetId' | 'targetUrl' | 'durationMs'>): Result {
