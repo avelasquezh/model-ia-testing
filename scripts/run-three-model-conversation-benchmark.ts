@@ -29,8 +29,8 @@ const corpusFile = process.env.THREE_MODEL_CORPUS_FILE ?? 'examples/public-sut-d
 const outputFile = process.env.THREE_MODEL_OUTPUT_FILE ?? 'artifacts/browser-sut/three-model-conversation-benchmark.json';
 const timeoutMs = positive(process.env.THREE_MODEL_TIMEOUT_MS, 30_000, 'THREE_MODEL_TIMEOUT_MS');
 const message = process.env.THREE_MODEL_MESSAGE ?? 'Hello';
-const adaptiveMaxCandidates = positive(process.env.ADAPTIVE_DISCOVERY_MAX_CANDIDATES, 40, 'ADAPTIVE_DISCOVERY_MAX_CANDIDATES');
-const adaptiveMaxClicks = positive(process.env.ADAPTIVE_DISCOVERY_MAX_CLICKS, 12, 'ADAPTIVE_DISCOVERY_MAX_CLICKS');
+const adaptiveMaxCandidates = positive(process.env.ADAPTIVE_DISCOVERY_MAX_CANDIDATES, 80, 'ADAPTIVE_DISCOVERY_MAX_CANDIDATES');
+const adaptiveMaxClicks = positive(process.env.ADAPTIVE_DISCOVERY_MAX_CLICKS, 24, 'ADAPTIVE_DISCOVERY_MAX_CLICKS');
 
 const corpus = parseCorpus(JSON.parse(await readFile(corpusFile, 'utf8')) as unknown);
 const browser = await chromium.launch({ headless: true });
@@ -95,7 +95,12 @@ async function runLegacy(page: import('@playwright/test').Page, target: Target, 
 
 async function runAdaptive(page: import('@playwright/test').Page, target: Target, startedAt: number, networkMode: boolean): Promise<Result> {
   try {
-    const adaptive = await new AdaptiveDiscoveryExperimentRunner(page, { maxCandidates: adaptiveMaxCandidates, maxClicks: adaptiveMaxClicks }).run();
+    const adaptive = await new AdaptiveDiscoveryExperimentRunner(page, {
+      maxCandidates: adaptiveMaxCandidates,
+      maxClicks: adaptiveMaxClicks,
+      settleMs: 650,
+      isolateExperiments: true,
+    }).run();
     if (!adaptive.selected) {
       return baseResult(networkMode ? 'ADAPTIVE_V2_NETWORK' : 'ADAPTIVE', target, startedAt, { discovery: 'NOT_FOUND', chatOpen: 'NOT_FOUND', composer: 'NOT_FOUND', send: 'NOT_PERFORMED', receive: 'NOT_PERFORMED', conversation: 'NOT_PERFORMED' });
     }
