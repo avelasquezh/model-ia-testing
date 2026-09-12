@@ -63,31 +63,37 @@ export class AdaptiveDiscoveryExperimentRunner {
 
     for (const handle of candidates) {
       if (clicksAttempted >= maxClicks) break;
+
       const before = await this.snapshot(debug, 'SNAPSHOT_BEFORE');
       const beforeUrl = this.page.url();
       const clickResult = await this.safeClick(handle, debug);
       if (!clickResult.ok) continue;
+
       clicksAttempted += 1;
       await this.page.waitForTimeout(this.options.settleMs ?? DEFAULT_SETTLE_MS);
+
       const after = await this.snapshot(debug, 'SNAPSHOT_AFTER');
       const diff = diffUiSnapshots(before, after);
-      const classification = classifyExperiment(diff);
       const result: DiscoveryExperimentResult = {
         candidate: handle.candidate,
         before,
         after,
         diff,
-        classification,
+        classification: classifyExperiment(diff),
         surfaceScore: this.surfaceScore(diff),
         surfaceEvidence: this.surfaceEvidence(diff),
       };
       experiments.push(result);
-      if (classification === 'CHAT_SURFACE_CANDIDATE') return { experiments, selected: result, candidatesConsidered: candidates.length, clicksAttempted, debug };
+
+      if (result.classification === 'CHAT_SURFACE_CANDIDATE') {
+        return { experiments, selected: result, candidatesConsidered: candidates.length, clicksAttempted, debug };
+      }
 
       if (this.options.isolateExperiments ?? true) {
         await this.restoreAfterExperiment(beforeUrl, handle, debug);
       }
     }
+
     return { experiments, candidatesConsidered: candidates.length, clicksAttempted, debug };
   }
 
@@ -113,28 +119,25 @@ export class AdaptiveDiscoveryExperimentRunner {
         if (!await this.isSafeCandidate(candidateLocator)) continue;
         const candidate = await this.buildCandidate(candidateLocator);
         if (!candidate) continue;
+
         const exploratorySignal = candidate.tagName === 'a' || candidate.tagName === 'button' || candidate.role === 'button' ||
           Boolean(candidate.ariaControls) || candidate.ariaExpanded !== undefined || Boolean(candidate.ariaHasPopup) ||
           Boolean(candidate.dataChatSignal) || Boolean(candidate.navigationSignal) || Boolean(candidate.shadowHost);
         if (!exploratorySignal) continue;
+
         const key = this.candidateKey(candidate);
         if (seen.has(key)) continue;
         seen.add(key);
+
         const scored = scoreDiscoveryCandidate(candidate);
         handles.push({ locator: candidateLocator, context, candidate: scored, key });
         debug.push({ candidateId: scored.candidateId, score: scored.score, frameUrl: context.url(), stage: 'COLLECT', action: 'INSPECT', ok: true });
       }
     }
 
-    return this.rankCandidates(handles).slice(0, maxCandidates);
-  }
-
-  private rankCandidates(handles: CandidateHandle[]): CandidateHandle[] {
-    return [...handles].sort((left, right) => {
-      if (right.candidate.score !== left.candidate.score) return right.candidate.score - left.candidate.score;
-      if (right.candidate.confidenceScore !== left.candidate.confidenceScore) return right.candidate.confidenceScore - left.candidate.confidenceScore;
-      return left.key.localeCompare(right.key);
-    });
+    return [...handles]
+      .sort((left, right) => right.candidate.score - left.candidate.score || right.candidate.confidenceScore - left.candidate.confidenceScore || left.key.localeCompare(right.key))
+      .slice(0, maxCandidates);
   }
 
   private async isSafeCandidate(locator: Locator): Promise<boolean> {
@@ -151,6 +154,7 @@ export class AdaptiveDiscoveryExperimentRunner {
   private async buildCandidate(locator: Locator): Promise<DiscoveryCandidate | null> {
     const box = await locator.boundingBox().catch(() => null);
     if (!box) return null;
+
     const tagName = await locator.evaluate((element) => element.tagName.toLowerCase()).catch(() => 'unknown');
     const explicitRole = await locator.getAttribute('role');
     const role = explicitRole ?? (tagName === 'button' ? 'button' : undefined);
@@ -245,14 +249,11 @@ export class AdaptiveDiscoveryExperimentRunner {
   }
 
   private async restoreAfterExperiment(beforeUrl: string, handle: CandidateHandle, debug: AdaptiveDiscoveryDebugAttempt[]): Promise<void> {
-    if (beforeUrl === 'about:blank') return;
+    if (beforeUrl === 'about:blank' || this.page.url() === beforeUrl) return;
+
     try {
       debug.push({ candidateId: handle.candidate.candidateId, score: handle.candidate.score, frameUrl: handle.context.url(), stage: 'RESTORE', action: 'RESTORE', ok: true });
-      if (this.page.url() !== beforeUrl) {
-        await this.page.goto(beforeUrl, { waitUntil: 'domcontentloaded', timeout: 10_000 });
-      } else {
-        await this.page.reload({ waitUntil: 'domcontentloaded', timeout: 10_000 });
-      }
+      await this.page.goto(beforeUrl, { waitUntil: 'domcontentloaded', timeout: 10_000 });
     } catch (error) {
       debug.push({ candidateId: handle.candidate.candidateId, score: handle.candidate.score, frameUrl: handle.context.url(), stage: 'RESTORE', action: 'RESTORE', ok: false, error: this.errorMessage(error) });
     }
@@ -304,7 +305,7 @@ export class AdaptiveDiscoveryExperimentRunner {
                 if (node.matches('iframe')) iframeCount += 1;
                 if (node.matches('[contenteditable="true"]')) contentEditableCount += 1;
                 if (node.matches('[aria-live], [role="log"], [role="status"], [role="alert"]')) liveRegionCount += 1;
-                const semantic = `${node.getAttribute('aria-label') ?? ''} ${node.getAttribute('title') ?? ''} ${node.getAttribute('data-testid') ?? ''} ${node.className ?? ''} ${node.id ?? ''}`;
+                const semantic = `${node.getAttribute('aria-label') ?? ''} ${node.getAttribute('title') ?? ''} ${node.getAttribute('data-testid') ?? ''} ${typeof node.className === 'string' ? node.className : ''} ${node.id ?? ''}`;
                 if (messagePattern.test(semantic)) messageNodeCount += 1;
                 if (chatPattern.test(semantic)) chatSignalCount += 1;
               }
@@ -318,11 +319,13 @@ export class AdaptiveDiscoveryExperimentRunner {
           };
 
           visit(element);
+
           const clone = element.cloneNode(true) as HTMLElement;
           const nodes = clone.querySelectorAll('[id], [class], [style], [data-reactroot], [data-testid]');
           for (const node of Array.from(nodes)) {
             for (const attribute of dynamicAttributes) node.removeAttribute(attribute);
           }
+
           return {
             html: clone.outerHTML,
             shadowSerializations,
@@ -391,5 +394,7 @@ export class AdaptiveDiscoveryExperimentRunner {
     return evidence;
   }
 
-  private errorMessage(error: unknown): string { return error instanceof Error ? `${error.name}: ${error.message}` : String(error); }
+  private errorMessage(error: unknown): string {
+    return error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+  }
 }
