@@ -1,0 +1,68 @@
+name: Discovery Three Model Comparison
+
+on:
+  workflow_dispatch:
+    inputs:
+      corpus:
+        description: 'Public SUT corpus path'
+        required: false
+        default: 'examples/public-sut-discovery-corpus.json'
+        type: string
+      timeout_ms:
+        description: 'Per-target timeout in milliseconds'
+        required: false
+        default: '30000'
+        type: string
+  push:
+    branches:
+      - qa
+
+permissions:
+  contents: read
+
+jobs:
+  discovery-three-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Three-model discovery unit test
+        run: npx playwright test spike/browser/legacy-seeded-adaptive-discovery.spec.ts --reporter=line
+
+      - name: Three-model discovery benchmark (no SEND)
+        env:
+          DISCOVERY_BENCHMARK_CORPUS_FILE: ${{ inputs.corpus || 'examples/public-sut-discovery-corpus.json' }}
+          DISCOVERY_BENCHMARK_TIMEOUT_MS: ${{ inputs.timeout_ms || '30000' }}
+          DISCOVERY_THREE_MODEL_OUTPUT_FILE: artifacts/browser-sut/discovery-three-model-evidence.json
+          ADAPTIVE_DISCOVERY_MAX_CANDIDATES: '40'
+          ADAPTIVE_DISCOVERY_MAX_CLICKS: '12'
+          ADAPTIVE_DISCOVERY_SETTLE_MS: '350'
+        run: npm run browser:discovery:three-model
+
+      - name: Upload three-model evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: discovery-three-model-evidence
+          path: artifacts/browser-sut/discovery-three-model-evidence.json
+          if-no-files-found: warn
+          retention-days: 14
