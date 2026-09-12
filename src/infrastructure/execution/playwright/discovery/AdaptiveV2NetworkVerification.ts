@@ -14,6 +14,19 @@ export type AdaptiveV2Verification = {
 
 type ResponseState = { readonly count: number; readonly values: readonly string[] };
 
+const BROAD_RESPONSE_SELECTOR = [
+  '[aria-live]',
+  '[role="log"]',
+  '[role="status"]',
+  '[role="alert"]',
+  '[data-testid*="message" i]',
+  '[data-testid*="response" i]',
+  '[class*="message" i]',
+  '[class*="response" i]',
+  '[id*="message" i]',
+  '[id*="response" i]',
+].join(',');
+
 export async function verifyAdaptiveV2NetworkConversation(
   page: Page,
   config: PlaywrightConversationUiConfig,
@@ -23,6 +36,7 @@ export async function verifyAdaptiveV2NetworkConversation(
   const network = new NetworkConversationEvidence(page);
   const responseLocator = locatorFromDefinition(page, config.response);
   const before = await readResponseState(responseLocator);
+  const broadBefore = await readBroadResponseState(page);
   const startedAt = Date.now();
 
   try {
@@ -35,7 +49,7 @@ export async function verifyAdaptiveV2NetworkConversation(
       const sendButton = locatorFromDefinition(page, config.sendButton);
       if (await sendButton.isEnabled().catch(() => false)) {
         await sendButton.click({ timeout: timeoutMs });
-        await waitForOutboundOrDomResponse(page, network, responseLocator, before, message, 750);
+        await waitForOutboundOrDomResponse(page, network, responseLocator, before, broadBefore, message, Math.min(2_000, timeoutMs));
       }
 
       const afterClick = network.correlate();
@@ -50,14 +64,15 @@ export async function verifyAdaptiveV2NetworkConversation(
     let domResponse: string | null = null;
     while (Date.now() < deadline) {
       const current = await readResponseState(responseLocator);
-      domResponse = findNewResponse(before, current, message);
+      const broadCurrent = await readBroadResponseState(page);
+      domResponse = findNewResponse(before, current, message) ?? findNewResponse(broadBefore, broadCurrent, message);
       const correlation = network.correlate();
       if (domResponse || correlation.ordered) {
         network.stop();
         const finalNetwork = network.correlate();
         const hasInbound = finalNetwork.ordered;
         return {
-          send: 'CONFIRMED',
+          send: finalNetwork.outbound ? 'CONFIRMED' : 'FAILED',
           receive: domResponse || hasInbound ? 'CONFIRMED' : 'FAILED',
           conversation: domResponse || hasInbound ? 'VERIFIED' : 'FAILED',
           network: finalNetwork,
@@ -65,7 +80,7 @@ export async function verifyAdaptiveV2NetworkConversation(
           ...(domResponse ? { responseLength: domResponse.length } : {}),
         };
       }
-      await page.waitForTimeout(100);
+      await page.waitForTimeout(150);
     }
 
     network.stop();
@@ -76,7 +91,7 @@ export async function verifyAdaptiveV2NetworkConversation(
       conversation: finalNetwork.ordered ? 'VERIFIED' : 'FAILED',
       network: finalNetwork,
       domResponseObserved: false,
-      error: 'Timed out waiting for correlated conversation evidence',
+      error: `Timed out waiting for correlated conversation evidence after ${timeoutMs}ms`,
     };
   } catch (error) {
     network.stop();
@@ -97,6 +112,7 @@ async function waitForOutboundOrDomResponse(
   network: NetworkConversationEvidence,
   responseLocator: ReturnType<typeof locatorFromDefinition>,
   previous: ResponseState,
+  broadPrevious: ResponseState,
   input: string,
   timeoutMs: number,
 ): Promise<void> {
@@ -105,7 +121,9 @@ async function waitForOutboundOrDomResponse(
     if (network.correlate().outbound) return;
     const current = await readResponseState(responseLocator);
     if (findNewResponse(previous, current, input)) return;
-    await page.waitForTimeout(50);
+    const broadCurrent = await readBroadResponseState(page);
+    if (findNewResponse(broadPrevious, broadCurrent, input)) return;
+    await page.waitForTimeout(75);
   }
 }
 
@@ -120,6 +138,23 @@ async function readResponseState(locator: ReturnType<typeof locatorFromDefinitio
   } catch {
     return { count: 0, values: [] };
   }
+}
+
+async function readBroadResponseState(page: Page): Promise<ResponseState> {
+  const values: string[] = [];
+  for (const context of [page, ...page.frames().filter((frame) => frame !== page.mainFrame())]) {
+    try {
+      const locator = context.locator(BROAD_RESPONSE_SELECTOR);
+      const count = Math.min(await locator.count(), 120);
+      for (let index = 0; index < count; index += 1) {
+        const text = (await locator.nth(index).textContent())?.trim() ?? '';
+        if (text) values.push(text.slice(0, 2_000));
+      }
+    } catch {
+      // A detached cross-origin frame is evidence of volatility, not a verifier failure.
+    }
+  }
+  return { count: values.length, values };
 }
 
 function findNewResponse(previous: ResponseState, current: ResponseState, input: string): string | null {
