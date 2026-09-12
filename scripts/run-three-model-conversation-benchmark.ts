@@ -27,7 +27,7 @@ type Result = {
 
 const corpusFile = process.env.THREE_MODEL_CORPUS_FILE ?? 'examples/public-sut-discovery-corpus.json';
 const outputFile = process.env.THREE_MODEL_OUTPUT_FILE ?? 'artifacts/browser-sut/three-model-conversation-benchmark.json';
-const timeoutMs = positive(process.env.THREE_MODEL_TIMEOUT_MS, 30_000, 'THREE_MODEL_TIMEOUT_MS');
+const timeoutMs = positive(process.env.THREE_MODEL_TIMEOUT_MS, 45_000, 'THREE_MODEL_TIMEOUT_MS');
 const message = process.env.THREE_MODEL_MESSAGE ?? 'Hello';
 const adaptiveMaxCandidates = positive(process.env.ADAPTIVE_DISCOVERY_MAX_CANDIDATES, 80, 'ADAPTIVE_DISCOVERY_MAX_CANDIDATES');
 const adaptiveMaxClicks = positive(process.env.ADAPTIVE_DISCOVERY_MAX_CLICKS, 24, 'ADAPTIVE_DISCOVERY_MAX_CLICKS');
