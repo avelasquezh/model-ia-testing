@@ -1,9 +1,9 @@
 import type { Frame, Locator, Page } from '@playwright/test';
+import { createHash } from 'node:crypto';
 import { scoreDiscoveryCandidate, type AdaptiveCandidateScore, type DiscoveryCandidate } from './AdaptiveDiscovery.js';
 import { classifyExperiment, diffUiSnapshots, type AdaptiveDiscoveryDebugAttempt, type DiscoveryExperimentResult, type UiSnapshot } from './AdaptiveDiscoveryExperiment.js';
 import { ChatDiscoveryError, PlaywrightChatDiscovery } from '../PlaywrightChatDiscovery.js';
 import type { ChatDiscoveryCandidate, ChatDiscoveryReport } from '../ChatDiscoveryReport.js';
-import { createHash } from 'node:crypto';
 
 type SeedHandle = {
   readonly source: ChatDiscoveryCandidate;
@@ -37,8 +37,8 @@ const DEFAULT_SETTLE_MS = 350;
  * Independent third discovery model.
  *
  * It does not modify LEGACY or ADAPTIVE. LEGACY supplies observed candidate
- * evidence; this model converts that evidence into Adaptive scores, restores
- * the original URL, and safely explores the Legacy-derived candidates in
+ * evidence; this model converts that evidence into Adaptive scores, reloads
+ * the original page, and safely explores the Legacy-derived candidates in
  * Adaptive score order.
  */
 export class LegacySeededAdaptiveDiscovery {
@@ -186,7 +186,6 @@ export class LegacySeededAdaptiveDiscovery {
   }
 
   private async restore(url: string, debug: AdaptiveDiscoveryDebugAttempt[]): Promise<void> {
-    if (this.page.url() === url) return;
     try {
       await this.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 8_000 });
     } catch (error) {
