@@ -61,7 +61,7 @@ jobs:
         run: npm run browser:discovery:run
       - name: Publish site discovery evidence
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: public-sut-discovery-${{ matrix.target }}-${{ github.sha }}
           path: artifacts/public-sut-discovery/
@@ -90,7 +90,7 @@ jobs:
       - name: Build cumulative locator candidate registry
         run: npm run browser:discovery:merge -- artifacts/public-sut-discovery artifacts/public-sut-discovery/locator-candidate-registry.json
       - name: Publish cumulative registry
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: public-sut-locator-candidate-registry-${{ github.sha }}
           path: artifacts/public-sut-discovery/locator-candidate-registry.json
