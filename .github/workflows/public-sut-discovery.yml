@@ -82,7 +82,7 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Download discovery evidence
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           pattern: public-sut-discovery-*-*
           path: artifacts/public-sut-discovery
